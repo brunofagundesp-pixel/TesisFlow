@@ -1,0 +1,96 @@
+<h2 mat-dialog-title>Criar Tarefa</h2>
+
+<mat-dialog-content class="dialog-content">
+  <form [formGroup]="form">
+    <div class="top-row">
+      <div class="detail-item" style="width: 220px; flex-shrink: 0;">
+        <label class="detail-label">Projeto</label>
+        <mat-form-field appearance="fill" class="detail-select">
+          <mat-select formControlName="projetoId" (selectionChange)="onProjetoChange($event.value)">
+            <mat-option [value]="null" disabled>Selecionar...</mat-option>
+            @for (p of projetos; track p.id) {
+              <mat-option [value]="p.id">{{ p.nome }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="titulo-wrapper" style="flex: 1;">
+        <label class="detail-label">Titulo</label>
+        <input
+          class="titulo-native"
+          formControlName="titulo"
+          placeholder="Digite o titulo da tarefa"
+        />
+      </div>
+    </div>
+
+    @if (form.get('titulo')?.invalid && form.get('titulo')?.touched) {
+      <span class="field-error">Titulo e obrigatorio</span>
+    }
+
+    <div class="tipo-group">
+      @for (t of tiposVisuais; track t.value) {
+        <button type="button" class="tipo-option" [class.tipo-option--active]="form.get('tipo')?.value === t.value" (click)="form.patchValue({tipo: t.value})">
+          <mat-icon>{{ t.icon }}</mat-icon>
+          <span>{{ t.label }}</span>
+        </button>
+      }
+    </div>
+
+    <div class="descricao-wrapper">
+      <textarea
+        class="descricao-native"
+        formControlName="descricao"
+        rows="3"
+        placeholder="Adicione uma descricao..."
+      ></textarea>
+    </div>
+
+    <div class="details-divider">
+      <span>Detalhes</span>
+    </div>
+
+    <div class="details-grid">
+      <div class="detail-item">
+        <label class="detail-label">Status</label>
+        <mat-form-field appearance="fill" class="detail-select">
+          <mat-select formControlName="status">
+            @for (c of colunas; track c.status) {
+              <mat-option [value]="c.status">{{ c.titulo }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="detail-item">
+        <label class="detail-label">Prioridade</label>
+        <mat-form-field appearance="fill" class="detail-select">
+          <mat-select formControlName="prioridade">
+            @for (p of prioridades; track p.value) {
+              <mat-option [value]="p.value">{{ p.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    @if (membros.length > 0) {
+      <div class="detail-item w-100">
+        <label class="detail-label">Responsaveis</label>
+        <mat-form-field appearance="fill" class="detail-select">
+          <mat-select formControlName="responsavelIds" multiple>
+            @for (m of membros; track m.usuarioId) {
+              <mat-option [value]="m.usuarioId">{{ m.usuarioNome }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-button (click)="fechar()">Cancelar</button>
+  <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="salvar()">Criar Tarefa</button>
+</mat-dialog-actions>

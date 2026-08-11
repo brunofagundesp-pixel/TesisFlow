@@ -1,0 +1,14 @@
+services:
+  coturn:
+    image: coturn/coturn
+    container_name: tesisflow-coturn
+    network_mode: host
+    restart: unless-stopped
+    command:
+      - -n
+      - --log-file=stdout
+      - --lt-cred-mech
+      - --fingerprint
+      - --realm=tesisflow
+      - --user=tesisflow:suasenhaaqui
+      - --external-ip=$$(curl -s https://api.ipify.org)

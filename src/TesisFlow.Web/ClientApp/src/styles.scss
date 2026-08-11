@@ -1,0 +1,98 @@
+@use '@angular/material' as mat;
+
+$tf-primary-palette: (
+  50: #fff3e6,
+  100: #ffe0b3,
+  200: #ffcc80,
+  300: #ffb84d,
+  400: #ffa726,
+  500: #ff8615,
+  600: #e67600,
+  700: #cc6600,
+  800: #b35900,
+  900: #994d00,
+  contrast: (50: #1f2937, 100: #1f2937, 200: #1f2937, 300: #1f2937, 400: #fff, 500: #fff, 600: #fff, 700: #fff, 800: #fff, 900: #fff)
+);
+
+$tf-accent-palette: (
+  50: #e8f0fe,
+  100: #c5d9fc,
+  200: #9ec0fa,
+  300: #77a7f8,
+  400: #5a94f6,
+  500: #3d81f4,
+  600: #3779f3,
+  700: #2f6ef1,
+  800: #2764ef,
+  900: #1a51ec,
+  contrast: (50: #1f2937, 100: #1f2937, 200: #1f2937, 300: #fff, 400: #fff, 500: #fff, 600: #fff, 700: #fff, 800: #fff, 900: #fff)
+);
+
+$tf-primary: mat.m2-define-palette($tf-primary-palette, 500);
+$tf-accent: mat.m2-define-palette($tf-accent-palette, 500);
+$tf-warn: mat.m2-define-palette(mat.$m2-red-palette);
+
+$tf-theme: mat.m2-define-light-theme((
+  color: (
+    primary: $tf-primary,
+    accent: $tf-accent,
+    warn: $tf-warn,
+  ),
+  typography: mat.m2-define-typography-config(),
+  density: 0,
+));
+
+@include mat.all-component-themes($tf-theme);
+@include mat.core();
+
+:root {
+  --tf-primary: #ff8615;
+  --tf-primary-hover: #e67600;
+  --tf-primary-light: #fff3e6;
+  --tf-bg: #ffffff;
+  --tf-card-bg: #ffffff;
+  --tf-border: #e6ebf2;
+  --tf-text-primary: #0f172a;
+  --tf-text-body: #1f2937;
+  --tf-text-muted: #64748b;
+  --tf-danger: #ef4444;
+  --tf-success: #16a34a;
+  --tf-warning: #f59e0b;
+  --tf-blue: #3d81f4;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  background: var(--tf-bg);
+  color: var(--tf-text-body);
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.chave-link {
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.1s;
+
+  &:hover {
+    color: var(--tf-blue) !important;
+    text-decoration: underline;
+  }
+}
+
+.mencao-tag {
+  color: var(--tf-primary);
+  font-weight: 600;
+  background: var(--tf-primary-light);
+  padding: 1px 4px;
+  border-radius: 4px;
+}

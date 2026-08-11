@@ -1,0 +1,48 @@
+.page { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+.page-header h1 { font-size: 1.5rem; font-weight: 700; color: var(--tf-text-primary); }
+.page-header span { font-size: 0.85rem; color: var(--tf-text-muted); }
+
+.projetos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+
+.projeto-card { border-radius: 14px; border: 1px solid var(--tf-border); box-shadow: 0 4px 12px rgba(0,0,0,0.03); cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+.projeto-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+
+.projeto-card-header { display: flex; gap: 0.85rem; padding: 1.25rem 1.25rem 0.75rem; align-items: flex-start; }
+.projeto-card-icone {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--tf-primary-light);
+  color: var(--tf-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.projeto-card-info { flex: 1; min-width: 0; }
+.projeto-card-header h3 { font-size: 1rem; font-weight: 700; color: var(--tf-text-primary); margin-bottom: 0.2rem; }
+.projeto-card-header p { font-size: 0.8rem; color: var(--tf-text-muted); margin: 0; line-height: 1.4; }
+
+.projeto-delete-btn {
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+  margin-top: -4px;
+  margin-right: -4px;
+
+  mat-icon { font-size: 1.15rem; width: 1.15rem; height: 1.15rem; color: #94a3b8; }
+}
+.projeto-card:hover .projeto-delete-btn { opacity: 1; }
+.projeto-delete-btn:hover mat-icon { color: #ef4444; }
+
+.projeto-card-footer { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1.25rem; font-size: 0.75rem; color: var(--tf-text-muted); }
+.projeto-card-footer mat-icon { font-size: 1rem; width: 1rem; height: 1rem; vertical-align: -2px; margin-right: 0.2rem; }
+.projeto-lider { margin-left: auto; }
+
+.empty { text-align: center; padding: 4rem 2rem; }
+.empty mat-icon { font-size: 4rem; width: 4rem; height: 4rem; color: #cbd5e1; margin-bottom: 1rem; }
+.empty h3 { font-weight: 700; color: var(--tf-text-primary); margin-bottom: 0.5rem; }
+.empty p { color: var(--tf-text-muted); margin-bottom: 1.5rem; }

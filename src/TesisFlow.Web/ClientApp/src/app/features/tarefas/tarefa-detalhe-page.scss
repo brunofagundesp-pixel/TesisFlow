@@ -1,0 +1,19 @@
+.page-root { max-width: 1400px; margin: 0 auto; padding: 1.5rem 1.5rem 0; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.header-actions { display: flex; gap: 0.5rem; }
+.breadcrumb { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
+.breadcrumb a { color: var(--tf-text-primary); text-decoration: none; font-weight: 500; &:hover { text-decoration: underline; } }
+.breadcrumb-sep { color: #cbd5e1; font-weight: 300; }
+.breadcrumb-current { color: var(--tf-text-muted); font-weight: 500; }
+.page-columns { display: flex; gap: 1.5rem; }
+.col-main { flex: 1; min-width: 0; overflow-y: auto; height: calc(100vh - 130px); padding-right: 0.5rem; padding-bottom: 1.5rem; }
+.col-side { width: 260px; flex-shrink: 0; overflow-y: auto; height: calc(100vh - 130px); padding-bottom: 1.5rem; }
+
+.skeleton-body { display: flex; flex-direction: column; gap: 0.6rem; padding: 2rem 0; }
+.skeleton-row { height: 14px; border-radius: 6px; background: linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%); background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite; }
+.skeleton-title { height: 12px; width: 80px; }
+.skeleton-line { width: 100%; }
+.w-80 { width: 80%; } .w-60 { width: 60%; } .w-40 { width: 40%; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+@import '../projetos/tarefa-detalhe-modal';

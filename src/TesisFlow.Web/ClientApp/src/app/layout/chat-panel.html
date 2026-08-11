@@ -1,0 +1,144 @@
+<div class="chat-panel">
+  <div class="chat-panel-header">
+    @if (chatService.conversaAtiva()) {
+      <button class="chat-voltar" (click)="voltar()">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div class="chat-contato-info">
+        <div class="chat-foto-wrapper">
+          <span class="chat-contato-foto">{{ contatoAtivo?.avatar }}</span>
+          <span class="chat-status-dot" [class.s-online]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'online'" [class.s-ausente]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'ausente'" [class.s-ocupado]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'ocupado'"></span>
+        </div>
+        <span class="chat-contato-nome">{{ contatoAtivo?.nome }}</span>
+      </div>
+      <button class="chat-call-btn" (click)="ligar()" title="Ligar">
+        <mat-icon>call</mat-icon>
+      </button>
+    } @else {
+      <span class="chat-panel-titulo">Mensagens</span>
+      <button class="chat-call-btn" (click)="mostrarLigacaoGrupo = !mostrarLigacaoGrupo" title="Ligar">
+        <mat-icon>call</mat-icon>
+      </button>
+    }
+    <button class="chat-fechar" (click)="fechar.emit()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  @if (!chatService.conversaAtiva()) {
+    @if (mostrarLigacaoGrupo) {
+      <div class="chat-grupo-ligacao">
+        <span class="chat-grupo-titulo">Selecionar participantes (até 6)</span>
+        @if (participantesGrupo.size > 0) {
+          <div class="chat-grupo-chips">
+            @for (id of participanteIds(); track id) {
+              <span class="chat-grupo-chip" (click)="toggleParticipante(id)">
+                <span class="chat-grupo-chip-avatar">{{ participanteNome(id).charAt(0) }}</span>
+                <span>{{ participanteNome(id) }}</span>
+                <mat-icon class="chat-grupo-chip-close">close</mat-icon>
+              </span>
+            }
+          </div>
+        }
+        <div class="chat-grupo-search-wrapper">
+          <mat-icon class="chat-busca-icon">search</mat-icon>
+          <input class="chat-grupo-search" placeholder="Buscar usuario..." [(ngModel)]="termoBuscaGrupo" (input)="onBuscaGrupo()" />
+          @if (chatService.sugestoesBusca().length > 0) {
+            <div class="chat-busca-dropdown" style="position: relative; top: 0; left: 0; right: 0; margin-top: 0.25rem;">
+              @for (u of chatService.sugestoesBusca(); track u.usuarioId) {
+                <div class="chat-busca-item" (click)="toggleParticipante(u.usuarioId); termoBuscaGrupo = ''">
+                  <span class="chat-contato-foto">{{ u.avatar }}</span>
+                  <span>{{ u.nome }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <button class="chat-grupo-ligar" (click)="iniciarLigacaoGrupo()" [disabled]="participantesGrupo.size === 0">
+          <mat-icon>call</mat-icon> Ligar ({{ participantesGrupo.size }})
+        </button>
+        <button class="chat-grupo-cancelar" (click)="mostrarLigacaoGrupo = false; participantesGrupo.clear()">Cancelar</button>
+      </div>
+    } @else {
+    <div class="chat-busca">
+      <mat-icon class="chat-busca-icon">search</mat-icon>
+      <input
+        class="chat-busca-input"
+        placeholder="Buscar usuario..."
+        [ngModel]="termoBusca"
+        (ngModelChange)="onBuscaChange($event)"
+      />
+      @if (chatService.sugestoesBusca().length > 0) {
+        <div class="chat-busca-dropdown">
+          @for (u of chatService.sugestoesBusca(); track u.usuarioId) {
+            <div class="chat-busca-item" (click)="abrirConversa(u.usuarioId); termoBusca = ''">
+              <span class="chat-contato-foto">{{ u.avatar }}</span>
+              <span>{{ u.nome }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+    <div class="chat-contatos">
+      @for (c of chatService.contatos(); track c.usuarioId) {
+        <div class="chat-contato-card" (click)="abrirConversa(c.usuarioId)">
+          <div class="chat-foto-wrapper">
+            <span class="chat-contato-foto">{{ c.avatar }}</span>
+            <span class="chat-status-dot" [class.s-online]="chatService.getStatus(c.usuarioId) === 'online'" [class.s-ausente]="chatService.getStatus(c.usuarioId) === 'ausente'" [class.s-ocupado]="chatService.getStatus(c.usuarioId) === 'ocupado'"></span>
+          </div>
+          <div class="chat-contato-content">
+            <div class="chat-contato-top">
+              <span class="chat-contato-nome">{{ c.nome }}</span>
+              <span class="chat-contato-data">{{ c.ultimaData | date:'HH:mm' }}</span>
+            </div>
+            <div class="chat-contato-bottom">
+              <span class="chat-contato-msg">{{ c.ultimaMensagem }}</span>
+              @if (c.naoLidas > 0) {
+                <span class="chat-badge">{{ c.naoLidas }}</span>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+    }
+  } @else {
+    <div class="chat-mensagens">
+      @for (m of mensagensAtivas; track m.id) {
+        <div class="chat-msg" [class.chat-msg--meu]="m.remetenteId === meuId">
+          @if (m.remetenteId !== meuId) {
+            <span class="chat-msg-foto">{{ m.remetenteNome.charAt(0) }}</span>
+          }
+          <div class="chat-msg-bubble" [class.chat-msg-bubble--meu]="m.remetenteId === meuId">
+            <span class="chat-msg-texto">{{ m.texto }}</span>
+            <span class="chat-msg-data">{{ m.data | date:'HH:mm' }}</span>
+          </div>
+        </div>
+      }
+      @if (digitandoAtivo) {
+        <div class="chat-msg">
+          <span class="chat-msg-foto">{{ contatoAtivo?.avatar }}</span>
+          <div class="chat-msg-bubble chat-digitando-bubble">
+            <span class="chat-digitando-dots"><span>.</span><span>.</span><span>.</span></span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="chat-input-area">
+      <textarea
+        class="chat-input"
+        placeholder="Digite uma mensagem..."
+        [(ngModel)]="novaMensagem"
+        (keydown)="onKeydown($event)"
+        (input)="onInput()"
+        cdkTextareaAutosize
+        cdkAutosizeMinRows="1"
+        cdkAutosizeMaxRows="5"
+      ></textarea>
+      <button class="chat-enviar" (click)="enviar()" [disabled]="!novaMensagem.trim()">
+        <mat-icon>send</mat-icon>
+      </button>
+    </div>
+  }
+</div>

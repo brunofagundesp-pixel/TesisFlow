@@ -1,0 +1,52 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Para voce</h1>
+      <span>Tarefas atribuidas a voce em todos os projetos</span>
+    </div>
+  </div>
+
+  @if (carregando) {
+    <div class="skeleton-groups">
+      @for (i of [1,2]; track i) {
+        <div class="skeleton-group">
+          <div class="skeleton-group-header">
+            <div class="skeleton-group-icon"></div>
+            <div class="skeleton-group-title"></div>
+          </div>
+          <div class="skeleton-group-list">
+            <div class="skeleton-task"></div>
+            <div class="skeleton-task w-80"></div>
+            <div class="skeleton-task w-60"></div>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (tarefasAgrupadas.length === 0) {
+    <div class="empty">
+      <mat-icon>inbox</mat-icon>
+      <h3>Nenhuma tarefa para voce</h3>
+      <p>Voce nao tem tarefas atribuidas no momento.</p>
+    </div>
+  } @else {
+    @for (grupo of tarefasAgrupadas; track grupo.projetoId) {
+      <div class="projeto-group">
+        <div class="projeto-group-header">
+          <span class="projeto-group-icone">{{ grupo.projetoNome.charAt(0) }}</span>
+          <h3>{{ grupo.projetoNome }}</h3>
+          <span class="projeto-group-count">{{ grupo.tarefas.length }}</span>
+        </div>
+        <div class="tarefas-mini-list">
+          @for (t of grupo.tarefas; track t.id) {
+            <div class="tarefa-mini-item" (click)="abrirTarefa(t)">
+              <mat-icon class="mini-tipo-icon tipo-{{t.tipo}}">{{ tipoIcone(t.tipo) }}</mat-icon>
+              <a class="mini-chave chave-link" [routerLink]="['/tarefas', t.chave]">{{ t.chave }}</a>
+              <span class="mini-titulo">{{ t.titulo }}</span>
+              <span class="mini-badge">{{ statusLabel(t.status) }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>

@@ -1,0 +1,120 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Clientes</h1>
+      <span>Gerencie seus clientes e escolas</span>
+    </div>
+    <button mat-flat-button color="primary" class="page-header-btn">
+      <mat-icon>add</mat-icon> Novo Cliente
+    </button>
+  </div>
+
+  <div class="clientes-layout">
+    <div class="clientes-main">
+      @if (carregando()) {
+        <div class="clientes-grid">
+          @for (i of [1,2,3,4,5,6,7,8]; track i) {
+            <div class="cliente-card skeleton-card">
+              <div class="cliente-card-header">
+                <div class="skeleton skeleton-icone"></div>
+                <div class="cliente-card-info">
+                  <div class="skeleton skeleton-line skeleton-line--long"></div>
+                  <div class="skeleton skeleton-line skeleton-line--short"></div>
+                </div>
+                <div class="skeleton skeleton-badge"></div>
+              </div>
+              <div class="skeleton skeleton-divider"></div>
+              <div class="cliente-card-footer">
+                <div class="skeleton skeleton-line skeleton-line--short"></div>
+                <div class="skeleton skeleton-line skeleton-line--sm"></div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else if (clientesPaginados().length > 0) {
+        <div class="clientes-grid">
+          @for (c of clientesPaginados(); track c.id) {
+            <mat-card class="cliente-card" [routerLink]="['/clientes', c.id]">
+              <div class="cliente-card-header">
+                <div class="cliente-card-icone">{{ c.nome.charAt(0) }}</div>
+                <div class="cliente-card-info">
+                  <h3>{{ c.nome }}</h3>
+                  <p>{{ c.apelido }}</p>
+                </div>
+                <span class="cliente-status-badge" [class.status-inativo]="c.status === 'Inativo'">{{ c.status }}</span>
+              </div>
+              <mat-divider></mat-divider>
+              <div class="cliente-card-footer">
+                <span><mat-icon>location_on</mat-icon> {{ c.cidade }}, {{ c.estado }}</span>
+                @if (c.contato) {
+                  <span><mat-icon>person</mat-icon> {{ c.contato }}</span>
+                }
+                @if (c.telefone) {
+                  <span><mat-icon>call</mat-icon> {{ c.telefone }}</span>
+                }
+              </div>
+            </mat-card>
+          }
+        </div>
+        <mat-paginator
+          class="clientes-paginator"
+          [length]="totalFiltrados()"
+          [pageIndex]="pageIndex()"
+          [pageSize]="pageSize()"
+          [pageSizeOptions]="pageSizeOptions"
+          (page)="onPageChange($event)"
+          showFirstLastButtons
+        ></mat-paginator>
+      } @else {
+        <div class="empty">
+          <mat-icon>search_off</mat-icon>
+          <h3>Nenhum cliente encontrado</h3>
+          <p>Tente ajustar os filtros para encontrar o que procura.</p>
+        </div>
+      }
+    </div>
+
+    <div class="clientes-filtros">
+      <div class="filtro-titulo">Filtros</div>
+
+      <label class="filtro-label">Nome / Apelido</label>
+      <div class="filtro-input">
+        <mat-icon class="filtro-input-icon">search</mat-icon>
+        <input
+          type="text"
+          class="filtro-input-field"
+          placeholder="Buscar..."
+          [value]="filtroNome()"
+          (input)="onNomeInput($event)"
+        />
+      </div>
+
+      <label class="filtro-label">Status</label>
+      <mat-form-field appearance="fill" class="filtro-field">
+        <mat-select [(ngModel)]="filtroStatus" (selectionChange)="onFiltroChange()">
+          @for (opt of statusOptions; track opt) {
+            <mat-option [value]="opt">{{ opt === 'Todos' ? 'Todos' : opt }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <label class="filtro-label">Estado</label>
+      <mat-form-field appearance="fill" class="filtro-field">
+        <mat-select [(ngModel)]="filtroEstado" (selectionChange)="onEstadoChange()">
+          @for (opt of estadoOptions(); track opt) {
+            <mat-option [value]="opt">{{ opt === 'Todos' ? 'Todos' : opt }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <label class="filtro-label">Cidade</label>
+      <mat-form-field appearance="fill" class="filtro-field">
+        <mat-select [(ngModel)]="filtroCidade" (selectionChange)="onFiltroChange()">
+          @for (opt of cidadeOptions(); track opt) {
+            <mat-option [value]="opt">{{ opt === 'Todos' ? 'Todos' : opt }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+</div>

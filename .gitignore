@@ -1,0 +1,52 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.vs/
+*.DotSettings.user
+/packages/
+
+# ASP.NET Core
+*.db
+*.db-shm
+*.db-wal
+*.sqlite3
+
+# Angular / Node
+node_modules/
+dist/
+tmp/
+out-tsc/
+/.angular/cache/
+.sass-cache/
+connect.lock
+coverage/
+libpeerconnection.log
+testem.log
+typings/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Secrets - NEVER COMMIT CREDENTIALS
+**/appsettings.Development.json
+**/appsettings.*.local.json
+*.env
+*.env.*
+
+# Uploads (runtime user data)
+/src/TesisFlow.Api/uploads/
+
+# Publish output
+/src/TesisFlow.Api/publish/

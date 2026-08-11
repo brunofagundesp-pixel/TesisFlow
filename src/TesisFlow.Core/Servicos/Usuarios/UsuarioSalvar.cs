@@ -1,0 +1,42 @@
+using TesisFlow.Core.Interfaces;
+using TesisFlow.Modelo.Entidades;
+
+namespace TesisFlow.Core.Servicos.Usuarios
+{
+    public class UsuarioSalvar
+    {
+        private readonly IUsuarioRepositorio _repositorio;
+
+        public UsuarioSalvar(IUsuarioRepositorio repositorio)
+        {
+            _repositorio = repositorio;
+        }
+
+        public async Task<Usuario> CriarAsync(string nome, string email, string senha)
+        {
+            if (await _repositorio.EmailExisteAsync(email))
+                throw new InvalidOperationException("Email já cadastrado.");
+
+            var usuario = new Usuario
+            {
+                Nome = nome,
+                Email = email,
+                SenhaHash = BCrypt.Net.BCrypt.HashPassword(senha)
+            };
+
+            return await _repositorio.AdicionarAsync(usuario);
+        }
+
+        public async Task<Usuario> AtualizarAsync(int id, string nome, string? cargo, string? foto)
+        {
+            var usuario = await _repositorio.ObterPorIdAsync(id)
+                ?? throw new KeyNotFoundException("Usuário não encontrado.");
+
+            usuario.Nome = nome;
+            usuario.Cargo = cargo;
+            if (foto != null) usuario.Foto = foto;
+
+            return await _repositorio.AtualizarAsync(usuario);
+        }
+    }
+}

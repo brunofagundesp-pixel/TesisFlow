@@ -1,0 +1,164 @@
+.page { padding: 2rem; max-width: 900px; margin: 0 auto; }
+
+.page-header { margin-bottom: 1.5rem; }
+.page-header h1 { font-size: 1.3rem; font-weight: 700; color: var(--tf-text-primary); }
+.page-header span { font-size: 0.85rem; color: var(--tf-text-muted); }
+
+.loading { display: flex; align-items: center; gap: 0.75rem; color: var(--tf-text-muted); font-size: 0.85rem; padding: 2rem 0; }
+
+.empty { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 3rem 0; color: var(--tf-text-muted); }
+.empty mat-icon { font-size: 3rem; width: 3rem; height: 3rem; color: #cbd5e1; }
+.empty h3 { font-size: 1rem; font-weight: 600; color: var(--tf-text-primary); margin: 0; }
+.empty p { font-size: 0.85rem; margin: 0; }
+
+.projeto-group {
+  margin-bottom: 1.5rem;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--tf-border);
+  overflow: hidden;
+}
+
+.projeto-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--tf-border);
+
+  h3 { font-size: 0.9rem; font-weight: 600; color: var(--tf-text-primary); margin: 0; flex: 1; }
+}
+
+.projeto-group-icone {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: var(--tf-primary-light); color: var(--tf-primary);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.75rem; flex-shrink: 0;
+}
+
+.projeto-group-count {
+  font-size: 0.72rem; font-weight: 600;
+  background: #f1f5f9; color: #475569;
+  padding: 0.15rem 0.5rem; border-radius: 999px;
+}
+
+.tarefas-mini-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.tarefa-mini-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1.25rem;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-bottom: 1px solid #f3f4f6;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: #f9fafb; }
+}
+
+.mini-tipo-icon {
+  font-size: 1.05rem; width: 1.05rem; height: 1.05rem;
+  flex-shrink: 0;
+
+  &.tipo-1 { color: var(--tf-primary); }
+  &.tipo-2 { color: #ef4444; }
+  &.tipo-3 { color: #f59e0b; }
+  &.tipo-4 { color: #3b82f6; }
+}
+
+.mini-chave {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94a3b8;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.mini-titulo {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--tf-text-body);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.skeleton-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.skeleton-group {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid var(--tf-border);
+  overflow: hidden;
+}
+
+.skeleton-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--tf-border);
+}
+
+.skeleton-group-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.skeleton-group-title {
+  width: 160px;
+  height: 16px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-group-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.skeleton-task {
+  height: 40px;
+  margin: 0 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+
+  &:last-child { border-bottom: none; }
+}
+
+.w-80 { width: calc(80% - 2.5rem); }
+.w-60 { width: calc(60% - 2.5rem); }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

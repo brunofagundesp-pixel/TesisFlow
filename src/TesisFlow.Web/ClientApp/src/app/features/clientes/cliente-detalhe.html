@@ -1,0 +1,410 @@
+<div class="page">
+  <div class="breadcrumb">
+    <a routerLink="/clientes" class="breadcrumb-link">Clientes</a>
+    <mat-icon class="breadcrumb-sep">chevron_right</mat-icon>
+    <span class="breadcrumb-current">{{ cliente?.nome || '...' }}</span>
+  </div>
+
+  <div class="detalhe-scroll">
+    @if (carregando()) {
+      <div class="cliente-header-card skeleton-header-card">
+        <div class="cliente-header-top">
+          <div class="cliente-header-main">
+            <div class="skeleton skeleton-avatar"></div>
+            <div class="cliente-header-info">
+              <div class="skeleton skeleton-line skeleton-line--lg" style="width: 60%"></div>
+              <div class="skeleton skeleton-line skeleton-line--md" style="width: 80%; margin-top: 0.5rem"></div>
+            </div>
+          </div>
+          <div class="skeleton skeleton-status-detalhe"></div>
+        </div>
+        <div class="skeleton skeleton-divider"></div>
+        <div class="cliente-header-secondary">
+          <div class="secondary-grid">
+            @for (i of [1,2,3,4,5]; track i) {
+              <div class="secondary-item">
+                <div class="skeleton skeleton-line skeleton-line--xs"></div>
+                <div class="skeleton skeleton-line skeleton-line--sm" style="margin-top: 4px"></div>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="skeleton skeleton-divider"></div>
+        <div class="cliente-header-tge">
+          <div class="skeleton skeleton-line skeleton-line--xs" style="width: 25%"></div>
+          <div class="skeleton skeleton-line skeleton-line--md" style="width: 70%; margin-top: 6px"></div>
+        </div>
+      </div>
+
+      <nav class="modulo-nav">
+        @for (tab of tabs; track tab.label) {
+          <div class="modulo-nav-btn skeleton-nav-tab">
+            <div class="skeleton skeleton-line" style="width: 100%; height: 18px"></div>
+          </div>
+        }
+      </nav>
+
+      <div class="detalhe-layout" style="padding-bottom: 2rem">
+        <div class="detalhe-main">
+          <div class="tab-table">
+            <div class="tab-table-header">
+              @for (i of [1,2,3,4]; track i) {
+                <div class="skeleton skeleton-line" style="width: 80px; height: 12px; margin-right: 2rem"></div>
+              }
+            </div>
+            @for (i of [1,2,3,4,5]; track i) {
+              <div class="tab-table-row">
+                @for (j of [1,2,3,4]; track j) {
+                  <div class="skeleton skeleton-line" style="width: 100px; height: 14px; margin-right: 1rem"></div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+        <div class="detalhe-filtros">
+          <div class="skeleton skeleton-line skeleton-line--md" style="width: 40%"></div>
+          <div class="skeleton skeleton-line skeleton-line--xs" style="width: 60%; margin-top: 1.2rem"></div>
+          <div class="skeleton skeleton-input" style="margin-top: 0.3rem"></div>
+          <div class="skeleton skeleton-line skeleton-line--xs" style="width: 40%; margin-top: 1.2rem"></div>
+          <div class="skeleton skeleton-input" style="margin-top: 0.3rem"></div>
+          <div class="skeleton skeleton-line skeleton-line--xs" style="width: 50%; margin-top: 1.2rem"></div>
+          <div class="skeleton skeleton-input" style="margin-top: 0.3rem"></div>
+        </div>
+      </div>
+    } @else {
+      <div class="detalhe-body">
+        <div class="detalhe-left">
+          <div class="cliente-header-card">
+            <div class="cliente-header-top">
+              <div class="cliente-header-main">
+                <div class="cliente-avatar">{{ cliente.nome.charAt(0) }}</div>
+                <div class="cliente-header-info">
+                  <h1>{{ cliente.nome }}</h1>
+                  <div class="cliente-header-meta">
+                    <span class="meta-item"><span class="meta-label">Contato:</span> {{ cliente.contato || '-' }}</span>
+                    <span class="meta-sep"></span>
+                    <span class="meta-item"><span class="meta-label">Telefone:</span> {{ cliente.telefone || '-' }}</span>
+                    <span class="meta-sep"></span>
+                    <span class="meta-item"><span class="meta-label">E-mail:</span> {{ cliente.email || '-' }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="cliente-header-actions">
+                <span class="cliente-header-status" [class.status-inativo]="cliente.status === 'Inativo'">
+                  <span class="status-dot-header" [class.dot-inativo]="cliente.status === 'Inativo'"></span>
+                  {{ cliente.status }}
+                </span>
+                <button class="header-toggle-btn" (click)="toggleHeader()">
+                  <mat-icon>{{ headerExpandido() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            @if (headerExpandido()) {
+              <div class="cliente-header-secondary">
+                <div class="secondary-grid">
+                  <div class="secondary-item">
+                    <span class="secondary-label">Codigo Portal Aluno</span>
+                    <span class="secondary-value mono">{{ cliente.codigoPortalAluno || '-' }}</span>
+                  </div>
+                  <div class="secondary-item">
+                    <span class="secondary-label">Codigo Aplicativo</span>
+                    <span class="secondary-value mono">{{ cliente.codigoAplicativo || '-' }}</span>
+                  </div>
+                  <div class="secondary-item">
+                    <span class="secondary-label">Apelido Aplicativo</span>
+                    <span class="secondary-value">{{ cliente.apelidoAplicativo || '-' }}</span>
+                  </div>
+                  <div class="secondary-item">
+                    <span class="secondary-label">Codigo Diario</span>
+                    <span class="secondary-value mono">{{ cliente.codigoDiario || '-' }}</span>
+                  </div>
+                  <div class="secondary-item">
+                    <span class="secondary-label">Senha Master Diario</span>
+                    <span class="secondary-value secondary-senha">
+                      <span class="mono">{{ mostrarSenha() ? cliente.senhaMasterDiario : '••••••••••••' }}</span>
+                      <button class="senha-toggle" (click)="toggleSenha()">
+                        <mat-icon>{{ mostrarSenha() ? 'visibility_off' : 'visibility' }}</mat-icon>
+                      </button>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cliente-header-tge">
+                <span class="secondary-label">Link TGE</span>
+                @if (cliente.linkTGE) {
+                  <a [href]="cliente.linkTGE" target="_blank" class="tge-link">
+                    {{ cliente.linkTGE }}
+                    <mat-icon class="tge-link-icon">open_in_new</mat-icon>
+                  </a>
+                } @else {
+                  <span class="secondary-value">-</span>
+                }
+              </div>
+            }
+          </div>
+
+          <nav class="modulo-nav">
+            @for (tab of tabs; track tab.label; let i = $index) {
+              <button
+                class="modulo-nav-btn"
+                [class.modulo-nav-btn--active]="tabIndex() === i"
+                (click)="selecionarTab(i)"
+              >
+                <mat-icon class="modulo-nav-icon">{{ tab.icon }}</mat-icon>
+                <span class="modulo-nav-label">{{ tab.label }}</span>
+                <span class="modulo-nav-count">{{ tabCounts()[i] }}</span>
+              </button>
+            }
+          </nav>
+
+          <div class="detalhe-main" (scroll)="onTabScroll($event)">
+            @if (tabIndex() === 0) {
+              @if (atendimentosVisiveis().length > 0) {
+                <div class="tab-table">
+                  <div class="tab-table-header">
+                    <span class="col-titulo">Titulo / Descricao</span>
+                    <span class="col-protocolo">Protocolo</span>
+                    <span class="col-usuario">Usuario</span>
+                    <span class="col-data">Data</span>
+                  </div>
+                  @for (a of atendimentosVisiveis(); track a.id) {
+                    <div class="tab-table-row">
+                      <div class="col-titulo">
+                        <span class="row-titulo" (click)="abrirAtendimento(a)">{{ a.titulo }}</span>
+                        @if (a.descricao) {
+                          <span class="row-desc">{{ a.descricao }}</span>
+                        }
+                      </div>
+                      <span class="col-protocolo mono">{{ a.protocolo | slice:0:8 }}</span>
+                      <span class="col-usuario">{{ a.usuario }}</span>
+                      <span class="col-data">{{ formatarData(a.data) }}</span>
+                    </div>
+                  }
+                </div>
+                @if (temMaisAtendimentos()) {
+                  <div class="scroll-sentinel">Rolando para carregar mais...</div>
+                }
+              } @else {
+                <div class="tab-empty">Nenhum atendimento encontrado</div>
+              }
+            }
+
+            @if (tabIndex() === 1) {
+              @if (diarioVisiveis().length > 0) {
+                <div class="tab-table">
+                  <div class="tab-table-header">
+                    <span class="col-professor">Nome</span>
+                    <span class="col-id">ID</span>
+                    <span class="col-senha">Senha</span>
+                    <span class="col-telefone">Telefone</span>
+                    <span class="col-email-diario">E-mail</span>
+                  </div>
+                  @for (d of diarioVisiveis(); track d.id) {
+                    <div class="tab-table-row">
+                      <span class="col-professor">{{ d.nome }}</span>
+                      <span class="col-id mono">{{ d.id }}</span>
+                      <span class="col-senha mono">{{ d.senha }}</span>
+                      <span class="col-telefone">{{ d.celular || d.telefone || '-' }}</span>
+                      <span class="col-email-diario">{{ d.email || '-' }}</span>
+                    </div>
+                  }
+                </div>
+                @if (temMaisDiario()) {
+                  <div class="scroll-sentinel">Rolando para carregar mais...</div>
+                }
+              } @else {
+                <div class="tab-empty">Nenhum professor no diario encontrado</div>
+              }
+            }
+
+            @if (tabIndex() === 2) {
+              @if (portalAlunoFiltrados().length > 0) {
+                <div class="tab-table">
+                  <div class="tab-table-header">
+                    <span class="col-usuario">Nome</span>
+                    <span class="col-login">Login</span>
+                    <span class="col-tipo">Tipo</span>
+                    <span class="col-status-col">Status</span>
+                  </div>
+                  @for (p of portalAlunoFiltrados(); track p.id) {
+                    <div class="tab-table-row">
+                      <span class="col-usuario">{{ p.nomeUsuario }}</span>
+                      <span class="col-login mono">{{ p.login }}</span>
+                      <span class="col-tipo">{{ p.tipoUsuario }}</span>
+                      <span class="col-status-col">
+                        <span class="status-dot" [class.dot-inativo]="!p.ativo"></span>
+                        {{ p.ativo ? 'Ativo' : 'Inativo' }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="tab-empty">Nenhum usuario encontrado</div>
+              }
+            }
+
+            @if (tabIndex() === 3) {
+              @if (portalAlunoAdminFiltrados().length > 0) {
+                <div class="tab-table">
+                  <div class="tab-table-header">
+                    <span class="col-usuario">Nome</span>
+                    <span class="col-login">Login</span>
+                    <span class="col-tipo">Tipo</span>
+                    <span class="col-status-col">Status</span>
+                  </div>
+                  @for (p of portalAlunoAdminFiltrados(); track p.id) {
+                    <div class="tab-table-row">
+                      <span class="col-usuario">{{ p.nomeUsuario }}</span>
+                      <span class="col-login mono">{{ p.login }}</span>
+                      <span class="col-tipo">{{ p.tipoUsuario }}</span>
+                      <span class="col-status-col">
+                        <span class="status-dot" [class.dot-inativo]="!p.ativo"></span>
+                        {{ p.ativo ? 'Ativo' : 'Inativo' }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="tab-empty">Nenhum administrador encontrado</div>
+              }
+            }
+
+            @if (tabIndex() === 4) {
+              @if (financeiroVisiveis().length > 0) {
+                <div class="tab-table">
+                  <div class="tab-table-header">
+                    <span class="col-descricao">Descricao</span>
+                    <span class="col-vencimento">Vencimento</span>
+                    <span class="col-status-fin">Status</span>
+                    <span class="col-valor">Valor</span>
+                  </div>
+                  @for (f of financeiroVisiveis(); track f.id) {
+                    <div class="tab-table-row">
+                      <span class="col-descricao">{{ f.descricao }}</span>
+                      <span class="col-vencimento">{{ formatarData(f.vencimento) }}</span>
+                      <span class="col-status-fin">
+                        <span class="financeiro-badge" [class.badge-pago]="f.statusParcela === 'Pago'" [class.badge-pendente]="f.statusParcela === 'Pendente'" [class.badge-atrasado]="f.statusParcela === 'Atrasado'" [class.badge-cancelado]="f.statusParcela === 'Cancelado'">{{ f.statusParcela }}</span>
+                      </span>
+                      <span class="col-valor mono">R$ {{ f.valorReal.toFixed(2).replace('.', ',') }}</span>
+                    </div>
+                  }
+                </div>
+                @if (temMaisFinanceiro()) {
+                  <div class="scroll-sentinel">Rolando para carregar mais...</div>
+                }
+              } @else {
+                <div class="tab-empty">Nenhum registro financeiro encontrado</div>
+              }
+            }
+          </div>
+        </div>
+
+        <div class="detalhe-filtros">
+          <div class="filtro-titulo">Filtros</div>
+
+          @if (tabIndex() === 0) {
+            <label class="filtro-label">Descricao / Titulo</label>
+            <div class="filtro-input">
+              <mat-icon class="filtro-input-icon">search</mat-icon>
+              <input type="text" class="filtro-input-field" placeholder="Buscar..." [value]="filtroAtendimentoDescricao()" (input)="filtroAtendimentoDescricao.set(($any($event.target).value)); atendimentoFilterChange()" />
+            </div>
+
+            <label class="filtro-label">Protocolo</label>
+            <div class="filtro-input">
+              <mat-icon class="filtro-input-icon">tag</mat-icon>
+              <input type="text" class="filtro-input-field" placeholder="PROTO-..." [value]="filtroAtendimentoProtocolo()" (input)="filtroAtendimentoProtocolo.set(($any($event.target).value)); atendimentoFilterChange()" />
+            </div>
+
+            <label class="filtro-label">Usuario</label>
+            <mat-form-field appearance="fill" class="filtro-field">
+              <mat-select [(ngModel)]="filtroAtendimentoUsuario" (selectionChange)="atendimentoFilterChange()">
+                @for (u of usuariosAtendimentoOptions(); track u) {
+                  <mat-option [value]="u">{{ u === 'Todos' ? 'Todos' : u }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+
+          @if (tabIndex() === 1) {
+            <label class="filtro-label">Nome do Professor</label>
+            <div class="filtro-input">
+              <mat-icon class="filtro-input-icon">search</mat-icon>
+              <input type="text" class="filtro-input-field" placeholder="Buscar..." [value]="filtroDiarioNome()" (input)="filtroDiarioNome.set(($any($event.target).value)); diarioFilterChange()" />
+            </div>
+
+            <label class="filtro-label">ID do Professor</label>
+            <div class="filtro-input">
+              <mat-icon class="filtro-input-icon">tag</mat-icon>
+              <input type="text" class="filtro-input-field" placeholder="ID..." [value]="filtroDiarioId()" (input)="filtroDiarioId.set(($any($event.target).value)); diarioFilterChange()" />
+            </div>
+          }
+
+          @if (tabIndex() === 2) {
+            <label class="filtro-label">Nome do Usuario</label>
+            <div class="filtro-input">
+              <mat-icon class="filtro-input-icon">search</mat-icon>
+              <input type="text" class="filtro-input-field" placeholder="Buscar..." [value]="filtroPortalNomeUsuario()" (input)="filtroPortalNomeUsuario.set(($any($event.target).value))" />
+            </div>
+
+            <label class="filtro-label">Login (CPF / Prontuario)</label>
+            <div class="filtro-input">
+              <mat-icon class="filtro-input-icon">badge</mat-icon>
+              <input type="text" class="filtro-input-field" placeholder="Buscar..." [value]="filtroPortalLogin()" (input)="filtroPortalLogin.set(($any($event.target).value))" />
+            </div>
+
+            <label class="filtro-label">Tipo de Usuario</label>
+            <mat-form-field appearance="fill" class="filtro-field">
+              <mat-select [(ngModel)]="filtroPortalTipoUsuario">
+                @for (t of tipoUsuarioOptions; track t) {
+                  <mat-option [value]="t">{{ t === 'Todos' ? 'Todos' : t }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+
+          @if (tabIndex() === 3) {
+            <label class="filtro-label">Nome do Admin</label>
+            <div class="filtro-input">
+              <mat-icon class="filtro-input-icon">search</mat-icon>
+              <input type="text" class="filtro-input-field" placeholder="Buscar..." [value]="filtroPortalAdminNomeUsuario()" (input)="filtroPortalAdminNomeUsuario.set(($any($event.target).value))" />
+            </div>
+
+            <label class="filtro-label">Login</label>
+            <div class="filtro-input">
+              <mat-icon class="filtro-input-icon">badge</mat-icon>
+              <input type="text" class="filtro-input-field" placeholder="Buscar..." [value]="filtroPortalAdminLogin()" (input)="filtroPortalAdminLogin.set(($any($event.target).value))" />
+            </div>
+          }
+
+          @if (tabIndex() === 4) {
+            <label class="filtro-label">Status da Parcela</label>
+            <mat-form-field appearance="fill" class="filtro-field">
+              <mat-select [(ngModel)]="filtroFinanceiroStatus" (selectionChange)="financeiroFilterChange()">
+                @for (s of statusFinanceiroOptions; track s) {
+                  <mat-option [value]="s">{{ s === 'Todos' ? 'Todos' : s }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <label class="filtro-label">Ano</label>
+            <div class="filtro-input">
+              <mat-icon class="filtro-input-icon">calendar_today</mat-icon>
+              <input type="text" class="filtro-input-field" placeholder="2026" [value]="filtroFinanceiroAno()" (input)="filtroFinanceiroAno.set(($any($event.target).value)); financeiroFilterChange()" />
+            </div>
+
+            <label class="filtro-label">Mes</label>
+            <mat-form-field appearance="fill" class="filtro-field">
+              <mat-select [(ngModel)]="filtroFinanceiroMes" (selectionChange)="financeiroFilterChange()">
+                @for (m of mesOptions; track m) {
+                  <mat-option [value]="m">{{ m }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>

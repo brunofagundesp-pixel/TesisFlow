@@ -1,0 +1,67 @@
+<div class="modal-container">
+  <div class="modal-header">
+    <div class="modal-header-left">
+      <span class="modal-badge">Atendimento</span>
+      <span class="modal-badge mono">{{ data.atendimento.protocolo | slice:0:8 }}</span>
+    </div>
+    <div class="modal-header-right">
+      <button mat-icon-button class="modal-close" (click)="fechar()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="modal-body">
+    <div class="modal-main">
+      <mat-form-field appearance="outline" class="modal-field w-100">
+        <textarea matInput cdkTextareaAutosize cdkAutosizeMinRows="1" cdkAutosizeMaxRows="6"
+                  [(ngModel)]="editando.titulo" placeholder="Titulo do atendimento"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="modal-field modal-textarea w-100">
+        <mat-label>Detalhe</mat-label>
+        <textarea matInput [(ngModel)]="editando.descricao" rows="10" placeholder="Detalhes do atendimento"></textarea>
+      </mat-form-field>
+    </div>
+
+    <div class="modal-sidebar">
+      <div class="info-group">
+        <span class="info-label">Status</span>
+        <mat-form-field appearance="fill" class="sidebar-field">
+          <mat-select [(ngModel)]="editando.idStatusContato">
+            @for (s of statusOptions; track s.value) {
+              <mat-option [value]="s.value">{{ s.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="info-group">
+        <span class="info-label">Data</span>
+        <span class="info-value">{{ formatarData(editando.data) }}</span>
+      </div>
+
+      <div class="info-group">
+        <span class="info-label">Atendente</span>
+        <span class="info-value">{{ editando.usuario || '-' }}</span>
+      </div>
+
+      <div class="info-group">
+        <span class="info-label">Nome do Contato</span>
+        <mat-form-field appearance="fill" class="sidebar-field">
+          <input matInput [(ngModel)]="editando.nomeContato" placeholder="Nome do contato">
+        </mat-form-field>
+      </div>
+
+      <div class="info-group">
+        <span class="info-label">Protocolo</span>
+        <span class="info-value mono">{{ editando.protocolo }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button mat-button (click)="fechar()">Cancelar</button>
+    <button mat-flat-button color="primary" (click)="salvar()">Salvar</button>
+  </div>
+</div>

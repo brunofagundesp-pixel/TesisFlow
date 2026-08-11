@@ -1,0 +1,47 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Projetos</h1>
+      <span>Gerencie seus projetos e equipes</span>
+    </div>
+    <button mat-flat-button color="primary" (click)="abrirModal()">
+      <mat-icon>add</mat-icon> Novo Projeto
+    </button>
+  </div>
+
+  @if (projetos.length > 0) {
+    <div class="projetos-grid">
+      @for (p of projetos; track p.id) {
+        <mat-card class="projeto-card" [routerLink]="['/projetos', p.id, 'kanban']">
+          <div class="projeto-card-header">
+            <div class="projeto-card-icone">{{ p.icone || p.nome.charAt(0) }}</div>
+            <div class="projeto-card-info">
+              <h3>{{ p.nome }}</h3>
+              @if (p.descricao) {
+                <p>{{ p.descricao }}</p>
+              }
+            </div>
+            @if (auth.isMaster()) {
+              <button mat-icon-button class="projeto-delete-btn" (click)="excluirProjeto($event, p.id)" matTooltip="Excluir projeto">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          </div>
+          <mat-divider></mat-divider>
+          <div class="projeto-card-footer">
+            <span><mat-icon>task</mat-icon> {{ p.quantidadeTarefas }} tarefas</span>
+            <span><mat-icon>people</mat-icon> {{ p.quantidadeMembros }} membros</span>
+            <span class="projeto-lider">Lider: {{ p.liderNome }}</span>
+          </div>
+        </mat-card>
+      }
+    </div>
+  } @else {
+    <div class="empty">
+      <mat-icon>create_new_folder</mat-icon>
+      <h3>Nenhum projeto ainda</h3>
+      <p>Crie seu primeiro projeto para comec,ar a organizar suas tarefas.</p>
+      <button mat-flat-button color="primary" (click)="abrirModal()">Criar Projeto</button>
+    </div>
+  }
+</div>
