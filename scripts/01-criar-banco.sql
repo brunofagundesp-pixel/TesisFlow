@@ -1,8 +1,8 @@
-CREATE DATABASE IF NOT EXISTS TesisFlowDB
+CREATE DATABASE IF NOT EXISTS u292823232_tesisflowdb
   CHARACTER SET utf8
   COLLATE utf8_general_ci;
 
-USE TesisFlowDB;
+USE u292823232_tesisflowdb;
 
 CREATE TABLE IF NOT EXISTS Usuarios (
     Id              INT             NOT NULL AUTO_INCREMENT,

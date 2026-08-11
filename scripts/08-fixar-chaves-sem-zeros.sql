@@ -4,7 +4,7 @@
 -- Ex: AM-0004 -> AM-4, APP-0001 -> APP-1
 -- ============================================================
 
-USE TesisFlowDB;
+USE u292823232_tesisflowdb;
 
 UPDATE Tarefas 
 SET Chave = CONCAT(SUBSTRING_INDEX(Chave, '-', 1), '-', CAST(CAST(SUBSTRING_INDEX(Chave, '-', -1) AS UNSIGNED) AS CHAR))

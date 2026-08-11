@@ -2,7 +2,7 @@
 -- Script: 10-criar-anexos.sql
 -- Objetivo: Tabela de anexos para tarefas
 -- ============================================================
-USE TesisFlowDB;
+USE u292823232_tesisflowdb;
 
 CREATE TABLE IF NOT EXISTS Anexos (
     Id              INT             NOT NULL AUTO_INCREMENT,

@@ -1,6 +1,6 @@
 -- Migracao: Criar tabela Notificacoes
 -- Data: 2026-08-11
--- Execute no banco TesisFlowDB
+-- Execute no banco u292823232_tesisflowdb
 
 CREATE TABLE IF NOT EXISTS Notificacoes (
     Id INT AUTO_INCREMENT PRIMARY KEY,

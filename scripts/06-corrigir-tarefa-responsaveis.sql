@@ -3,10 +3,10 @@
 -- Objetivo: Adicionar DataAtualizacao na tabela nova
 -- ============================================================
 
-USE TesisFlowDB;
+USE u292823232_tesisflowdb;
 
 SET @stmt = IF(
-    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'TesisFlowDB' AND TABLE_NAME = 'TarefaResponsaveis' AND COLUMN_NAME = 'DataAtualizacao') = 0,
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'u292823232_tesisflowdb' AND TABLE_NAME = 'TarefaResponsaveis' AND COLUMN_NAME = 'DataAtualizacao') = 0,
     'ALTER TABLE TarefaResponsaveis ADD COLUMN DataAtualizacao DATETIME NULL AFTER DataCriacao',
     'SELECT 1'
 );

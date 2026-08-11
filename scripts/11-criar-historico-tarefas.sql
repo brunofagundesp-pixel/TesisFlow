@@ -2,7 +2,7 @@
 -- Script: 11-criar-historico-tarefas.sql
 -- Objetivo: Tabela de auditoria de mudancas nas tarefas
 -- ============================================================
-USE TesisFlowDB;
+USE u292823232_tesisflowdb;
 
 CREATE TABLE IF NOT EXISTS HistoricoTarefas (
     Id              INT             NOT NULL AUTO_INCREMENT,

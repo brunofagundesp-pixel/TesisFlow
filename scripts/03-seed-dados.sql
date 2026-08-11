@@ -1,11 +1,11 @@
 -- ============================================================
 -- Script: 03-seed-dados.sql
 -- Objetivo: Popular dados de teste
--- DB: TesisFlowDB (MySQL 8.x)
+-- DB: u292823232_tesisflowdb (MySQL 8.x)
 -- Idempotente: pode rodar quantas vezes quiser
 -- ============================================================
 
-USE TesisFlowDB;
+USE u292823232_tesisflowdb;
 
 -- ============================================================
 -- 1. Usuarios extras

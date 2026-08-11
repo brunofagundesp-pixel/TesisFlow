@@ -2,7 +2,7 @@
 -- Script: 12-criar-reacoes.sql
 -- Objetivo: Tabela de reacoes (emojis) nos comentarios
 -- ============================================================
-USE TesisFlowDB;
+USE u292823232_tesisflowdb;
 
 CREATE TABLE IF NOT EXISTS ComentarioReacoes (
     Id              INT             NOT NULL AUTO_INCREMENT,

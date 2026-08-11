@@ -3,7 +3,7 @@
 -- Objetivo: Migrar de responsavel unico para multiplos
 -- ============================================================
 
-USE TesisFlowDB;
+USE u292823232_tesisflowdb;
 
 -- 1. Criar tabela de vinculo
 CREATE TABLE IF NOT EXISTS TarefaResponsaveis (
