@@ -302,3 +302,28 @@ input[type="datetime-local"].data-entrega-input {
 
   mat-icon { font-size: 1.4rem; width: 1.4rem; height: 1.4rem; }
 }
+
+.calendario-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--tf-border-input);
+  border-radius: 8px;
+  background: var(--tf-surface-soft);
+  color: var(--tf-text-secondary);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; }
+
+  &:hover {
+    border-color: var(--tf-primary);
+    color: var(--tf-primary);
+    background: var(--tf-primary-light);
+  }
+}

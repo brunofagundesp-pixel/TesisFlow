@@ -347,6 +347,9 @@
               <mat-icon>folder</mat-icon>
               <span class="sidebar-text">Projetos</span>
               <mat-icon class="sidebar-chevron">{{ projetosExpandido() ? 'expand_less' : 'expand_more' }}</mat-icon>
+              <button type="button" class="sidebar-add-btn" (click)="$event.stopPropagation(); abrirNovoProjeto()" title="Novo projeto">
+                <mat-icon>add</mat-icon>
+              </button>
             </a>
 
             @if (projetosExpandido()) {

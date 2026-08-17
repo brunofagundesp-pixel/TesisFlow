@@ -22,6 +22,7 @@ import { ProjetoService } from '../projetos/projeto.service';
 import { ColegioSelectComponent } from '../../shared/colegio-select/colegio-select';
 import { CategoriaService } from '../categorias/categoria.service';
 import { toDateTimeLocal, toUtcIso } from '../../core/utils/date.util';
+import { baixarEventoIcs } from '../../core/utils/calendar.util';
 
 interface EventoHistorico { icon: string; mensagem: string; autor: string; data: string; timestamp: number; }
 
@@ -115,6 +116,7 @@ export class TarefaDetalheComponent implements OnInit, OnDestroy {
   private inserirImagemHtml(url: string) { document.execCommand('insertHTML', false, `<img src="${url}" class="descricao-img" />`); }
   onDescricaoViewClick(event: MouseEvent) { const img = (event.target as HTMLElement).closest('img.descricao-img'); if (img) { event.stopPropagation(); this.imagemAmpliada = (img as HTMLImageElement).src; return; } this.toggleEditDescricao(); }
   fecharImagem() { this.imagemAmpliada = null; }
+  adicionarAoCalendario() { baixarEventoIcs(this.tarefa); }
   get isOwner(): (c: Comentario) => boolean { return (c: Comentario) => c.usuarioId === this.auth.usuario()?.id; }
   respostasDoComentario(paiId: number): Comentario[] { return this.comentarios.filter(c => c.comentarioPaiId === paiId); }
   comentariosPrincipais(): Comentario[] { return this.comentarios.filter(c => !c.comentarioPaiId); }

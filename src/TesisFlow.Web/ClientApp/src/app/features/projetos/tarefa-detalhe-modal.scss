@@ -51,6 +51,15 @@
   }
 }
 
+.modal-calendario {
+  color: var(--tf-text-faint);
+
+  &:hover:not(:disabled) {
+    color: var(--tf-primary);
+    background: var(--tf-primary-light);
+  }
+}
+
 .modal-body {
   display: flex;
   gap: 1.5rem;

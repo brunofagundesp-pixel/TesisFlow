@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu';
 import { DatePipe } from '@angular/common';
 import { TarefaService } from '../tarefas/tarefa.service';
 import { ComentarioService } from '../tarefas/comentario.service';
@@ -24,6 +25,7 @@ import { ColegioSelectComponent } from '../../shared/colegio-select/colegio-sele
 import { CategoriaService } from '../categorias/categoria.service';
 import { toDateTimeLocal, toUtcIso } from '../../core/utils/date.util';
 import { ImagemService } from '../../core/services/imagem.service';
+import { baixarEventoIcs, gerarUrlGoogle, gerarUrlOutlook } from '../../core/utils/calendar.util';
 
 interface EventoHistorico {
   icon: string;
@@ -39,7 +41,7 @@ interface EventoHistorico {
   imports: [
     ReactiveFormsModule, MatDialogModule, MatFormFieldModule,
     MatInputModule, MatSelectModule, MatButtonModule, MatIconModule,
-    MatExpansionModule,     MatTooltipModule,
+    MatExpansionModule, MatTooltipModule, MatMenuModule,
     DatePipe,
     MencaoDropdownComponent,
     ColegioSelectComponent,
@@ -408,6 +410,18 @@ export class TarefaDetalheModalComponent {
 
   fecharImagem() {
     this.imagemAmpliada = null;
+  }
+
+  adicionarAoCalendario() {
+    baixarEventoIcs(this.tarefa);
+  }
+
+  adicionarGoogleAgenda() {
+    window.open(gerarUrlGoogle(this.tarefa), '_blank');
+  }
+
+  adicionarOutlook() {
+    window.open(gerarUrlOutlook(this.tarefa), '_blank');
   }
 
   inserirCodigo() {

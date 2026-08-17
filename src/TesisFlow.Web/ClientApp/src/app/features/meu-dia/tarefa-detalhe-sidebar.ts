@@ -24,6 +24,7 @@ import { Tarefa, Comentario, Anexo, HistoricoTarefa, Reacao, StatusTarefa, Prior
 import { ColegioSelectComponent } from '../../shared/colegio-select/colegio-select';
 import { CategoriaService } from '../categorias/categoria.service';
 import { toDateTimeLocal, toUtcIso } from '../../core/utils/date.util';
+import { baixarEventoIcs } from '../../core/utils/calendar.util';
 
 interface EventoHistorico {
   icon: string;
@@ -567,6 +568,10 @@ export class TarefaDetalheSidebarComponent implements OnChanges, OnDestroy {
 
   fecharImagem() {
     this.imagemAmpliada = null;
+  }
+
+  adicionarAoCalendario() {
+    baixarEventoIcs(this.tarefa);
   }
 
   inserirCodigo() {

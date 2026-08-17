@@ -335,6 +335,12 @@
           <div class="info-group">
             <span class="info-label">Data de entrega</span>
             <input class="data-entrega-input" type="datetime-local" formControlName="dataEntrega" (change)="salvar()">
+            @if (tarefa.dataEntrega) {
+              <button type="button" class="calendario-btn" (click)="adicionarAoCalendario()" title="Adicionar ao calendário">
+                <mat-icon>event</mat-icon>
+                <span>Adicionar ao calendário</span>
+              </button>
+            }
           </div>
 
           <div class="info-group info-readonly">

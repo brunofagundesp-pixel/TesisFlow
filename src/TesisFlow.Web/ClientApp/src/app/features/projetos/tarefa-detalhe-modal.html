@@ -5,6 +5,23 @@
       <span class="modal-task-id">{{ tarefa.projetoNome }}</span>
     </div>
     <div class="modal-header-right">
+      <button mat-icon-button class="modal-calendario" [disabled]="!tarefa.dataEntrega" [matMenuTriggerFor]="calendarioMenu" [matTooltip]="tarefa.dataEntrega ? 'Adicionar ao calendário' : 'Defina uma data de entrega'">
+        <mat-icon>event</mat-icon>
+      </button>
+      <mat-menu #calendarioMenu="matMenu">
+        <button mat-menu-item (click)="adicionarGoogleAgenda()">
+          <mat-icon>calendar_month</mat-icon>
+          <span>Google Agenda</span>
+        </button>
+        <button mat-menu-item (click)="adicionarOutlook()">
+          <mat-icon>mail_outline</mat-icon>
+          <span>Outlook</span>
+        </button>
+        <button mat-menu-item (click)="adicionarAoCalendario()">
+          <mat-icon>download</mat-icon>
+          <span>Baixar .ics</span>
+        </button>
+      </mat-menu>
       @if (souResponsavel()) {
         <button mat-icon-button class="modal-meu-dia" [class.modal-meu-dia--ativo]="temMeuDia()" [matTooltip]="temMeuDia() ? 'Remover do Meu dia' : 'Adicionar ao Meu dia'" (click)="alternarMeuDia()">
           <mat-icon>{{ temMeuDia() ? 'wb_sunny' : 'light_mode' }}</mat-icon>
