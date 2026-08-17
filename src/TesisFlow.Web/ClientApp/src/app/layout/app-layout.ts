@@ -14,18 +14,22 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, switchMap, Subscription, of, EMPTY, tap, finalize } from 'rxjs';
 import { AuthService } from '../core/services/auth.service';
+import { ThemeService } from '../core/services/theme.service';
 import { NotificacaoService, Notificacao } from '../core/services/notificacao.service';
 import { ChatService } from '../core/services/chat.service';
 import { CallService } from '../core/services/call.service';
+import { MeuDiaService } from '../core/services/meu-dia.service';
 import { ProjetoService } from '../features/projetos/projeto.service';
 import { QuadroConfiguracaoService } from '../features/projetos/quadro-configuracao.service';
 import { TarefaService } from '../features/tarefas/tarefa.service';
+import { ClienteApiService } from '../features/clientes/cliente-api.service';
+import { Cliente } from '../features/clientes/clientes-data';
 import { ProjetoDialogComponent } from '../features/projetos/projeto-dialog';
 import { GlobalTaskDialogComponent } from '../shared/global-task-dialog';
 import { TarefaDetalheModalComponent } from '../features/projetos/tarefa-detalhe-modal';
 import { ChatPanelComponent } from './chat-panel';
 import { CallModalComponent } from './call-modal';
-import { Projeto, ProjetoSave, Tarefa, StatusTarefa, TipoTarefa, TarefaSave } from '../core/models';
+import { Projeto, ProjetoSave, Tarefa, StatusTarefa, TarefaSave } from '../core/models';
 
 const STATUS_LABEL: Record<number, string> = {
   [StatusTarefa.Backlog]: 'Backlog',
@@ -34,20 +38,6 @@ const STATUS_LABEL: Record<number, string> = {
   [StatusTarefa.Revisao]: 'Revisao',
   [StatusTarefa.Feito]: 'Concluido',
   [StatusTarefa.Cancelado]: 'Cancelado',
-};
-
-const TIPO_LABEL: Record<number, string> = {
-  [TipoTarefa.Tarefa]: 'Tarefa',
-  [TipoTarefa.Bug]: 'Bug',
-  [TipoTarefa.Melhoria]: 'Melhoria',
-  [TipoTarefa.Historia]: 'Historia',
-};
-
-const TIPO_ICONE: Record<number, string> = {
-  [TipoTarefa.Tarefa]: 'task_alt',
-  [TipoTarefa.Bug]: 'bug_report',
-  [TipoTarefa.Melhoria]: 'auto_awesome',
-  [TipoTarefa.Historia]: 'auto_stories',
 };
 
 @Component({
@@ -79,6 +69,7 @@ export class AppLayoutComponent implements OnInit, OnDestroy {
   @ViewChild('sidenav') sidenav!: MatSidenav;
   projetos: Projeto[] = [];
   sidebarOpen = signal(true);
+  sidebarPinned = signal(true);
   projetosExpandido = signal(true);
 
   mostrarNotificacoes = signal(false);
@@ -92,13 +83,22 @@ export class AppLayoutComponent implements OnInit, OnDestroy {
     return this.notificacaoService.naoLidasCount;
   }
 
+  naoLidasPorProjeto(projetoId: number): number {
+    return this.notificacaoService.notificacoes().filter(n => !n.lida && n.projetoId === projetoId).length;
+  }
+
   searchControl = new FormControl('');
   resultados: Tarefa[] = [];
   mostrarDropdown = false;
+  clicouDentro = false;
   carregando = false;
   hoveredTarefa: Tarefa | null = null;
   private searchSub!: Subscription;
+  private searchColegiosSub!: Subscription;
   private ultimoTermoApi = '';
+
+  colegios: Cliente[] = [];
+  colegiosFiltrados: Cliente[] = [];
 
   filtroProjetos = new Set<number>();
   filtroPeriodo = 'todos';
@@ -123,18 +123,15 @@ export class AppLayoutComponent implements OnInit, OnDestroy {
     [StatusTarefa.Cancelado, 'Cancelado'],
   ];
 
-  readonly tipoEntries: [number, string][] = [
-    [TipoTarefa.Tarefa, 'Tarefa'],
-    [TipoTarefa.Bug, 'Bug'],
-    [TipoTarefa.Melhoria, 'Melhoria'],
-    [TipoTarefa.Historia, 'Historia'],
-  ];
-
   get filtroCount(): number {
     let c = this.filtroProjetos.size + this.filtroResponsavel.size + this.filtroCategoria.size + this.filtroStatus.size;
     if (this.filtroPeriodo !== 'todos') c++;
     if (this.relatadasPorMim) c++;
     return c;
+  }
+
+  get temResultados(): boolean {
+    return this.resultadosFiltrados.length > 0 || this.colegiosFiltrados.length > 0;
   }
 
   get resultadosFiltrados(): Tarefa[] {
@@ -205,31 +202,28 @@ export class AppLayoutComponent implements OnInit, OnDestroy {
     this.relatadasPorMim = false;
   }
 
-  tipoLabel(tipo: number): string {
-    return TIPO_LABEL[tipo] || '';
-  }
-
-  tipoIcone(tipo: number): string {
-    return TIPO_ICONE[tipo] || 'task_alt';
-  }
-
   constructor(
     public auth: AuthService,
+    public theme: ThemeService,
     public notificacaoService: NotificacaoService,
     public chatService: ChatService,
     public callService: CallService,
+    public meuDiaService: MeuDiaService,
     private projetoService: ProjetoService,
     private quadroService: QuadroConfiguracaoService,
     private tarefaService: TarefaService,
+    private clienteApiService: ClienteApiService,
     private dialog: MatDialog,
     private router: Router,
   ) {}
 
   ngOnInit() {
     this.carregarProjetos();
+    this.carregarColegios();
     this.notificacaoService.inicializar();
     this.chatService.inicializar();
     this.callService.inicializar();
+    this.meuDiaService.inicializar();
 
     this.searchSub = this.searchControl.valueChanges.pipe(
       debounceTime(150),
@@ -265,14 +259,34 @@ export class AppLayoutComponent implements OnInit, OnDestroy {
       this.resultados = tarefas;
       this.carregando = false;
     });
+
+    this.searchColegiosSub = this.searchControl.valueChanges.pipe(
+      debounceTime(150),
+      distinctUntilChanged(),
+    ).subscribe(valor => this.filtrarColegios((valor ?? '').trim()));
   }
 
   ngOnDestroy() {
     this.searchSub?.unsubscribe();
+    this.searchColegiosSub?.unsubscribe();
   }
 
   onInputFocus() {
     this.mostrarDropdown = true;
+  }
+
+  onInputBlur() {
+    setTimeout(() => {
+      if (!this.clicouDentro) {
+        this.mostrarDropdown = false;
+      }
+    }, 150);
+  }
+
+  @HostListener('document:mousedown', ['$event'])
+  onMouseDownGlobal(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    this.clicouDentro = !!target.closest('.toolbar-search');
   }
 
   @HostListener('document:click', ['$event'])
@@ -309,6 +323,9 @@ export class AppLayoutComponent implements OnInit, OnDestroy {
         projetoId: tarefa.projetoId,
         responsavelIds: result.responsavelIds || [],
         criadorId: tarefa.criadorId,
+        atorId: this.auth.usuario()?.id,
+        contatoNome: result.contatoNome ?? null,
+        dataEntrega: result.dataEntrega ?? null,
       };
       this.tarefaService.atualizar(tarefa.id, dto).subscribe({
         error: err => console.error('Erro ao salvar:', err),
@@ -320,12 +337,56 @@ export class AppLayoutComponent implements OnInit, OnDestroy {
     return STATUS_LABEL[status] || '';
   }
 
+  selecionarColegio(colegio: Cliente) {
+    this.mostrarDropdown = false;
+    this.resultados = [];
+    this.colegiosFiltrados = [];
+    this.limparFiltros();
+    this.searchControl.setValue('', { emitEvent: false });
+    this.router.navigate(['/clientes', colegio.id]);
+  }
+
   carregarProjetos() {
     this.projetoService.listar().subscribe(p => this.projetos = p);
   }
 
+  carregarColegios() {
+    this.clienteApiService.listarAtivos().subscribe({
+      next: clientes => this.colegios = clientes,
+      error: () => this.colegios = [],
+    });
+  }
+
+  filtrarColegios(termo: string) {
+    const q = termo.toLowerCase();
+    if (q.length < 2) {
+      this.colegiosFiltrados = [];
+      return;
+    }
+    this.colegiosFiltrados = this.colegios.filter(c =>
+      (c.nome || '').toLowerCase().includes(q) ||
+      (c.apelido || '').toLowerCase().includes(q) ||
+      (c.contato || '').toLowerCase().includes(q) ||
+      (c.telefone || '').toLowerCase().includes(q) ||
+      (c.cidade || '').toLowerCase().includes(q)
+    );
+  }
+
   toggleSidebar() {
-    this.sidebarOpen.update(v => !v);
+    this.sidebarPinned.update(v => !v);
+    this.sidebarOpen.set(this.sidebarPinned());
+  }
+
+  onHoverZoneEnter() {
+    if (!this.sidebarPinned()) {
+      this.sidebarOpen.set(true);
+    }
+  }
+
+  onSidebarLeave() {
+    if (!this.sidebarPinned()) {
+      this.sidebarOpen.set(false);
+    }
   }
 
   toggleProjetos() {
@@ -350,6 +411,10 @@ export class AppLayoutComponent implements OnInit, OnDestroy {
       if (target.closest('.notificacao-btn') || target.closest('.notificacao-panel')) return;
       this.mostrarNotificacoes.set(false);
     }
+  }
+
+  abrirConfiguracoes() {
+    this.router.navigate(['/configuracoes']);
   }
 
   abrirGlobalTaskDialog() {

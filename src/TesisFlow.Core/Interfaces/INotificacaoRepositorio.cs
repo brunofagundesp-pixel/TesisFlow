@@ -8,5 +8,7 @@ namespace TesisFlow.Core.Interfaces
         Task<Notificacao> AdicionarAsync(Notificacao notificacao);
         Task MarcarComoLidaAsync(int id);
         Task MarcarTodasComoLidasAsync(int usuarioId);
+        Task MarcarTarefaComoLidaAsync(int tarefaId, int usuarioId);
+        Task<int> LimparAntigasAsync(DateTime limite);
     }
 }

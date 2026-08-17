@@ -12,6 +12,7 @@ namespace TesisFlow.Contexto.ModeloConfiguracao
             builder.HasKey(m => m.Id);
             builder.Property(m => m.Texto).IsRequired().HasMaxLength(5000);
             builder.Property(m => m.Lida).HasDefaultValue(false);
+            builder.Property(m => m.Entregue).HasDefaultValue(false);
 
             builder.HasOne(m => m.Remetente)
                 .WithMany()

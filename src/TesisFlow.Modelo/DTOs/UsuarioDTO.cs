@@ -6,6 +6,7 @@ namespace TesisFlow.Modelo.DTOs
         public string Nome { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? Foto { get; set; }
+        public string? Banner { get; set; }
         public string? Cargo { get; set; }
         public bool Ativo { get; set; }
     }

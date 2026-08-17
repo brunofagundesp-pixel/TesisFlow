@@ -1,0 +1,31 @@
+<button
+  type="button"
+  class="categoria-trigger"
+  [matMenuTriggerFor]="menu"
+  #trigger="matMenuTrigger"
+  [disabled]="disabled"
+>
+  @if (selecionada) {
+    <mat-icon class="categoria-trigger-icon" [style.color]="selecionada.cor">{{ selecionada.icone }}</mat-icon>
+    <span class="categoria-trigger-label">{{ selecionada.nome }}</span>
+  } @else {
+    <span class="categoria-trigger-label categoria-trigger-placeholder">Selecione o tipo</span>
+  }
+  <mat-icon class="categoria-trigger-arrow">arrow_drop_down</mat-icon>
+</button>
+
+<mat-menu #menu="matMenu" class="categoria-menu">
+  <div class="categoria-lista">
+    @for (c of categorias; track c.id) {
+      <button type="button" class="categoria-opcao" [class.active]="c.id === valor" (click)="selecionar(c); trigger.closeMenu()">
+        <mat-icon [style.color]="c.cor">{{ c.icone }}</mat-icon>
+        <span>{{ c.nome }}</span>
+      </button>
+    }
+  </div>
+  <div class="categoria-footer">
+    <button type="button" class="categoria-footer-btn" (click)="editar(); trigger.closeMenu()" [disabled]="!selecionada">Editar</button>
+    <button type="button" class="categoria-footer-btn" (click)="adicionar(); trigger.closeMenu()" [disabled]="projetoId == null">Adicionar</button>
+    <button type="button" class="categoria-footer-btn" (click)="gerenciar(); trigger.closeMenu()" [disabled]="projetoId == null">Gerenciar</button>
+  </div>
+</mat-menu>

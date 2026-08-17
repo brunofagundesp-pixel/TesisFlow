@@ -1,10 +1,20 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, forkJoin } from 'rxjs';
-import { Cliente, Atendimento, DiarioEntry, FinanceiroEntry } from './clientes-data';
+import { Observable, map } from 'rxjs';
+import { Cliente, Atendimento, DiarioEntry, FinanceiroEntry, PortalAlunoEntry } from './clientes-data';
 
-// Token gerenciado pelo proxy (proxy.conf.mjs) durante desenvolvimento.
-// Em producao, sera necessario um interceptor ou fluxo de login real.
+interface AtendimentoApi {
+  idContato: number;
+  dataContato: string;
+  nomeusuario: string;
+  idUsuario: number | null;
+  referencia: string;
+  detalhes: string;
+  nomeContato: string;
+  idStatusContato: number;
+  temAnexo: boolean;
+  protocoloComentario: string;
+}
 
 interface ClienteOData {
   idColegio: number;
@@ -27,25 +37,6 @@ interface ClienteOData {
   bairro: string;
   cep: string;
   fax: string;
-}
-
-interface AtendimentoApi {
-  idContato: number;
-  dataContato: string;
-  nomeusuario: string;
-  idUsuario: number | null;
-  referencia: string;
-  detalhes: string;
-  nomeContato: string;
-  idStatusContato: number;
-  temAnexo: boolean;
-  protocoloComentario: string;
-}
-
-interface ODataResponse<T> {
-  '@odata.context': string;
-  '@odata.count'?: number;
-  value: T[];
 }
 
 export interface ClientePage {
@@ -95,31 +86,19 @@ function mapAtendimento(api: AtendimentoApi): Atendimento {
 @Injectable({ providedIn: 'root' })
 export class ClienteApiService {
   private http = inject(HttpClient);
-  private baseUrl = '/odata/cc_cliente';
 
   listarAtivos(): Observable<Cliente[]> {
-    const filter = encodeURIComponent("situacao eq 'CLIENTE ATIVO'");
-    const url = `${this.baseUrl}?$filter=${filter}`;
-
-    return this.http.get<ODataResponse<ClienteOData>>(url).pipe(
-      map(res => res.value.map(mapCliente)),
-    );
+    return this.http.get<Cliente[]>('/api/Colegios');
   }
 
   listarAtivosPaginado(top: number, skip: number): Observable<ClientePage> {
-    const filter = encodeURIComponent("situacao eq 'CLIENTE ATIVO'");
-    const url = `${this.baseUrl}?$filter=${filter}&$top=${top}&$skip=${skip}&$count=true`;
-
-    return this.http.get<ODataResponse<ClienteOData>>(url).pipe(
-      map(res => ({
-        items: res.value.map(mapCliente),
-        total: res['@odata.count'] ?? 0,
-      })),
+    return this.http.get<{ itens: Cliente[]; total: number }>(`/api/Colegios?top=${top}&skip=${skip}`).pipe(
+      map(res => ({ items: res.itens, total: res.total })),
     );
   }
 
   obterPorId(id: number): Observable<Cliente | undefined> {
-    const url = `/api/tesiscc/GetClienteIdColegio/${id}`;
+    const url = `/api/integracao/cliente/${id}`;
 
     return this.http.get<ClienteOData>(url).pipe(
       map(api => mapCliente(api)),
@@ -127,27 +106,64 @@ export class ClienteApiService {
   }
 
   getAtendimentos(idCliente: number): Observable<Atendimento[]> {
-    const url = `/api/tesiscc/GetContatosIdCliente/${idCliente}`;
+    const url = `/api/integracao/contatos/${idCliente}`;
 
     return this.http.get<AtendimentoApi[]>(url).pipe(
       map(res => (res || []).map(mapAtendimento)),
     );
   }
 
+  salvarContato(payload: {
+    idContato?: number;
+    idColegio: number;
+    dataContato: string;
+    idStatusContato: number;
+    referencia: string;
+    nomeContato?: string | null;
+    detalhes?: string | null;
+    protocoloComentario?: string | null;
+  }): Observable<{ idContato?: number }> {
+    return this.http.post<{ idContato?: number }>('/api/Atendimentos/salvar', payload);
+  }
+
   getSenhaDiario(idDiario: number | string): Observable<string> {
-    return this.http.get(`/api/Diario/SenhaMasterDiario/${idDiario}`, { responseType: 'text' }).pipe(
+    return this.http.get(`/api/integracao/diario/senha/${idDiario}`, { responseType: 'text' }).pipe(
       map(senha => senha?.trim() || ''),
     );
   }
 
   getCodigosApp(idTesis: string): Observable<{ codigoAplicativo: string; apelidoAplicativo: string }> {
     return this.http.get<{ codigoAplicativo: string; apelidoAplicativo: string }>(
-      `/api/TesisTW/GetCodigosApp/${idTesis}`,
+      `/api/integracao/codigos-app/${idTesis}`,
+    );
+  }
+
+  getPortalAlunoUsuarios(idTesis: string): Observable<PortalAlunoEntry[]> {
+    return this.http.get<PortalAlunoUsuarioApi[]>(`/api/integracao/portal-aluno/usuarios/${idTesis}`).pipe(
+      map(res => (res || []).map((u, i) => ({
+        id: i,
+        nomeUsuario: u.nome || '',
+        login: u.login || '',
+        tipoUsuario: (u.tipoUsuario || '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''),
+        ativo: true,
+      }))),
+    );
+  }
+
+  getPortalAlunoAdministradores(idTesis: string): Observable<PortalAlunoEntry[]> {
+    return this.http.get<PortalAlunoAdminApi[]>(`/api/integracao/portal-aluno/administradores/${idTesis}`).pipe(
+      map(res => (res || []).map((a, i) => ({
+        id: a.idUsuario ?? i,
+        nomeUsuario: a.nome || '',
+        login: a.login || '',
+        tipoUsuario: 'Administrador',
+        ativo: true,
+      }))),
     );
   }
 
   getProfessores(idDiario: number | string, ano: number): Observable<DiarioEntry[]> {
-    return this.http.get<ProfessorApi[]>(`/api/Diario/GetProfessoresAno/${idDiario}/${ano}`).pipe(
+    return this.http.get<ProfessorApi[]>(`/api/integracao/professores/${idDiario}/${ano}`).pipe(
       map(res => (res || []).map(p => ({
         id: p.idProfessor,
         professorId: p.idProfessor,
@@ -164,7 +180,7 @@ export class ClienteApiService {
   getParcelas(idColegio: number): Observable<FinanceiroEntry[]> {
     const meses = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-    return this.http.get<ParcelaApi[]>(`/api/TesisCc/GetParcelasClientes/${idColegio}`).pipe(
+    return this.http.get<ParcelaApi[]>(`/api/integracao/parcelas/${idColegio}`).pipe(
       map(parcelas => (parcelas || []).map((p, i) => {
         const venc = new Date(p.vencimento);
         const status = p.dataPagamento ? 'Pago' : new Date(p.vencimento) < new Date() ? 'Atrasado' : 'Pendente';
@@ -208,4 +224,26 @@ interface ProfessorApi {
   email: string;
   ativo: string;
   senha: string;
+}
+
+interface PortalAlunoUsuarioApi {
+  nome: string;
+  login: string;
+  senha: string;
+  tipoUsuario: string;
+}
+
+interface PortalAlunoAdminApi {
+  idUsuario: number;
+  idCliente: string;
+  nome: string;
+  login: string;
+  senha: string;
+  administrador: string;
+  professor: string;
+  secretaria: string;
+  idProfessor: string;
+  tipoUsuario: number;
+  status: string;
+  dataCadastro: string;
 }

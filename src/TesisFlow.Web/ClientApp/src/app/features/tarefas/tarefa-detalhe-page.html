@@ -30,7 +30,7 @@
         <mat-expansion-panel [expanded]="true" class="descricao-panel" togglePosition="before">
           <mat-expansion-panel-header><mat-panel-title>Descricao</mat-panel-title></mat-expansion-panel-header>
           @if (!editandoDescricao) {
-            <div class="descricao-view" (click)="toggleEditDescricao()" [innerHTML]="descricaoHtml"></div>
+            <div class="descricao-view" (click)="onDescricaoViewClick($event)" [innerHTML]="descricaoHtml"></div>
           } @else {
             <div class="editor-container">
               <div class="editor-toolbar">
@@ -45,7 +45,7 @@
                 <button type="button" class="toolbar-btn toolbar-btn-save" (click)="salvarDescricao()">Salvar</button>
                 <button type="button" class="toolbar-btn" (click)="editandoDescricao = false">Cancelar</button>
               </div>
-              <div class="editor-content" contenteditable="true" [innerHTML]="form.get('descricao')?.value||''"></div>
+              <div class="editor-content" contenteditable="true" [innerHTML]="form.get('descricao')?.value||''" (paste)="onDescricaoPaste($event)"></div>
             </div>
           }
         </mat-expansion-panel>
@@ -84,7 +84,10 @@
         <form [formGroup]="form" class="sidebar-form">
           <div class="info-group"><span class="info-label">Status</span><mat-form-field appearance="fill" class="sidebar-field"><mat-select formControlName="status">@for(s of statusOptions; track s.value){<mat-option [value]="s.value">{{s.label}}</mat-option>}</mat-select></mat-form-field></div>
           <div class="info-group"><span class="info-label">Prioridade</span><mat-form-field appearance="fill" class="sidebar-field"><mat-select formControlName="prioridade">@for(p of prioridadeOptions; track p.value){<mat-option [value]="p.value">{{p.label}}</mat-option>}</mat-select></mat-form-field></div>
-          <div class="info-group"><span class="info-label">Tipo</span><mat-form-field appearance="fill" class="sidebar-field"><mat-select formControlName="tipo">@for(t of tipoOptions; track t.value){<mat-option [value]="t.value">{{t.label}}</mat-option>}</mat-select></mat-form-field></div>
+          <div class="info-group"><span class="info-label">Tipo</span><mat-form-field appearance="fill" class="sidebar-field"><mat-select formControlName="tipo">@for(c of categorias; track c.id){<mat-option [value]="c.id">{{c.nome}}</mat-option>}</mat-select></mat-form-field></div>
+          <div class="info-group"><span class="info-label">Escola</span><div class="sidebar-field"><app-colegio-select formControlName="colegio" appearance="fill" [hideLabel]="true"></app-colegio-select></div></div>
+          <div class="info-group"><span class="info-label">Nome do contato</span><mat-form-field appearance="fill" class="sidebar-field"><input matInput formControlName="contatoNome" placeholder="Com quem foi falado"></mat-form-field></div>
+          <div class="info-group"><span class="info-label">Data de entrega</span><input class="data-entrega-input" type="datetime-local" formControlName="dataEntrega"></div>
           <div class="info-group info-readonly"><span class="info-label">Projeto</span><span class="info-value"><a [routerLink]="['/projetos',tarefa.projetoId,'kanban']">{{tarefa.projetoNome}}</a></span></div>
           <div class="info-group info-readonly"><span class="info-label">Criado por</span><span class="info-value">{{tarefa.criadorNome}}</span></div>
           <div class="info-group info-readonly"><span class="info-label">Data criacao</span><span class="info-value">{{tarefa.dataCriacao|date:'dd/MM/yyyy'}}</span></div>
@@ -93,3 +96,12 @@
     </div>
   }
 </div>
+
+@if (imagemAmpliada) {
+  <div class="imagem-lightbox" (click)="fecharImagem()">
+    <img [src]="imagemAmpliada" alt="Imagem ampliada" />
+    <button type="button" class="imagem-lightbox-fechar" (click)="fecharImagem()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+}

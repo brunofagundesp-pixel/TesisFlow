@@ -1,0 +1,59 @@
+<div class="lixeira">
+  <div class="lixeira-header">
+    <div>
+      <h1>Lixeira</h1>
+      <span>Tarefas excluídas ficam aqui por 30 dias antes de serem removidas permanentemente.</span>
+    </div>
+    @if (tarefas.length > 0) {
+      <span class="lixeira-count">{{ tarefas.length }}</span>
+    }
+  </div>
+
+  @if (carregando) {
+    <div class="lixeira-empty">
+      <mat-icon>hourglass_empty</mat-icon>
+      <p>Carregando...</p>
+    </div>
+  } @else if (tarefas.length > 0) {
+    <div class="lixeira-list">
+      @for (t of tarefas; track t.id) {
+        <div class="lixeira-card">
+          <mat-icon class="lixeira-tipo" [style.color]="t.categoriaCor">{{ t.categoriaIcone || 'task_alt' }}</mat-icon>
+
+          <div class="lixeira-info">
+            <div class="lixeira-titulo-row">
+              <span class="lixeira-chave">{{ t.chave }}</span>
+              <span class="lixeira-titulo">{{ t.titulo }}</span>
+            </div>
+            <span class="lixeira-projeto">{{ t.projetoNome }}</span>
+          </div>
+
+          <span class="lixeira-status" [class]="'s-' + t.status">{{ statusLabel(t.status) }}</span>
+
+          <div class="lixeira-meta">
+            <mat-icon>delete_outline</mat-icon>
+            <span>Excluída {{ t.dataExclusao | date:'dd/MM/yyyy HH:mm' }}</span>
+            <span class="lixeira-dias">{{ diasRestantes(t.dataExclusao) }} dia(s) restantes</span>
+          </div>
+
+          <div class="lixeira-actions">
+            <button mat-stroked-button class="acao-restaurar" (click)="restaurar(t)">
+              <mat-icon>restore</mat-icon>
+              Restaurar
+            </button>
+            <button mat-stroked-button class="acao-excluir" (click)="excluirDefinitivamente(t)">
+              <mat-icon>delete_forever</mat-icon>
+              Excluir
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="lixeira-empty">
+      <mat-icon>restore_from_trash</mat-icon>
+      <h3>Lixeira vazia</h3>
+      <p>As tarefas que você excluir aparecerão aqui.</p>
+    </div>
+  }
+</div>

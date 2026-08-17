@@ -14,5 +14,6 @@ namespace TesisFlow.Modelo.Entidades
         public ICollection<ProjetoMembro> Membros { get; set; } = new List<ProjetoMembro>();
         public ICollection<Sprint> Sprints { get; set; } = new List<Sprint>();
         public ICollection<Tarefa> Tarefas { get; set; } = new List<Tarefa>();
+        public ICollection<Categoria> Categorias { get; set; } = new List<Categoria>();
     }
 }

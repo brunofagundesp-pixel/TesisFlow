@@ -15,7 +15,13 @@ namespace TesisFlow.Contexto.ModeloConfiguracao
             builder.Property(t => t.Descricao).HasMaxLength(5000);
             builder.Property(t => t.Status).IsRequired();
             builder.Property(t => t.Prioridade).IsRequired();
-            builder.Property(t => t.Tipo).IsRequired();
+            builder.Property(t => t.CategoriaId).HasColumnName("Tipo").IsRequired();
+            builder.Property(t => t.ColegioNome).HasMaxLength(300);
+            builder.Property(t => t.ContatoNome).HasMaxLength(200);
+            builder.Property(t => t.ContatoId);
+            builder.Property(t => t.DataExclusao);
+            builder.Property(t => t.DataEntrega);
+            builder.Property(t => t.LembreteNivel).HasDefaultValue(0);
 
             builder.HasOne(t => t.Projeto)
                 .WithMany(p => p.Tarefas)
@@ -27,6 +33,11 @@ namespace TesisFlow.Contexto.ModeloConfiguracao
                 .HasForeignKey(t => t.SprintId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            builder.HasOne(t => t.Categoria)
+                .WithMany(c => c.Tarefas)
+                .HasForeignKey(t => t.CategoriaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.HasOne(t => t.Criador)
                 .WithMany(u => u.TarefasCriadas)
                 .HasForeignKey(t => t.CriadorId)
@@ -35,6 +46,8 @@ namespace TesisFlow.Contexto.ModeloConfiguracao
             builder.HasIndex(t => new { t.ProjetoId, t.Status, t.Ordem });
             builder.HasIndex(t => t.SprintId);
             builder.HasIndex(t => t.CriadorId);
+            builder.HasIndex(t => t.CategoriaId);
+            builder.HasIndex(t => t.DataEntrega);
         }
     }
 }

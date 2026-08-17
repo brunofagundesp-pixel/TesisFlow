@@ -1,326 +1,397 @@
-<mat-sidenav-container class="app-container">
+<div class="app-root">
   @if (auth.logado()) {
-    <mat-sidenav #sidenav mode="side" opened class="app-sidebar" [class.sidebar-collapsed]="!sidebarOpen()">
-      <div class="sidebar-brand">
-        <div class="sidebar-logo">TF</div>
-        <span class="sidebar-text sidebar-title">TesisFlow</span>
+    <mat-toolbar class="app-toolbar">
+      <button mat-icon-button class="toolbar-menu-btn" (click)="toggleSidebar()" matTooltip="Menu">
+        <mat-icon>{{ sidebarOpen() ? 'menu_open' : 'menu' }}</mat-icon>
+      </button>
+
+      <div class="toolbar-brand">
+        <img class="toolbar-logo" src="elefante_flow.png" alt="TesisFlow" />
+        <span class="toolbar-title">TesisFlow</span>
       </div>
 
-      <nav class="sidebar-nav">
-        <a mat-list-item routerLink="/dashboard" routerLinkActive="active" class="sidebar-link"
-           [matTooltip]="!sidebarOpen() ? 'Para voce' : null" matTooltipPosition="right">
-          <mat-icon>inbox</mat-icon>
-          <span class="sidebar-text">Para voce</span>
-        </a>
+      <span class="toolbar-spacer"></span>
 
-        <a mat-list-item routerLink="/clientes" routerLinkActive="active" class="sidebar-link"
-           [matTooltip]="!sidebarOpen() ? 'Clientes' : null" matTooltipPosition="right">
-          <mat-icon>business</mat-icon>
-          <span class="sidebar-text">Clientes</span>
-        </a>
+      <div class="toolbar-center">
+        <div class="toolbar-search" [class.toolbar-search--open]="mostrarDropdown && temResultados">
+          <mat-icon class="toolbar-search-icon">search</mat-icon>
+          <input
+            type="text"
+            class="toolbar-search-input"
+            placeholder="Buscar tarefas ou escolas..."
+            [formControl]="searchControl"
+            (focus)="onInputFocus()"
+            (blur)="onInputBlur()"
+          />
 
-        <div class="sidebar-section">
-          <a class="sidebar-link" (click)="toggleProjetos()">
-            <mat-icon>folder</mat-icon>
-            <span class="sidebar-text">Projetos</span>
-            <mat-icon class="sidebar-chevron">{{ projetosExpandido() ? 'expand_less' : 'expand_more' }}</mat-icon>
-          </a>
-
-          @if (projetosExpandido()) {
-            <div class="sidebar-sub">
-            @for (p of projetos; track p.id) {
-              <a
-                 [routerLink]="['/projetos', p.id, 'kanban']"
-                 routerLinkActive="active"
-                 class="sidebar-link sidebar-projeto-link"
-                 [matTooltip]="!sidebarOpen() ? p.nome : null"
-                 matTooltipPosition="right">
-                <span class="sidebar-projeto-icone">{{ p.icone || p.nome.charAt(0) }}</span>
-                <span class="sidebar-text sidebar-projeto-nome">{{ p.nome }}</span>
-              </a>
-            }
-            </div>
-          }
-        </div>
-      </nav>
-    </mat-sidenav>
-  }
-
-  <mat-sidenav-content class="app-content">
-    @if (auth.logado()) {
-      <mat-toolbar class="app-toolbar">
-        <button mat-icon-button class="toolbar-menu-btn" (click)="toggleSidebar()">
-          <mat-icon>{{ sidebarOpen() ? 'menu_open' : 'menu' }}</mat-icon>
-        </button>
-
-        <span class="toolbar-spacer"></span>
-
-        <div class="toolbar-center">
-          <div class="toolbar-search" [class.toolbar-search--open]="mostrarDropdown && resultados.length > 0">
-            <mat-icon class="toolbar-search-icon">search</mat-icon>
-            <input
-              type="text"
-              class="toolbar-search-input"
-              placeholder="Buscar tarefas..."
-              [formControl]="searchControl"
-              (focus)="onInputFocus()"
-            />
-
-            @if (mostrarDropdown) {
-              <div class="toolbar-search-dropdown">
-                @if (carregando) {
-                  <div class="search-loading">
-                    <mat-spinner diameter="24" color="accent"></mat-spinner>
-                    <span>Buscando...</span>
-                  </div>
-                } @else if (resultados.length === 0) {
-                  <div class="search-empty">
-                    @if ((searchControl.value ?? '').trim().length < 2) {
-                      <p>Digite pelo menos 2 caracteres para buscar</p>
-                    } @else {
-                      <p>Nenhum resultado encontrado</p>
-                    }
-                  </div>
-                } @else {
-                  <div class="dropdown-columns">
-                    <div class="dropdown-results">
-                    @for (tarefa of resultadosFiltrados; track tarefa.id) {
-                      <div class="search-result-item"
-                           [class.search-result-item--hovered]="hoveredTarefa === tarefa"
-                           (mouseenter)="hoveredTarefa = tarefa"
-                           (mouseleave)="hoveredTarefa = null"
-                           (mousedown)="selecionarResultado(tarefa)">
-                        <mat-icon class="search-result-type-icon" [class]="'search-result-type-icon tipo-' + tarefa.tipo">{{ tipoIcone(tarefa.tipo) }}</mat-icon>
+          @if (mostrarDropdown) {
+            <div class="toolbar-search-dropdown">
+              @if (carregando) {
+                <div class="search-loading">
+                  <mat-spinner diameter="24" color="accent"></mat-spinner>
+                  <span>Buscando...</span>
+                </div>
+              } @else if (!temResultados) {
+                <div class="search-empty">
+                  @if ((searchControl.value ?? '').trim().length < 2) {
+                    <p>Digite pelo menos 2 caracteres para buscar</p>
+                  } @else {
+                    <p>Nenhum resultado encontrado</p>
+                  }
+                </div>
+              } @else {
+                <div class="dropdown-columns">
+                  <div class="dropdown-results">
+                  @if (colegiosFiltrados.length > 0) {
+                    <div class="search-section-title">Escolas</div>
+                    @for (colegio of colegiosFiltrados; track colegio.id) {
+                      <div class="search-result-item" (mousedown)="selecionarColegio(colegio)">
+                        <mat-icon class="search-result-type-icon search-result-colegio-icon">business</mat-icon>
                         <div class="search-result-content">
-                          <div class="search-result-title">
-                            <a class="search-result-id chave-link" [routerLink]="['/tarefas', tarefa.chave]">{{ tarefa.chave }}</a>
-                            {{ tarefa.titulo }}
-                          </div>
-                          <div class="search-result-project">{{ tarefa.projetoNome }}</div>
+                          <div class="search-result-title">{{ colegio.nome }}</div>
+                          <div class="search-result-project">{{ colegio.telefone || 'Sem telefone' }} · {{ colegio.contato || 'Sem contato' }}</div>
                         </div>
-                        <span class="search-result-badge">{{ statusLabel(tarefa.status) }}</span>
-
-                        @if (hoveredTarefa === tarefa) {
-                          <div class="search-result-tooltip">
-                            <div class="tooltip-title">{{ tarefa.titulo }}</div>
-                            <div class="tooltip-row">
-                              <span class="tooltip-label">Status</span>
-                              <span class="tooltip-badge">{{ statusLabel(tarefa.status) }}</span>
-                            </div>
-                            <div class="tooltip-row">
-                              <span class="tooltip-label">Responsavel</span>
-                              <span class="tooltip-value">{{ tarefa.responsaveis[0]?.nome || 'Nao atribuido' }}</span>
-                            </div>
-                            <div class="tooltip-row">
-                              <span class="tooltip-label">Projeto</span>
-                              <span class="tooltip-value">{{ tarefa.projetoNome }}</span>
-                            </div>
-                            <a class="tooltip-link" (mousedown)="$event.stopPropagation(); selecionarResultado(tarefa)">
-                              Ver no Kanban &rarr;
-                            </a>
-                          </div>
-                        }
                       </div>
                     }
-                  </div>
+                  }
 
-                  <div class="dropdown-filters">
-                    <div class="filter-group">
-                      <div class="filter-group-title">Projetos</div>
-                      <div class="filter-option" [class.active]="filtroProjetos.size === 0 && !relatadasPorMim" (click)="filtroProjetos.clear(); relatadasPorMim = false">
-                        <mat-icon>check_box{{ filtroProjetos.size === 0 && !relatadasPorMim ? '' : '_outline_blank' }}</mat-icon>
-                        <span>Todos</span>
-                      </div>
-                      <div class="filter-option" [class.active]="relatadasPorMim" (click)="relatadasPorMim = !relatadasPorMim">
-                        <mat-icon>check_box{{ relatadasPorMim ? '' : '_outline_blank' }}</mat-icon>
-                        <span>Relatadas por mim</span>
-                      </div>
-                      @for (p of projetosUnicos; track p.id) {
-                        <div class="filter-option" [class.active]="filtroProjetos.has(p.id)" (click)="toggleFiltro('projetos', p.id)">
-                          <mat-icon>check_box{{ filtroProjetos.has(p.id) ? '' : '_outline_blank' }}</mat-icon>
-                          <span>{{ p.nome }}</span>
+                  @if (resultadosFiltrados.length > 0) {
+                    <div class="search-section-title">Tarefas</div>
+                    @for (tarefa of resultadosFiltrados; track tarefa.id) {
+                    <div class="search-result-item"
+                         [class.search-result-item--hovered]="hoveredTarefa === tarefa"
+                         (mouseenter)="hoveredTarefa = tarefa"
+                         (mouseleave)="hoveredTarefa = null"
+                         (mousedown)="selecionarResultado(tarefa)">
+                      <mat-icon class="search-result-type-icon" [style.color]="tarefa.categoriaCor">{{ tarefa.categoriaIcone }}</mat-icon>
+                      <div class="search-result-content">
+                        <div class="search-result-title">
+                          <a class="search-result-id chave-link" [routerLink]="['/tarefas', tarefa.chave]">{{ tarefa.chave }}</a>
+                          {{ tarefa.titulo }}
                         </div>
-                      }
-                    </div>
+                        <div class="search-result-project">{{ tarefa.projetoNome }}</div>
+                      </div>
+                      <span class="search-result-badge">{{ statusLabel(tarefa.status) }}</span>
 
-                    <div class="filter-group">
-                      <div class="filter-group-title">Ultima utilizacao</div>
-                      @for (opt of periodoOptions; track opt.value) {
-                        <div class="filter-option" [class.active]="filtroPeriodo === opt.value" (click)="filtroPeriodo = opt.value">
-                          <mat-icon>{{ filtroPeriodo === opt.value ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
-                          <span>{{ opt.label }}</span>
-                        </div>
-                      }
-                    </div>
-
-                    @if (responsaveisUnicos.length > 0) {
-                      <div class="filter-group">
-                        <div class="filter-group-title">Responsavel</div>
-                        @for (r of responsaveisUnicos; track r.id) {
-                          <div class="filter-option" [class.active]="filtroResponsavel.has(r.id)" (click)="toggleFiltro('responsavel', r.id)">
-                            <mat-icon>check_box{{ filtroResponsavel.has(r.id) ? '' : '_outline_blank' }}</mat-icon>
-                            <span>{{ r.nome }}</span>
+                      @if (hoveredTarefa === tarefa) {
+                        <div class="search-result-tooltip">
+                          <div class="tooltip-title">{{ tarefa.titulo }}</div>
+                          <div class="tooltip-row">
+                            <span class="tooltip-label">Status</span>
+                            <span class="tooltip-badge">{{ statusLabel(tarefa.status) }}</span>
                           </div>
-                        }
-                      </div>
-                    }
-
-                    <div class="filter-group">
-                      <div class="filter-group-title">Categoria</div>
-                      @for (entry of tipoEntries; track entry[0]) {
-                        <div class="filter-option" [class.active]="filtroCategoria.has(entry[0])" (click)="toggleFiltro('categoria', entry[0])">
-                          <mat-icon>check_box{{ filtroCategoria.has(entry[0]) ? '' : '_outline_blank' }}</mat-icon>
-                          <span>{{ entry[1] }}</span>
+                          <div class="tooltip-row">
+                            <span class="tooltip-label">Responsavel</span>
+                            <span class="tooltip-value">{{ tarefa.responsaveis[0]?.nome || 'Nao atribuido' }}</span>
+                          </div>
+                          <div class="tooltip-row">
+                            <span class="tooltip-label">Projeto</span>
+                            <span class="tooltip-value">{{ tarefa.projetoNome }}</span>
+                          </div>
+                          <a class="tooltip-link" (mousedown)="$event.stopPropagation(); selecionarResultado(tarefa)">
+                            Ver no Kanban &rarr;
+                          </a>
                         </div>
                       }
-                    </div>
-
-                    <div class="filter-group">
-                      <div class="filter-group-title">Status</div>
-                      @for (entry of statusEntries; track entry[0]) {
-                        <div class="filter-option" [class.active]="filtroStatus.has(entry[0])" (click)="toggleFiltro('status', entry[0])">
-                          <mat-icon>check_box{{ filtroStatus.has(entry[0]) ? '' : '_outline_blank' }}</mat-icon>
-                          <span>{{ entry[1] }}</span>
-                        </div>
-                      }
-                    </div>
-
-                    @if (filtroCount > 0) {
-                      <button class="filter-clear-btn" (click)="limparFiltros()">Limpar filtros</button>
-                    }
-                  </div>
-                </div>
-              }
-            </div>
-          }
-          </div>
-
-          <button mat-flat-button color="primary" class="toolbar-create-btn" (click)="abrirGlobalTaskDialog()">
-            <mat-icon>add</mat-icon>
-            Criar
-          </button>
-        </div>
-
-        <span class="toolbar-spacer"></span>
-
-        <button class="notificacao-btn" (click)="chatAberto.update(v => !v)" title="Chat">
-          <mat-icon
-            [matBadge]="chatService.totalNaoLidas() || null"
-            matBadgeColor="warn"
-            matBadgeSize="small"
-            [matBadgeHidden]="chatService.totalNaoLidas() === 0"
-          >chat</mat-icon>
-        </button>
-
-        <div class="notificacao-wrapper">
-          <button class="notificacao-btn" (click)="toggleNotificacoes()">
-            <mat-icon
-              [matBadge]="naoLidasCount || null"
-              matBadgeColor="warn"
-              matBadgeSize="small"
-              [matBadgeHidden]="naoLidasCount === 0"
-            >notifications</mat-icon>
-          </button>
-
-          @if (mostrarNotificacoes()) {
-            <div class="notificacao-backdrop" (click)="mostrarNotificacoes.set(false)"></div>
-            <div class="notificacao-panel">
-              <div class="notificacao-panel-header">
-                <span class="notificacao-panel-titulo">Notificações</span>
-                <div class="notificacao-panel-actions">
-                  <label class="notificacao-toggle" (click)="notificacaoService.apenasNaoLidas.update(v => !v)">
-                    <span class="notificacao-toggle-track" [class.active]="notificacaoService.apenasNaoLidas()">
-                      <span class="notificacao-toggle-thumb"></span>
-                    </span>
-                    <span class="notificacao-toggle-label">Não lidas</span>
-                  </label>
-                  <button class="notificacao-action-btn" (click)="notificacaoService.marcarTodasLidas()" title="Marcar todas como lidas">
-                    <mat-icon>done_all</mat-icon>
-                  </button>
-                </div>
-              </div>
-
-              <div class="notificacao-panel-body">
-                @if (notificacoesFiltradas.length > 0) {
-                  @for (n of notificacoesFiltradas; track n.id) {
-                    <div class="notificacao-card" [class.notificacao-card--lida]="n.lida" [class.notificacao-card--link]="!!n.link" (click)="navegarNotificacao(n)">
-                      <div class="notificacao-card-icon" [class.icon-atendimento]="n.tipo === 'atendimento'" [class.icon-financeiro]="n.tipo === 'financeiro'" [class.icon-diario]="n.tipo === 'diario'" [class.icon-sistema]="n.tipo === 'sistema'" [class.icon-tarefa]="n.tipo === 'tarefa'" [class.icon-mencao]="n.tipo === 'mencao'" [class.icon-atribuicao]="n.tipo === 'atribuicao'">
-                        <mat-icon>{{ n.tipo === 'atendimento' ? 'headset_mic' : n.tipo === 'financeiro' ? 'payments' : n.tipo === 'diario' ? 'menu_book' : n.tipo === 'tarefa' ? 'task_alt' : n.tipo === 'mencao' ? 'chat' : n.tipo === 'atribuicao' ? 'person_add' : 'settings' }}</mat-icon>
-                      </div>
-                      <div class="notificacao-card-content">
-                        <span class="notificacao-card-titulo">{{ n.titulo }}</span>
-                        <span class="notificacao-card-desc">{{ n.descricao }}</span>
-                        @if (n.link) {
-                          <span class="notificacao-card-chave">{{ n.link.split('/').pop() }}</span>
-                        }
-                        <span class="notificacao-card-data">{{ n.data | date:'dd/MM/yyyy HH:mm' }}</span>
-                      </div>
-                      <button class="notificacao-card-mark" (click)="$event.stopPropagation(); notificacaoService.alternarLida(n.id)" [class.mark-lida]="n.lida" title="Marcar como {{ n.lida ? 'não lida' : 'lida' }}">
-                        <span class="mark-dot"></span>
-                      </button>
                     </div>
                   }
-                } @else {
-                  <div class="notificacao-empty">
-                    <mat-icon>notifications_off</mat-icon>
-                    <span>Nenhuma notificação</span>
+                  }
+                </div>
+
+                <div class="dropdown-filters">
+                  <div class="filter-group">
+                    <div class="filter-group-title">Projetos</div>
+                    <div class="filter-option" [class.active]="filtroProjetos.size === 0 && !relatadasPorMim" (click)="filtroProjetos.clear(); relatadasPorMim = false">
+                      <mat-icon>check_box{{ filtroProjetos.size === 0 && !relatadasPorMim ? '' : '_outline_blank' }}</mat-icon>
+                      <span>Todos</span>
+                    </div>
+                    <div class="filter-option" [class.active]="relatadasPorMim" (click)="relatadasPorMim = !relatadasPorMim">
+                      <mat-icon>check_box{{ relatadasPorMim ? '' : '_outline_blank' }}</mat-icon>
+                      <span>Relatadas por mim</span>
+                    </div>
+                    @for (p of projetosUnicos; track p.id) {
+                      <div class="filter-option" [class.active]="filtroProjetos.has(p.id)" (click)="toggleFiltro('projetos', p.id)">
+                        <mat-icon>check_box{{ filtroProjetos.has(p.id) ? '' : '_outline_blank' }}</mat-icon>
+                        <span>{{ p.nome }}</span>
+                      </div>
+                    }
                   </div>
-                }
+
+                  <div class="filter-group">
+                    <div class="filter-group-title">Ultima utilizacao</div>
+                    @for (opt of periodoOptions; track opt.value) {
+                      <div class="filter-option" [class.active]="filtroPeriodo === opt.value" (click)="filtroPeriodo = opt.value">
+                        <mat-icon>{{ filtroPeriodo === opt.value ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
+                        <span>{{ opt.label }}</span>
+                      </div>
+                    }
+                  </div>
+
+                  @if (responsaveisUnicos.length > 0) {
+                    <div class="filter-group">
+                      <div class="filter-group-title">Responsavel</div>
+                      @for (r of responsaveisUnicos; track r.id) {
+                        <div class="filter-option" [class.active]="filtroResponsavel.has(r.id)" (click)="toggleFiltro('responsavel', r.id)">
+                          <mat-icon>check_box{{ filtroResponsavel.has(r.id) ? '' : '_outline_blank' }}</mat-icon>
+                          <span>{{ r.nome }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <div class="filter-group">
+                    <div class="filter-group-title">Status</div>
+                    @for (entry of statusEntries; track entry[0]) {
+                      <div class="filter-option" [class.active]="filtroStatus.has(entry[0])" (click)="toggleFiltro('status', entry[0])">
+                        <mat-icon>check_box{{ filtroStatus.has(entry[0]) ? '' : '_outline_blank' }}</mat-icon>
+                        <span>{{ entry[1] }}</span>
+                      </div>
+                    }
+                  </div>
+
+                  @if (filtroCount > 0) {
+                    <button class="filter-clear-btn" (click)="limparFiltros()">Limpar filtros</button>
+                  }
+                </div>
               </div>
-            </div>
+            }
+          </div>
           }
         </div>
 
-        <button class="toolbar-user-btn" [matMenuTriggerFor]="userMenu">
-          <div class="toolbar-user-avatar-wrapper">
-            <div class="toolbar-user-avatar">{{ auth.usuario()?.nome?.charAt(0) }}</div>
-            <span class="toolbar-status-dot" [class.s-online]="chatService.meuStatus() === 'online'" [class.s-ausente]="chatService.meuStatus() === 'ausente'" [class.s-ocupado]="chatService.meuStatus() === 'ocupado'"></span>
-          </div>
+        <button mat-flat-button color="primary" class="toolbar-create-btn" (click)="abrirGlobalTaskDialog()">
+          <mat-icon>add</mat-icon>
+          Criar
+        </button>
+      </div>
+
+      <span class="toolbar-spacer"></span>
+
+      <button class="notificacao-btn" (click)="chatAberto.update(v => !v)" title="Chat">
+        <mat-icon
+          [matBadge]="chatService.totalNaoLidas() || null"
+          matBadgeColor="warn"
+          matBadgeSize="small"
+          [matBadgeHidden]="chatService.totalNaoLidas() === 0"
+        >chat</mat-icon>
+      </button>
+
+      <div class="notificacao-wrapper">
+        <button class="notificacao-btn" (click)="toggleNotificacoes()">
+          <mat-icon
+            [matBadge]="naoLidasCount || null"
+            matBadgeColor="warn"
+            matBadgeSize="small"
+            [matBadgeHidden]="naoLidasCount === 0"
+          >notifications</mat-icon>
         </button>
 
-        <mat-menu #userMenu="matMenu" panelClass="user-menu-wide">
-          <div class="user-menu-header">
-            <span class="user-menu-avatar">{{ auth.usuario()?.nome?.charAt(0) }}</span>
-            <div class="user-menu-info">
-              <span class="user-menu-nome">{{ auth.usuario()?.nome }}</span>
-              <span class="user-menu-email">{{ auth.usuario()?.email }}</span>
+        @if (mostrarNotificacoes()) {
+          <div class="notificacao-backdrop" (click)="mostrarNotificacoes.set(false)"></div>
+          <div class="notificacao-panel">
+            <div class="notificacao-panel-header">
+              <span class="notificacao-panel-titulo">Notificações</span>
+              <div class="notificacao-panel-actions">
+                <label class="notificacao-toggle" (click)="notificacaoService.apenasNaoLidas.update(v => !v)">
+                  <span class="notificacao-toggle-track" [class.active]="notificacaoService.apenasNaoLidas()">
+                    <span class="notificacao-toggle-thumb"></span>
+                  </span>
+                  <span class="notificacao-toggle-label">Não lidas</span>
+                </label>
+                <button class="notificacao-action-btn" (click)="notificacaoService.marcarTodasLidas()" title="Marcar todas como lidas">
+                  <mat-icon>done_all</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            <div class="notificacao-panel-body">
+              @if (notificacoesFiltradas.length > 0) {
+                @for (n of notificacoesFiltradas; track n.id) {
+                  <div class="notificacao-card" [class.notificacao-card--lida]="n.lida" [class.notificacao-card--link]="!!n.link" (click)="navegarNotificacao(n)">
+                    <div class="notificacao-card-icon" [class.icon-atendimento]="n.tipo === 'atendimento'" [class.icon-financeiro]="n.tipo === 'financeiro'" [class.icon-diario]="n.tipo === 'diario'" [class.icon-sistema]="n.tipo === 'sistema'" [class.icon-tarefa]="n.tipo === 'tarefa'" [class.icon-mencao]="n.tipo === 'mencao'" [class.icon-atribuicao]="n.tipo === 'atribuicao'" [class.icon-prazo]="n.tipo === 'prazo'">
+                      <mat-icon>{{ n.tipo === 'atendimento' ? 'headset_mic' : n.tipo === 'financeiro' ? 'payments' : n.tipo === 'diario' ? 'menu_book' : n.tipo === 'tarefa' ? 'task_alt' : n.tipo === 'mencao' ? 'chat' : n.tipo === 'atribuicao' ? 'person_add' : n.tipo === 'prazo' ? 'event' : 'settings' }}</mat-icon>
+                    </div>
+                    <div class="notificacao-card-content">
+                      <span class="notificacao-card-titulo">{{ n.titulo }}</span>
+                      <span class="notificacao-card-desc">{{ n.descricao }}</span>
+                      @if (n.link) {
+                        <span class="notificacao-card-chave">{{ n.link.split('/').pop() }}</span>
+                      }
+                      <span class="notificacao-card-data">{{ n.data | date:'dd/MM/yyyy HH:mm' }}</span>
+                    </div>
+                    <button class="notificacao-card-mark" (click)="$event.stopPropagation(); notificacaoService.alternarLida(n.id)" [class.mark-lida]="n.lida" title="Marcar como {{ n.lida ? 'não lida' : 'lida' }}">
+                      <span class="mark-dot"></span>
+                    </button>
+                  </div>
+                }
+              } @else {
+                <div class="notificacao-empty">
+                  <mat-icon>notifications_off</mat-icon>
+                  <span>Nenhuma notificação</span>
+                </div>
+              }
+
+              <div class="notificacao-panel-footer">
+                <mat-icon>info</mat-icon>
+                <span>As notificações são mantidas por 30 dias e depois excluídas automaticamente.</span>
+              </div>
             </div>
           </div>
-          <div class="user-menu-divider"></div>
-          <div class="user-menu-status">
-            <button class="user-status-item" (click)="chatService.alterarStatus('online')">
-              <span class="user-status-dot s-online"></span>
-              <span>Online</span>
-              @if (chatService.meuStatus() === 'online') { <mat-icon class="user-status-check">check</mat-icon> }
-            </button>
-            <button class="user-status-item" (click)="chatService.alterarStatus('ausente')">
-              <span class="user-status-dot s-ausente"></span>
-              <span>Ausente</span>
-              @if (chatService.meuStatus() === 'ausente') { <mat-icon class="user-status-check">check</mat-icon> }
-            </button>
-            <button class="user-status-item" (click)="chatService.alterarStatus('ocupado')">
-              <span class="user-status-dot s-ocupado"></span>
-              <span>Ocupado</span>
-              @if (chatService.meuStatus() === 'ocupado') { <mat-icon class="user-status-check">check</mat-icon> }
-            </button>
+        }
+      </div>
+
+      <button class="toolbar-user-btn" [matMenuTriggerFor]="userMenu">
+        <div class="toolbar-user-avatar-wrapper">
+          <div class="toolbar-user-avatar">
+            @if (auth.usuario()?.foto) {
+              <img [src]="auth.usuario()?.foto" alt="" />
+            } @else {
+              {{ auth.usuario()?.nome?.charAt(0) }}
+            }
           </div>
-          <div class="user-menu-divider"></div>
-          <button class="user-logout-btn" (click)="auth.logout()">
-            <mat-icon>logout</mat-icon>
-            <span>Sair</span>
+          <span class="toolbar-status-dot" [class.s-online]="chatService.meuStatus() === 'online'" [class.s-ausente]="chatService.meuStatus() === 'ausente'" [class.s-ocupado]="chatService.meuStatus() === 'ocupado'"></span>
+        </div>
+      </button>
+
+      <mat-menu #userMenu="matMenu" panelClass="user-menu-wide">
+        <div class="user-menu-header">
+          <span class="user-menu-avatar">
+            @if (auth.usuario()?.foto) {
+              <img [src]="auth.usuario()?.foto" alt="" />
+            } @else {
+              {{ auth.usuario()?.nome?.charAt(0) }}
+            }
+          </span>
+          <div class="user-menu-info">
+            <span class="user-menu-nome">{{ auth.usuario()?.nome }}</span>
+            <span class="user-menu-email">{{ auth.usuario()?.email }}</span>
+          </div>
+        </div>
+        <div class="user-menu-divider"></div>
+        <div class="user-menu-status">
+          <button class="user-status-item" (click)="chatService.alterarStatus('online')">
+            <span class="user-status-dot s-online"></span>
+            <span>Online</span>
+            @if (chatService.meuStatus() === 'online') { <mat-icon class="user-status-check">check</mat-icon> }
           </button>
-        </mat-menu>
-      </mat-toolbar>
+          <button class="user-status-item" (click)="chatService.alterarStatus('ausente')">
+            <span class="user-status-dot s-ausente"></span>
+            <span>Ausente</span>
+            @if (chatService.meuStatus() === 'ausente') { <mat-icon class="user-status-check">check</mat-icon> }
+          </button>
+          <button class="user-status-item" (click)="chatService.alterarStatus('ocupado')">
+            <span class="user-status-dot s-ocupado"></span>
+            <span>Ocupado</span>
+            @if (chatService.meuStatus() === 'ocupado') { <mat-icon class="user-status-check">check</mat-icon> }
+          </button>
+        </div>
+        <div class="user-menu-divider"></div>
+        <div class="user-menu-theme-title">Tema</div>
+        <div class="user-menu-status">
+          <button class="user-status-item" (click)="theme.setTheme('system')">
+            <mat-icon class="user-theme-icon">brightness_auto</mat-icon>
+            <span>Padrão do sistema</span>
+            @if (theme.preference() === 'system') { <mat-icon class="user-status-check">check</mat-icon> }
+          </button>
+          <button class="user-status-item" (click)="theme.setTheme('light')">
+            <mat-icon class="user-theme-icon">light_mode</mat-icon>
+            <span>Claro</span>
+            @if (theme.preference() === 'light') { <mat-icon class="user-status-check">check</mat-icon> }
+          </button>
+          <button class="user-status-item" (click)="theme.setTheme('dark')">
+            <mat-icon class="user-theme-icon">dark_mode</mat-icon>
+            <span>Escuro</span>
+            @if (theme.preference() === 'dark') { <mat-icon class="user-status-check">check</mat-icon> }
+          </button>
+        </div>
+        <div class="user-menu-divider"></div>
+        <button class="user-logout-btn" (click)="abrirConfiguracoes()">
+          <mat-icon>settings</mat-icon>
+          <span>Configurações</span>
+        </button>
+        <button class="user-logout-btn" (click)="auth.logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Sair</span>
+        </button>
+      </mat-menu>
+    </mat-toolbar>
+  }
+
+  <mat-sidenav-container class="app-container">
+    @if (auth.logado()) {
+      <mat-sidenav #sidenav mode="side" [opened]="sidebarOpen()" class="app-sidebar" (mouseleave)="onSidebarLeave()">
+        <nav class="sidebar-nav">
+          <a mat-list-item routerLink="/meu-dia" routerLinkActive="active" class="sidebar-link"
+             [matTooltip]="!sidebarOpen() ? 'Meu dia' : null" matTooltipPosition="right">
+            <mat-icon>wb_sunny</mat-icon>
+            <span class="sidebar-text">Meu dia</span>
+            @if (meuDiaService.count() > 0) {
+              <span class="sidebar-badge">{{ meuDiaService.count() }}</span>
+            }
+          </a>
+
+          <a mat-list-item routerLink="/dashboard" routerLinkActive="active" class="sidebar-link"
+             [matTooltip]="!sidebarOpen() ? 'Para voce' : null" matTooltipPosition="right">
+            <mat-icon>inbox</mat-icon>
+            <span class="sidebar-text">Para voce</span>
+          </a>
+
+          <a mat-list-item routerLink="/clientes" routerLinkActive="active" class="sidebar-link"
+             [matTooltip]="!sidebarOpen() ? 'Escolas' : null" matTooltipPosition="right">
+            <mat-icon>business</mat-icon>
+            <span class="sidebar-text">Escolas</span>
+          </a>
+
+          <div class="sidebar-section">
+            <a class="sidebar-link" (click)="toggleProjetos()">
+              <mat-icon>folder</mat-icon>
+              <span class="sidebar-text">Projetos</span>
+              <mat-icon class="sidebar-chevron">{{ projetosExpandido() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </a>
+
+            @if (projetosExpandido()) {
+              <div class="sidebar-sub">
+              @for (p of projetos; track p.id) {
+                <a
+                   [routerLink]="['/projetos', p.id, 'kanban']"
+                   routerLinkActive="active"
+                   class="sidebar-link sidebar-projeto-link"
+                   [matTooltip]="!sidebarOpen() ? p.nome : null"
+                   matTooltipPosition="right">
+                  <span class="sidebar-projeto-icone">{{ p.icone || p.nome.charAt(0) }}</span>
+                  <span class="sidebar-text sidebar-projeto-nome">{{ p.nome }}</span>
+                  @if (naoLidasPorProjeto(p.id) > 0) {
+                    <span class="sidebar-projeto-badge">{{ naoLidasPorProjeto(p.id) }}</span>
+                  }
+                </a>
+              }
+              </div>
+            }
+          </div>
+
+          <a mat-list-item routerLink="/lixeira" routerLinkActive="active" class="sidebar-link sidebar-link-bottom"
+             [matTooltip]="!sidebarOpen() ? 'Lixeira' : null" matTooltipPosition="right">
+            <mat-icon>restore_from_trash</mat-icon>
+            <span class="sidebar-text">Lixeira</span>
+          </a>
+        </nav>
+      </mat-sidenav>
     }
 
-    <div class="app-main-wrapper" [class.app-main-wrapper--chat]="chatAberto()">
-      <div class="app-main">
-        <router-outlet />
-      </div>
-      @if (chatAberto()) {
-        <app-chat-panel class="chat-panel-slot" (fechar)="chatAberto.set(false)"></app-chat-panel>
+    <mat-sidenav-content class="app-content">
+      @if (auth.logado() && !sidebarOpen()) {
+        <div class="sidebar-hover-zone" (mouseenter)="onHoverZoneEnter()"></div>
       }
-    </div>
-    <app-call-modal></app-call-modal>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+
+      <div class="app-main-wrapper" [class.app-main-wrapper--chat]="chatAberto()">
+        <div class="app-main">
+          <router-outlet />
+        </div>
+        @if (chatAberto()) {
+          <app-chat-panel class="chat-panel-slot" (fechar)="chatAberto.set(false)"></app-chat-panel>
+        }
+      </div>
+      <app-call-modal></app-call-modal>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>

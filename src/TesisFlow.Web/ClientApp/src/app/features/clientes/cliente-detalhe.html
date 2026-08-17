@@ -1,6 +1,6 @@
 <div class="page">
   <div class="breadcrumb">
-    <a routerLink="/clientes" class="breadcrumb-link">Clientes</a>
+    <a routerLink="/clientes" class="breadcrumb-link">Escolas</a>
     <mat-icon class="breadcrumb-sep">chevron_right</mat-icon>
     <span class="breadcrumb-current">{{ cliente?.nome || '...' }}</span>
   </div>
@@ -117,7 +117,7 @@
                   </div>
                   <div class="secondary-item">
                     <span class="secondary-label">Codigo Diario</span>
-                    <span class="secondary-value mono">{{ cliente.codigoDiario || '-' }}</span>
+                    <span class="secondary-value mono">{{ codigoColegio || '-' }}</span>
                   </div>
                   <div class="secondary-item">
                     <span class="secondary-label">Senha Master Diario</span>
@@ -203,7 +203,7 @@
                   </div>
                   @for (d of diarioVisiveis(); track d.id) {
                     <div class="tab-table-row">
-                      <span class="col-professor">{{ d.nome }}</span>
+                      <span class="col-professor"><a class="professor-link" [href]="linkProfessor(d)" target="_blank" rel="noopener">{{ d.nome }}</a></span>
                       <span class="col-id mono">{{ d.id }}</span>
                       <span class="col-senha mono">{{ d.senha }}</span>
                       <span class="col-telefone">{{ d.celular || d.telefone || '-' }}</span>

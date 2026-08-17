@@ -16,7 +16,9 @@ namespace TesisFlow.Contexto.Contextos
         public DbSet<ProjetoMembro> ProjetoMembros { get; set; } = null!;
         public DbSet<Sprint> Sprints { get; set; } = null!;
         public DbSet<Tarefa> Tarefas { get; set; } = null!;
+        public DbSet<Categoria> Categorias { get; set; } = null!;
         public DbSet<TarefaResponsavel> TarefaResponsaveis { get; set; } = null!;
+        public DbSet<TarefaMeuDia> TarefasMeuDia { get; set; } = null!;
         public DbSet<Anexo> Anexos { get; set; } = null!;
         public DbSet<HistoricoTarefa> HistoricoTarefas { get; set; } = null!;
         public DbSet<ComentarioReacao> ComentarioReacoes { get; set; } = null!;
@@ -32,8 +34,10 @@ namespace TesisFlow.Contexto.Contextos
             modelBuilder.ApplyConfiguration(new ProjetoMembroEntityConfiguracao());
             modelBuilder.ApplyConfiguration(new SprintEntityConfiguracao());
             modelBuilder.ApplyConfiguration(new TarefaEntityConfiguracao());
+            modelBuilder.ApplyConfiguration(new CategoriaEntityConfiguracao());
             modelBuilder.ApplyConfiguration(new ComentarioEntityConfiguracao());
             modelBuilder.ApplyConfiguration(new TarefaResponsavelEntityConfiguracao());
+            modelBuilder.ApplyConfiguration(new TarefaMeuDiaEntityConfiguracao());
             modelBuilder.ApplyConfiguration(new AnexoEntityConfiguracao());
             modelBuilder.ApplyConfiguration(new ComentarioReacaoEntityConfiguracao());
             modelBuilder.ApplyConfiguration(new QuadroConfiguracaoEntityConfiguracao());

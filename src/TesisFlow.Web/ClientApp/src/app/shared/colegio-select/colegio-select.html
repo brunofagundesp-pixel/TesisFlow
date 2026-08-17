@@ -1,0 +1,30 @@
+<mat-form-field [appearance]="appearance" class="colegio-field">
+  @if (!hideLabel) {
+    <mat-label>{{ label }}</mat-label>
+  }
+  <input
+    type="text"
+    matInput
+    [matAutocomplete]="autoColegio"
+    [value]="termo"
+    [placeholder]="placeholder"
+    [disabled]="disabled"
+    (input)="onInput($event.target.value)"
+    (blur)="marcarTouched()"
+  />
+  @if (termo && !disabled) {
+    <button type="button" matSuffix mat-icon-button aria-label="Limpar" (click)="limpar()">
+      <mat-icon>close</mat-icon>
+    </button>
+  }
+  <mat-autocomplete #autoColegio="matAutocomplete" (optionSelected)="onSelecionar($event.option.value)">
+    @for (c of filtrados; track c.id) {
+      <mat-option [value]="c">
+        <span class="colegio-nome">{{ c.nome }}</span>
+        @if (c.apelido) {
+          <span class="colegio-apelido"> · {{ c.apelido }}</span>
+        }
+      </mat-option>
+    }
+  </mat-autocomplete>
+</mat-form-field>

@@ -14,8 +14,12 @@ namespace TesisFlow.Contexto.ModeloConfiguracao
             builder.Property(n => n.Descricao).HasMaxLength(1000);
             builder.Property(n => n.Tipo).IsRequired().HasMaxLength(50);
             builder.Property(n => n.Link).HasMaxLength(500);
+            builder.Property(n => n.TarefaId);
+            builder.Property(n => n.ProjetoId);
 
             builder.HasIndex(n => n.TargetUserId);
+            builder.HasIndex(n => n.TarefaId);
+            builder.HasIndex(n => n.ProjetoId);
         }
     }
 }

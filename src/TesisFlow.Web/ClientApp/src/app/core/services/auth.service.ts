@@ -28,6 +28,11 @@ export class AuthService {
     return this.api.post<Usuario>('Auth/registro', dto);
   }
 
+  atualizarUsuario(usuario: Usuario): void {
+    this._usuario.set(usuario);
+    this.salvarSessao(usuario);
+  }
+
   logout(): void {
     localStorage.removeItem(STORAGE_KEY);
     this._usuario.set(null);

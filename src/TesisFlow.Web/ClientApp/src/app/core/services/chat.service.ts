@@ -19,6 +19,7 @@ export interface MensagemChat {
   destinatarioId: number;
   texto: string;
   lida: boolean;
+  entregue: boolean;
   data: Date;
 }
 
@@ -54,6 +55,14 @@ export class ChatService {
     return this.statusMap()[usuarioId] || 'offline';
   }
 
+  private inserirMensagemSeNova(usuarioId: number, msg: MensagemChat): void {
+    this._mensagensMap.update(map => {
+      const msgs = map[usuarioId] || [];
+      if (msgs.some(m => m.id === msg.id)) return map;
+      return { ...map, [usuarioId]: [...msgs, msg] };
+    });
+  }
+
   inicializar(): void {
     const userId = this.auth.usuario()?.id;
     if (!userId) return;
@@ -84,33 +93,70 @@ export class ChatService {
       .build();
 
     this.hubConnection.on('ReceberMensagem', (msg: any) => {
-      if (msg.remetenteId === userId) return;
       msg.data = dataDe(msg);
-      const outroId = msg.remetenteId;
+      const ehMinha = msg.remetenteId === userId;
+      const outroId = ehMinha ? msg.destinatarioId : msg.remetenteId;
 
-      this._mensagensMap.update(map => {
-        const msgs = [...(map[outroId] || []), msg as MensagemChat];
-        return { ...map, [outroId]: msgs };
-      });
+      this.inserirMensagemSeNova(outroId, {
+        ...msg,
+        entregue: msg.entregue ?? false,
+        lida: msg.lida ?? false,
+      } as MensagemChat);
+
+      if (ehMinha) {
+        this.contatos.update(lista => lista.map(c =>
+          c.usuarioId === outroId ? { ...c, ultimaMensagem: msg.texto, ultimaData: msg.data } : c));
+        return;
+      }
+
+      const conversaAberta = this.conversaAtiva() === outroId;
 
       const audio = new Audio('/sounds/notification.mp3');
       audio.volume = 0.5;
       audio.play().catch(() => {});
 
+      this.hubConnection?.invoke('ConfirmarEntrega', msg.id).catch(() => {});
+
+      if (conversaAberta) {
+        this.marcarLidas(outroId);
+      }
+
       this.contatos.update(lista => {
         const existe = lista.find(c => c.usuarioId === outroId);
         if (existe) {
           return lista.map(c => c.usuarioId === outroId
-            ? { ...c, ultimaMensagem: msg.texto, ultimaData: msg.data, naoLidas: c.naoLidas + 1 }
+            ? { ...c, ultimaMensagem: msg.texto, ultimaData: msg.data, naoLidas: conversaAberta ? 0 : c.naoLidas + 1 }
             : c);
         }
         return [...lista, {
           usuarioId: outroId, nome: msg.remetenteNome,
           avatar: msg.remetenteNome.charAt(0).toUpperCase(),
-          ultimaMensagem: msg.texto, ultimaData: msg.data, naoLidas: 1,
+          ultimaMensagem: msg.texto, ultimaData: msg.data, naoLidas: conversaAberta ? 0 : 1,
         }];
       });
-      this.totalNaoLidas.update(v => v + 1);
+      if (!conversaAberta) this.totalNaoLidas.update(v => v + 1);
+    });
+
+    this.hubConnection.on('MensagemEntregue', (mensagemId: number) => {
+      this._mensagensMap.update(map => {
+        const novo: Record<number, MensagemChat[]> = { ...map };
+        for (const key of Object.keys(novo)) {
+          const id = Number(key);
+          novo[id] = (novo[id] || []).map(m =>
+            m.id === mensagemId ? { ...m, entregue: true } : m
+          );
+        }
+        return novo;
+      });
+    });
+
+    this.hubConnection.on('MensagensLidas', (destinatarioId: number) => {
+      this._mensagensMap.update(map => {
+        const msgs = (map[destinatarioId] || []).map(m =>
+          m.remetenteId === userId ? { ...m, lida: true } : m
+        );
+        return { ...map, [destinatarioId]: msgs };
+      });
     });
 
     this.hubConnection.on('UsuarioDigitando', (uid: number, digitando: boolean) => {
@@ -151,11 +197,17 @@ export class ChatService {
     ));
     this.totalNaoLidas.set(this.contatos().reduce((s, c) => s + c.naoLidas, 0));
 
-    this.http.put(`/api/Chat/lidas/${usuarioId}/${userId}`, {}).subscribe();
+    this.marcarLidas(usuarioId);
 
     if (!this._mensagensMap()[usuarioId] || this._mensagensMap()[usuarioId].length === 0) {
       this.carregarMensagens(usuarioId);
     }
+  }
+
+  private marcarLidas(contatoId: number): void {
+    const userId = this.auth.usuario()?.id;
+    if (!userId) return;
+    this.http.put(`/api/Chat/lidas/${contatoId}/${userId}`, {}).subscribe();
   }
 
   fecharConversa(): void {
@@ -173,10 +225,9 @@ export class ChatService {
     const dto = { texto, remetenteId: meuId, destinatarioId: usuarioId };
     this.http.post<any>('/api/Chat', dto).subscribe(msg => {
       msg.data = dataDe(msg);
-      this._mensagensMap.update(map => {
-        const msgs = [...(map[usuarioId] || []), msg as MensagemChat];
-        return { ...map, [usuarioId]: msgs };
-      });
+      msg.entregue = msg.entregue ?? false;
+      msg.lida = msg.lida ?? false;
+      this.inserirMensagemSeNova(usuarioId, msg as MensagemChat);
       this.contatos.update(lista => lista.map(c =>
         c.usuarioId === usuarioId ? { ...c, ultimaMensagem: texto, ultimaData: msg.data } : c));
     });

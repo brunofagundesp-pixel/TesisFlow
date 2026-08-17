@@ -1,0 +1,22 @@
+<div class="config-page">
+  <div class="config-header">
+    <a [routerLink]="['/projetos', projetoId, 'kanban']" class="config-back">
+      <mat-icon>arrow_back</mat-icon>
+      Voltar para o projeto
+    </a>
+    <h1>Configurações do projeto</h1>
+    <span>{{ projetoNome }}</span>
+  </div>
+
+  <div class="config-layout">
+    <nav class="config-sidebar">
+      <a class="config-nav-item active">
+        <mat-icon>category</mat-icon>
+        <span>Tipos de tarefa</span>
+      </a>
+    </nav>
+    <div class="config-content">
+      <app-categorias [projetoId]="projetoId"></app-categorias>
+    </div>
+  </div>
+</div>

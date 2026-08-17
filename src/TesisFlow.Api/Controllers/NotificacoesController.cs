@@ -1,6 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using TesisFlow.Api.Hubs;
 using TesisFlow.Core.Servicos.Notificacoes;
 using TesisFlow.Modelo.DTOs;
 
@@ -11,17 +9,14 @@ namespace TesisFlow.Api.Controllers
     public class NotificacoesController : ControllerBase
     {
         private readonly NotificacaoConsultar _consultar;
-        private readonly NotificacaoSalvar _salvar;
-        private readonly IHubContext<NotificacaoHub> _hubContext;
+        private readonly NotificacaoServico _servico;
 
         public NotificacoesController(
             NotificacaoConsultar consultar,
-            NotificacaoSalvar salvar,
-            IHubContext<NotificacaoHub> hubContext)
+            NotificacaoServico servico)
         {
             _consultar = consultar;
-            _salvar = salvar;
-            _hubContext = hubContext;
+            _servico = servico;
         }
 
         [HttpGet("usuario/{usuarioId}")]
@@ -34,31 +29,8 @@ namespace TesisFlow.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] NotificacaoSalvarDTO dto)
         {
-            var notificacao = await _salvar.CriarAsync(
-                dto.Titulo, dto.Descricao, dto.Tipo, dto.Link, dto.TargetUserId);
-
-            var notificationDto = new NotificacaoDTO
-            {
-                Id = notificacao.Id,
-                Titulo = notificacao.Titulo,
-                Descricao = notificacao.Descricao,
-                Tipo = notificacao.Tipo,
-                Link = notificacao.Link,
-                Lida = notificacao.Lida,
-                DataCriacao = notificacao.DataCriacao,
-                TargetUserId = notificacao.TargetUserId,
-            };
-
-            if (notificacao.TargetUserId.HasValue)
-            {
-                await _hubContext.Clients
-                    .Group($"user_{notificacao.TargetUserId.Value}")
-                    .SendAsync("ReceberNotificacao", notificationDto);
-            }
-            else
-            {
-                await _hubContext.Clients.All.SendAsync("ReceberNotificacao", notificationDto);
-            }
+            var notificationDto = await _servico.CriarENotificarAsync(
+                dto.Titulo, dto.Descricao, dto.Tipo, dto.Link, dto.TargetUserId, dto.TarefaId, dto.ProjetoId);
 
             return Ok(notificationDto);
         }
@@ -66,14 +38,21 @@ namespace TesisFlow.Api.Controllers
         [HttpPut("{id}/lida")]
         public async Task<IActionResult> MarcarLida(int id)
         {
-            await _salvar.MarcarComoLidaAsync(id);
+            await _servico.MarcarComoLidaAsync(id);
             return Ok();
         }
 
         [HttpPut("usuario/{usuarioId}/lidas")]
         public async Task<IActionResult> MarcarTodasLidas(int usuarioId)
         {
-            await _salvar.MarcarTodasComoLidasAsync(usuarioId);
+            await _servico.MarcarTodasComoLidasAsync(usuarioId);
+            return Ok();
+        }
+
+        [HttpPut("tarefa/{tarefaId}/lida")]
+        public async Task<IActionResult> MarcarTarefaComoLida(int tarefaId, [FromQuery] int usuarioId)
+        {
+            await _servico.MarcarTarefaComoLidaAsync(tarefaId, usuarioId);
             return Ok();
         }
     }

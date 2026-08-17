@@ -1,52 +1,137 @@
-<div class="page">
-  <div class="page-header">
-    <div>
-      <h1>Para voce</h1>
-      <span>Tarefas atribuidas a voce em todos os projetos</span>
+<div class="dashboard">
+  <div class="dashboard-banner" #banner [class.dashboard-banner--vazio]="!usuario?.banner">
+    @if (usuario?.banner) {
+      <img class="dashboard-banner-img" [src]="usuario.banner" alt="" />
+    } @else {
+      <div class="dashboard-banner-placeholder"></div>
+    }
+
+    <div class="dashboard-banner-overlay">
+      @if (!usuario?.banner) {
+        <button mat-flat-button color="primary" (click)="abrirSeletorBanner()" [disabled]="carregandoBanner">
+          <mat-icon>add_photo_alternate</mat-icon>
+          Adicionar capa
+        </button>
+      } @else {
+        <button mat-stroked-button class="banner-btn" (click)="abrirSeletorBanner()" [disabled]="carregandoBanner">
+          <mat-icon>edit</mat-icon>
+          Alterar
+        </button>
+        <button mat-stroked-button class="banner-btn banner-btn--danger" (click)="removerBanner()" [disabled]="carregandoBanner">
+          <mat-icon>delete</mat-icon>
+          Remover
+        </button>
+      }
+    </div>
+
+    <input #bannerInput type="file" accept="image/*" hidden (change)="onBannerSelecionado($event)" />
+  </div>
+
+  <div class="dashboard-header">
+    <div class="page-header">
+      <div>
+        <h1>Para voce</h1>
+        <span>Tarefas atribuidas a voce em todos os projetos</span>
+      </div>
     </div>
   </div>
 
-  @if (carregando) {
-    <div class="skeleton-groups">
-      @for (i of [1,2]; track i) {
-        <div class="skeleton-group">
-          <div class="skeleton-group-header">
-            <div class="skeleton-group-icon"></div>
-            <div class="skeleton-group-title"></div>
-          </div>
-          <div class="skeleton-group-list">
-            <div class="skeleton-task"></div>
-            <div class="skeleton-task w-80"></div>
-            <div class="skeleton-task w-60"></div>
-          </div>
-        </div>
-      }
-    </div>
-  } @else if (tarefasAgrupadas.length === 0) {
-    <div class="empty">
-      <mat-icon>inbox</mat-icon>
-      <h3>Nenhuma tarefa para voce</h3>
-      <p>Voce nao tem tarefas atribuidas no momento.</p>
-    </div>
-  } @else {
-    @for (grupo of tarefasAgrupadas; track grupo.projetoId) {
-      <div class="projeto-group">
-        <div class="projeto-group-header">
-          <span class="projeto-group-icone">{{ grupo.projetoNome.charAt(0) }}</span>
-          <h3>{{ grupo.projetoNome }}</h3>
-          <span class="projeto-group-count">{{ grupo.tarefas.length }}</span>
-        </div>
-        <div class="tarefas-mini-list">
-          @for (t of grupo.tarefas; track t.id) {
-            <div class="tarefa-mini-item" (click)="abrirTarefa(t)">
-              <mat-icon class="mini-tipo-icon tipo-{{t.tipo}}">{{ tipoIcone(t.tipo) }}</mat-icon>
-              <a class="mini-chave chave-link" [routerLink]="['/tarefas', t.chave]">{{ t.chave }}</a>
-              <span class="mini-titulo">{{ t.titulo }}</span>
-              <span class="mini-badge">{{ statusLabel(t.status) }}</span>
+  <div class="dashboard-body">
+    <div class="dashboard-main">
+      @if (carregando) {
+        <div class="skeleton-groups">
+          @for (i of [1,2,3,4]; track i) {
+            <div class="skeleton-group">
+              <div class="skeleton-group-header">
+                <div class="skeleton-group-icon"></div>
+                <div class="skeleton-group-title"></div>
+              </div>
+              <div class="skeleton-group-list">
+                <div class="skeleton-task"></div>
+                <div class="skeleton-task w-80"></div>
+                <div class="skeleton-task w-60"></div>
+              </div>
             </div>
           }
         </div>
+      } @else if (tarefasAgrupadas.length === 0) {
+        <div class="empty">
+          <mat-icon>inbox</mat-icon>
+          <h3>Nenhuma tarefa para voce</h3>
+          <p>Voce nao tem tarefas atribuidas no momento.</p>
+        </div>
+      } @else {
+        <div class="projetos-grid">
+          @for (grupo of tarefasAgrupadas; track grupo.projetoId) {
+            <div class="projeto-group">
+              <div class="projeto-group-header">
+                <span class="projeto-group-icone">{{ grupo.projetoNome.charAt(0) }}</span>
+                <h3>{{ grupo.projetoNome }}</h3>
+                <span class="projeto-group-count">{{ grupo.tarefas.length }}</span>
+              </div>
+              <div class="tarefas-mini-list">
+                @for (t of grupo.tarefas; track t.id) {
+                  <div class="tarefa-mini-item" (click)="abrirTarefa(t)">
+                    <mat-icon class="mini-tipo-icon" [style.color]="t.categoriaCor">{{ t.categoriaIcone }}</mat-icon>
+                    <a class="mini-chave chave-link" [routerLink]="['/tarefas', t.chave]">{{ t.chave }}</a>
+                    <span class="mini-titulo">{{ t.titulo }}</span>
+                    @if (souResponsavel(t)) {
+                      <button class="mini-meu-dia" [class.mini-meu-dia--ativo]="temMeuDia(t)" [matTooltip]="temMeuDia(t) ? 'Remover do Meu dia' : 'Adicionar ao Meu dia'" (click)="$event.stopPropagation(); alternarMeuDia(t)">
+                        <mat-icon>{{ temMeuDia(t) ? 'wb_sunny' : 'light_mode' }}</mat-icon>
+                      </button>
+                    }
+                    <button type="button" class="mini-status" [class]="'s-' + t.status" (click)="$event.stopPropagation(); toggleStatusMenu($event, t)">
+                      <mat-icon class="mini-status-icon">{{ statusIcone(t.status) }}</mat-icon>
+                      <span>{{ statusLabel(t.status) }}</span>
+                    </button>
+                    @if (statusMenu?.id === t.id) {
+                      <div class="status-dropdown" (click)="$event.stopPropagation()" [style.top.px]="statusMenuPos.top" [style.left.px]="statusMenuPos.left">
+                        @for (entry of statusEntries; track entry[0]) {
+                          <div class="status-dropdown-item" [class]="'s-item-' + entry[0]" (click)="alterarStatus(t, entry[0]); statusMenu = null">
+                            <mat-icon>{{ statusIcone(entry[0]) }}</mat-icon>
+                            <span>{{ entry[1] }}</span>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <aside class="dashboard-sidebar">
+      <div class="meu-dia-header">
+        <mat-icon class="meu-dia-header-icon">wb_sunny</mat-icon>
+        <h2>Seu foco hoje</h2>
+        <span class="meu-dia-count">{{ meuDiaService.count() }}</span>
       </div>
-    }
-  }
+
+      @if (meuDiaService.count() > 0) {
+        <div class="meu-dia-list">
+          @for (t of meuDiaTarefas.slice(0, 3); track t.id) {
+            <div class="meu-dia-card" (click)="abrirTarefa(t)">
+              <div class="meu-dia-info">
+                <span class="meu-dia-titulo">{{ t.titulo }}</span>
+                <span class="meu-dia-projeto">{{ t.projetoNome }} · {{ t.chave }}</span>
+              </div>
+            </div>
+          }
+        </div>
+        <button mat-stroked-button class="foco-hoje-ver" routerLink="/meu-dia">
+          Ver meu dia
+          <mat-icon>arrow_forward</mat-icon>
+        </button>
+      } @else {
+        <div class="meu-dia-vazio">
+          <mat-icon>light_mode</mat-icon>
+          <p>Nenhuma tarefa no Meu dia</p>
+          <span>Clique no sol em uma tarefa para focar nela hoje</span>
+        </div>
+      }
+    </aside>
+  </div>
 </div>

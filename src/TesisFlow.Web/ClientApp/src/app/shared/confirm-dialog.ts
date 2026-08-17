@@ -15,7 +15,7 @@ import { MatInputModule } from '@angular/material/input';
       <p class="confirm-message">{{ data.mensagem }}</p>
       <mat-form-field appearance="outline" class="w-100">
         <mat-label>Digite <strong>"{{ data.textoConfirmacao }}"</strong> para confirmar</mat-label>
-        <input matInput [(ngModel)]="valor" (input)="verificar()">
+        <input matInput [(ngModel)]="valor" (input)="verificar()" (keydown.enter)="confirmar()">
       </mat-form-field>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
@@ -24,7 +24,7 @@ import { MatInputModule } from '@angular/material/input';
     </mat-dialog-actions>
   `,
   styles: [`
-    .confirm-message { margin-bottom: 1rem; color: #475569; font-size: 0.9rem; }
+    .confirm-message { margin-bottom: 1rem; color: var(--tf-text-secondary); font-size: 0.9rem; }
     .w-100 { width: 100%; }
   `]
 })

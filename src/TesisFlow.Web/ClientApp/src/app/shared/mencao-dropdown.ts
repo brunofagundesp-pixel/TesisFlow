@@ -34,7 +34,7 @@ export interface MembroMencao {
       max-height: 260px;
       width: 280px;
       overflow-y: auto;
-      background: #fff;
+      background: var(--tf-surface);
       border: 1px solid var(--tf-border);
       border-radius: 12px;
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
@@ -48,7 +48,7 @@ export interface MembroMencao {
       color: var(--tf-text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      border-bottom: 1px solid #f3f4f6;
+      border-bottom: 1px solid var(--tf-border-light);
     }
 
     .mencao-item {
@@ -58,14 +58,14 @@ export interface MembroMencao {
       padding: 0.5rem 0.85rem;
       cursor: pointer;
       transition: background 0.1s;
-      border-bottom: 1px solid #f3f4f6;
+      border-bottom: 1px solid var(--tf-border-light);
 
       &:last-child {
         border-bottom: none;
       }
 
       &:hover {
-        background: #f1f5f9;
+        background: var(--tf-surface-hover);
       }
     }
 

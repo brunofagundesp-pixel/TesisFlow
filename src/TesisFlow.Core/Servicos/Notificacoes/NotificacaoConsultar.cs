@@ -28,6 +28,8 @@ namespace TesisFlow.Core.Servicos.Notificacoes
             Lida = n.Lida,
             DataCriacao = n.DataCriacao,
             TargetUserId = n.TargetUserId,
+            TarefaId = n.TarefaId,
+            ProjetoId = n.ProjetoId,
         };
     }
 }

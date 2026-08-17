@@ -1,0 +1,24 @@
+<h2 mat-dialog-title>Recortar capa</h2>
+
+<mat-dialog-content class="crop-content">
+  <span class="crop-label">Assim vai ficar na capa:</span>
+  <div class="crop-preview" [style.aspect-ratio]="data.aspectRatio">
+    <div class="crop-preview-inner" #preview></div>
+  </div>
+
+  <p class="crop-subtitle">
+    Arraste o quadro abaixo para escolher qual parte da imagem aparece na capa.
+    Você também pode redimensionar o quadro pelos cantos.
+  </p>
+
+  <div class="crop-area">
+    <img #imagem [src]="data.imageUrl" alt="" (load)="iniciarCropper()" />
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="crop-actions">
+  <button mat-button (click)="fechar()">Cancelar</button>
+  <button mat-flat-button color="primary" [disabled]="processando" (click)="salvar()">
+    {{ processando ? 'Processando...' : 'Salvar capa' }}
+  </button>
+</mat-dialog-actions>

@@ -4,9 +4,16 @@
       <span class="modal-task-id">{{ tarefa.chave || ('#' + tarefa.id) }}</span>
       <span class="modal-task-id">{{ tarefa.projetoNome }}</span>
     </div>
-    <button mat-icon-button class="modal-close" (click)="fechar()">
-      <mat-icon>close</mat-icon>
-    </button>
+    <div class="modal-header-right">
+      @if (souResponsavel()) {
+        <button mat-icon-button class="modal-meu-dia" [class.modal-meu-dia--ativo]="temMeuDia()" [matTooltip]="temMeuDia() ? 'Remover do Meu dia' : 'Adicionar ao Meu dia'" (click)="alternarMeuDia()">
+          <mat-icon>{{ temMeuDia() ? 'wb_sunny' : 'light_mode' }}</mat-icon>
+        </button>
+      }
+      <button mat-icon-button class="modal-close" (click)="fechar()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
   </div>
 
   <div class="modal-body">
@@ -39,7 +46,7 @@
           </mat-expansion-panel-header>
 
           @if (!editandoDescricao) {
-            <div class="descricao-view" (click)="toggleEditDescricao()" [innerHTML]="descricaoHtml"></div>
+            <div class="descricao-view" (click)="onDescricaoViewClick($event)" [innerHTML]="descricaoHtml"></div>
           } @else {
             <div class="editor-container">
               <div class="editor-toolbar">
@@ -58,6 +65,7 @@
                 class="editor-content"
                 contenteditable="true"
                 [innerHTML]="form.get('descricao')?.value || ''"
+                (paste)="onDescricaoPaste($event)"
               ></div>
             </div>
           }
@@ -309,8 +317,8 @@
           <span class="info-label">Tipo</span>
           <mat-form-field appearance="fill" class="sidebar-field">
             <mat-select formControlName="tipo">
-              @for (t of tipoOptions; track t.value) {
-                <mat-option [value]="t.value">{{ t.label }}</mat-option>
+              @for (c of categorias; track c.id) {
+                <mat-option [value]="c.id">{{ c.nome }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
@@ -325,6 +333,25 @@
               }
             </mat-select>
           </mat-form-field>
+        </div>
+
+        <div class="info-group">
+          <span class="info-label">Escola</span>
+          <div class="sidebar-field">
+            <app-colegio-select formControlName="colegio" appearance="fill" [hideLabel]="true"></app-colegio-select>
+          </div>
+        </div>
+
+        <div class="info-group">
+          <span class="info-label">Nome do contato</span>
+          <mat-form-field appearance="fill" class="sidebar-field">
+            <input matInput formControlName="contatoNome" placeholder="Com quem foi falado">
+          </mat-form-field>
+        </div>
+
+        <div class="info-group">
+          <span class="info-label">Data de entrega</span>
+          <input class="data-entrega-input" type="datetime-local" formControlName="dataEntrega">
         </div>
 
         <div class="info-group info-readonly">
@@ -346,3 +373,12 @@
     <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="salvar()">Salvar</button>
   </div>
 </div>
+
+@if (imagemAmpliada) {
+  <div class="imagem-lightbox" (click)="fecharImagem()">
+    <img [src]="imagemAmpliada" alt="Imagem ampliada" />
+    <button type="button" class="imagem-lightbox-fechar" (click)="fecharImagem()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+}

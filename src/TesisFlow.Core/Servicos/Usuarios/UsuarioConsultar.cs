@@ -36,12 +36,18 @@ namespace TesisFlow.Core.Servicos.Usuarios
             return await _repositorio.ObterPorEmailAsync(email);
         }
 
+        public async Task<Usuario?> ObterEntidadePorIdAsync(int id)
+        {
+            return await _repositorio.ObterPorIdAsync(id);
+        }
+
         private static UsuarioDTO MapToDTO(Usuario u) => new()
         {
             Id = u.Id,
             Nome = u.Nome,
             Email = u.Email,
             Foto = u.Foto,
+            Banner = u.Banner,
             Cargo = u.Cargo,
             Ativo = u.Ativo
         };

@@ -3,18 +3,6 @@
 <mat-dialog-content class="dialog-content">
   <form [formGroup]="form">
     <div class="top-row">
-      <div class="detail-item" style="width: 220px; flex-shrink: 0;">
-        <label class="detail-label">Projeto</label>
-        <mat-form-field appearance="fill" class="detail-select">
-          <mat-select formControlName="projetoId" (selectionChange)="onProjetoChange($event.value)">
-            <mat-option [value]="null" disabled>Selecionar...</mat-option>
-            @for (p of projetos; track p.id) {
-              <mat-option [value]="p.id">{{ p.nome }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      </div>
-
       <div class="titulo-wrapper" style="flex: 1;">
         <label class="detail-label">Titulo</label>
         <input
@@ -23,22 +11,38 @@
           placeholder="Digite o titulo da tarefa"
         />
       </div>
+
+      <div class="detail-item" style="width: 220px; flex-shrink: 0;">
+        <label class="detail-label">Tipo de tarefa</label>
+        <app-categoria-select formControlName="tipo" [projetoId]="form.get('projetoId')?.value"></app-categoria-select>
+      </div>
     </div>
 
     @if (form.get('titulo')?.invalid && form.get('titulo')?.touched) {
       <span class="field-error">Titulo e obrigatorio</span>
     }
 
-    <div class="tipo-group">
-      @for (t of tiposVisuais; track t.value) {
-        <button type="button" class="tipo-option" [class.tipo-option--active]="form.get('tipo')?.value === t.value" (click)="form.patchValue({tipo: t.value})">
-          <mat-icon>{{ t.icon }}</mat-icon>
-          <span>{{ t.label }}</span>
-        </button>
+    <div class="detail-item w-100">
+      <label class="detail-label">Projeto</label>
+      @if (data.projetoId != null) {
+        <div class="projeto-fixo">
+          <mat-icon class="projeto-fixo-icon">folder</mat-icon>
+          <span>{{ nomeProjetoFixado() }}</span>
+        </div>
+      } @else {
+        <mat-form-field appearance="outline" class="detail-select">
+          <mat-select formControlName="projetoId" (selectionChange)="onProjetoChange($event.value)">
+            <mat-option [value]="null" disabled>Selecionar...</mat-option>
+            @for (p of projetos; track p.id) {
+              <mat-option [value]="p.id">{{ p.nome }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
       }
     </div>
 
-    <div class="descricao-wrapper">
+    <div class="detail-item w-100">
+      <label class="detail-label">Descricao</label>
       <textarea
         class="descricao-native"
         formControlName="descricao"
@@ -53,32 +57,46 @@
 
     <div class="details-grid">
       <div class="detail-item">
-        <label class="detail-label">Status</label>
-        <mat-form-field appearance="fill" class="detail-select">
-          <mat-select formControlName="status">
-            @for (c of colunas; track c.status) {
-              <mat-option [value]="c.status">{{ c.titulo }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+        <label class="detail-label">Prioridade</label>
+        <button type="button" [class]="'chip-select p-' + prioridadeAtual()" [matMenuTriggerFor]="prioridadeMenu">
+          <mat-icon class="chip-select-icon">{{ prioridadeIcone(prioridadeAtual()) }}</mat-icon>
+          <span class="chip-select-label">{{ prioridadeLabel(prioridadeAtual()) }}</span>
+          <mat-icon class="chip-select-arrow">arrow_drop_down</mat-icon>
+        </button>
+        <mat-menu #prioridadeMenu="matMenu" class="chip-menu">
+          @for (p of prioridades; track p.value) {
+            <button mat-menu-item (click)="form.patchValue({ prioridade: p.value })">
+              <mat-icon class="menu-icon" [class]="'p-item-' + p.value">{{ prioridadeIcone(p.value) }}</mat-icon>
+              <span>{{ p.label }}</span>
+            </button>
+          }
+        </mat-menu>
       </div>
 
       <div class="detail-item">
-        <label class="detail-label">Prioridade</label>
-        <mat-form-field appearance="fill" class="detail-select">
-          <mat-select formControlName="prioridade">
-            @for (p of prioridades; track p.value) {
-              <mat-option [value]="p.value">{{ p.label }}</mat-option>
-            }
-          </mat-select>
+        <label class="detail-label">Escola</label>
+        <div class="detail-select">
+          <app-colegio-select formControlName="colegio" appearance="outline" [hideLabel]="true"></app-colegio-select>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <label class="detail-label">Nome do contato</label>
+        <mat-form-field appearance="outline" class="detail-select">
+          <input matInput formControlName="contatoNome" placeholder="Com quem foi falado">
         </mat-form-field>
       </div>
     </div>
 
-    @if (membros.length > 0) {
-      <div class="detail-item w-100">
+    <div class="details-grid details-grid--spaced">
+      <div class="detail-item">
+        <label class="detail-label">Data de entrega</label>
+        <input class="data-entrega-input" type="datetime-local" formControlName="dataEntrega">
+      </div>
+
+      <div class="detail-item">
         <label class="detail-label">Responsaveis</label>
-        <mat-form-field appearance="fill" class="detail-select">
+        <mat-form-field appearance="outline" class="detail-select">
           <mat-select formControlName="responsavelIds" multiple>
             @for (m of membros; track m.usuarioId) {
               <mat-option [value]="m.usuarioId">{{ m.usuarioNome }}</mat-option>
@@ -86,7 +104,7 @@
           </mat-select>
         </mat-form-field>
       </div>
-    }
+    </div>
   </form>
 </mat-dialog-content>
 

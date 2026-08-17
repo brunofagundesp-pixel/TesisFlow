@@ -1,0 +1,77 @@
+.convite-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.convite-title-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--tf-primary-light);
+  color: var(--tf-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  mat-icon { font-size: 1.2rem; width: 1.2rem; height: 1.2rem; }
+}
+
+.convite-content {
+  min-width: 360px;
+  padding-top: 0.5rem;
+}
+
+.convite-subtitle {
+  font-size: 0.85rem;
+  color: var(--tf-text-muted);
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+.convite-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.convite-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--tf-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.convite-input {
+  width: 100%;
+  border: 1.5px solid var(--tf-border-input);
+  outline: none;
+  background: var(--tf-surface-subtle);
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--tf-text-primary);
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+
+  &::placeholder { color: var(--tf-text-placeholder); }
+
+  &:focus {
+    border-color: var(--tf-primary);
+    box-shadow: 0 0 0 3px rgba(var(--tf-primary-rgb, 255 134 21), 0.15);
+  }
+}
+
+.convite-error {
+  font-size: 0.72rem;
+  color: var(--tf-danger);
+  padding-left: 0.25rem;
+}
+
+.convite-actions {
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid var(--tf-border);
+}

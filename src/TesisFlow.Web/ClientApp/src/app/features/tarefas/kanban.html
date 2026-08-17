@@ -4,20 +4,22 @@
       <div class="page-header-left">
         <span class="page-icon">{{ projeto?.icone || projeto?.nome?.charAt(0) }}</span>
         <h1>{{ projeto?.nome || 'Projeto' }}</h1>
+        <button type="button" class="projeto-config-btn projeto-config-btn--bordered" matTooltip="Convidar" (click)="abrirConvidar()">
+          <mat-icon>person_add</mat-icon>
+        </button>
+        <button type="button" class="projeto-config-btn" matTooltip="Configurações do projeto" (click)="abrirConfiguracoes()">
+          <mat-icon>settings</mat-icon>
+        </button>
       </div>
-      <button mat-stroked-button (click)="abrirConvidar()">
-        <mat-icon>person_add</mat-icon>
-        Convidar
-      </button>
     </div>
 
     @if (!loading && !erro) {
       <div class="page-tabs">
-        <button class="tab-btn" [class.tab-btn--active]="viewAtiva === 'quadros'" (click)="viewAtiva = 'quadros'">
+        <button class="tab-btn" [class.tab-btn--active]="viewAtiva === 'quadros'" (click)="trocarView('quadros')">
           <mat-icon>view_column</mat-icon>
           Quadros
         </button>
-        <button class="tab-btn" [class.tab-btn--active]="viewAtiva === 'lista'" (click)="viewAtiva = 'lista'">
+        <button class="tab-btn" [class.tab-btn--active]="viewAtiva === 'lista'" (click)="trocarView('lista')">
           <mat-icon>view_list</mat-icon>
           Lista
         </button>
@@ -36,6 +38,14 @@
           </button>
         }
       </div>
+
+      <button class="minhas-btn" [class.minhas-btn--ativo]="somenteMinhas" (click)="toggleMinhasTarefas()" [matTooltip]="'Mostrar apenas minhas tarefas'">
+        @if (auth.usuario()?.foto) {
+          <img class="minhas-avatar" [src]="auth.usuario()?.foto" alt="" />
+        } @else {
+          <span class="minhas-avatar minhas-avatar--init">{{ (auth.usuario()?.nome ?? '?').charAt(0) }}</span>
+        }
+      </button>
 
       <button mat-stroked-button class="filtro-btn" [class.filtro-btn--active]="filtroCount > 0" [matMenuTriggerFor]="filtroMenu" [matBadge]="filtroCount" [matBadgeHidden]="filtroCount === 0" matBadgeColor="accent">
         <mat-icon>filter_list</mat-icon>
@@ -85,10 +95,10 @@
               }
             }
             @if (filtroCategoriaAtiva === 'tipo') {
-              @for (entry of tipoEntries; track entry[0]) {
-                <div class="filtro-item" (click)="$event.stopPropagation(); toggleFiltro('tipo', entry[0])">
-                  <mat-icon>{{ filtroTipo.has(entry[0]) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
-                  <span>{{ entry[1] }}</span>
+              @for (c of categorias; track c.id) {
+                <div class="filtro-item" (click)="$event.stopPropagation(); toggleFiltro('tipo', c.id)">
+                  <mat-icon>{{ filtroTipo.has(c.id) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+                  <span>{{ c.nome }}</span>
                 </div>
               }
             }
@@ -141,9 +151,26 @@
         <button mat-stroked-button (click)="limparFiltros()">Remover filtros</button>
       </div>
     } @else {
-    <div class="kanban-board" cdkDropListGroup>
+    <div class="kanban-board" #board cdkDropListGroup (scroll)="onBoardScroll()">
       @for (coluna of colunas; track coluna.status) {
         <div class="kanban-coluna">
+          @if (coluna.status === StatusTarefa.Feito && mostrarConfetti) {
+            <div class="confetti-layer">
+              @for (p of confeteParticles; track $index) {
+                <span
+                  class="confetti-piece"
+                  [style.left]="p.left"
+                  [style.animationDelay]="p.delay"
+                  [style.animationDuration]="p.duracao"
+                  [style.background]="p.cor"
+                  [style.width]="p.tamanho"
+                  [style.height]="p.tamanho"
+                  [style.--tx]="p.tx"
+                  [style.--ty]="p.ty"
+                  [style.--rot]="p.rotacao"></span>
+              }
+            </div>
+          }
           <div class="coluna-header">
             <div class="coluna-header-bar">
               <span class="coluna-titulo">{{ coluna.titulo }}</span>
@@ -155,29 +182,54 @@
               (cdkDropListDropped)="soltar($event, coluna.status)"
               class="coluna-body">
               @for (tarefa of coluna.tarefas; track tarefa.id) {
-                <div class="tarefa-card" cdkDrag [class.tarefa-card--criando]="tarefa.criando" (click)="!tarefa.criando && abrirTarefa(tarefa)">
+                <div class="tarefa-card" cdkDrag [class.tarefa-card--criando]="tarefa.criando" [class.tarefa-card--concluida]="isConcluida(tarefa)" (click)="!tarefa.criando && abrirTarefa(tarefa)">
                   @if (!tarefa.criando) {
                   <button mat-icon-button class="card-menu-btn" (click)="toggleMenuAcoes($event, tarefa)">
                     <mat-icon>more_horiz</mat-icon>
                   </button>
                   @if (tarefaMenu?.id === tarefa.id) {
                     <div class="acao-dropdown" (click)="$event.stopPropagation()" [style.top.px]="menuPos.top" [style.left.px]="menuPos.left">
+                      <div class="acao-dropdown-item" (click)="copiarLinkTarefa(tarefa); tarefaMenu = null">
+                        <mat-icon>link</mat-icon>
+                        Copiar link
+                      </div>
                       <div class="acao-dropdown-item" (click)="excluirTarefa(tarefa.id); tarefaMenu = null">
+                        <mat-icon>delete</mat-icon>
                         Excluir
                       </div>
                     </div>
                   }
                   }
-                  <span class="tarefa-titulo">{{ tarefa.titulo }}</span>
+                  <div class="tarefa-titulo-row">
+                    <span class="tarefa-titulo">{{ tarefa.titulo }}</span>
+                    @if (tarefa.colegioNome) {
+                      <span class="tarefa-colegio" [title]="tarefa.colegioNome">{{ tarefa.colegioNome }}</span>
+                    }
+                    @if (!tarefa.criando && temNotificacaoNaoLida(tarefa)) {
+                      <span class="tarefa-notif-badge" title="Há notificações não lidas nesta tarefa">
+                        <mat-icon>notifications</mat-icon>
+                      </span>
+                    }
+                  </div>
                   @if (tarefa.criando) {
                     <div class="tarefa-criando-overlay">
                       <mat-spinner diameter="18" color="accent"></mat-spinner>
                     </div>
                   }
                   <div class="tarefa-meta">
+                    <mat-icon class="tarefa-tipo-icon" [style.color]="tarefa.categoriaCor" [matTooltip]="tarefa.categoriaNome">{{ tarefa.categoriaIcone }}</mat-icon>
                     <a class="tarefa-chave chave-link" [routerLink]="['/tarefas', tarefa.chave]">{{ tarefa.chave }}</a>
-                    <mat-icon class="tarefa-prio-icon" [class]="'p-icon-' + tarefa.prioridade">{{ prioridadeIcone(tarefa.prioridade) }}</mat-icon>
-                    <span class="tarefa-tipo">{{ tipoLabel(tarefa.tipo) }}</span>
+                    @if (souResponsavel(tarefa)) {
+                      <button class="card-meu-dia" [class.card-meu-dia--ativo]="temMeuDia(tarefa)" [matTooltip]="temMeuDia(tarefa) ? 'Remover do Meu dia' : 'Adicionar ao Meu dia'" (click)="$event.stopPropagation(); alternarMeuDia(tarefa)">
+                        <mat-icon>{{ temMeuDia(tarefa) ? 'wb_sunny' : 'light_mode' }}</mat-icon>
+                      </button>
+                    }
+                    @if (isConcluida(tarefa)) {
+                      <mat-icon class="tarefa-concluida-icon" matTooltip="Card concluído">check_circle</mat-icon>
+                    }
+                    <button type="button" class="card-prio-btn" [matTooltip]="'Alterar prioridade'" (click)="$event.stopPropagation(); togglePrioridadeMenu($event, tarefa)">
+                      <mat-icon class="tarefa-prio-icon" [class]="'p-icon-' + tarefa.prioridade">{{ prioridadeIcone(tarefa.prioridade) }}</mat-icon>
+                    </button>
                     @if (tarefa.responsaveis.length > 0) {
                       <div class="tarefa-avatares">
                         @for (r of tarefa.responsaveis.slice(0, 3); track r.id) {
@@ -189,6 +241,16 @@
                       </div>
                     }
                   </div>
+                  @if (prioridadeMenu?.id === tarefa.id) {
+                    <div class="prioridade-dropdown" (click)="$event.stopPropagation()" [style.top.px]="prioridadeMenuPos.top" [style.left.px]="prioridadeMenuPos.left">
+                      @for (p of prioridadeEntries; track p[0]) {
+                        <div class="prioridade-dropdown-item" [class]="'p-item-' + p[0]" (click)="alterarPrioridade(tarefa, p[0]); prioridadeMenu = null">
+                          <mat-icon>{{ prioridadeIcone(p[0]) }}</mat-icon>
+                          <span>{{ p[1] }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
                 </div>
               }
               <div class="tarefa-ghost" (click)="abrirNovaTarefa(coluna.status); $event.stopPropagation()">
@@ -200,39 +262,110 @@
         </div>
       }
     </div>
+    @if (mostrarMinimapa) {
+      <div class="kanban-minimap" matTooltip="Arraste para rolar" aria-label="Arraste para rolar o quadro"
+        (pointerdown)="onMinimapPointerDown($event)"
+        (pointermove)="onMinimapPointerMove($event)"
+        (pointerup)="onMinimapPointerUp($event)"
+        (pointercancel)="onMinimapPointerUp($event)">
+        <div class="kanban-minimap-track">
+          @for (s of minimapaColunas; track s.status) {
+            <div class="kanban-minimap-coluna" [style.left.%]="s.left" [style.width.%]="s.width"></div>
+          }
+          <div class="kanban-minimap-viewport" [style.left.%]="viewportMinimapa.left" [style.width.%]="viewportMinimapa.width"></div>
+        </div>
+      </div>
+    }
     }
   } @else {
     <div class="lista-container">
       <table class="tarefa-lista">
         <thead>
           <tr>
-            <th style="width: 40px"></th>
-            <th style="width: 100px">Chave</th>
+            <th style="width: 44px" class="th-check">
+              <input
+                type="checkbox"
+                class="bulk-check"
+                [checked]="todasSelecionadas"
+                (change)="toggleSelecionarTodas()"
+                title="Selecionar tudo" />
+            </th>
             <th>Titulo</th>
+            <th style="width: 180px">Escola</th>
             <th style="width: 130px">Status</th>
             <th style="width: 110px">Prioridade</th>
+            <th style="width: 170px">Entrega</th>
             <th style="width: 130px">Responsavel</th>
             <th style="width: 90px">Criacao</th>
-            <th style="width: 44px"></th>
+            <th style="width: 60px">Ações</th>
           </tr>
         </thead>
         <tbody>
-          @for (tarefa of todasTarefas; track tarefa.id) {
-            <tr (click)="abrirTarefa(tarefa)">
-              <td>
-                <mat-icon class="lista-tipo-icon">{{ tipoIcone(tarefa.tipo) }}</mat-icon>
+          @for (tarefa of tarefasFiltradas; track tarefa.id) {
+            <tr (click)="abrirTarefa(tarefa)" [class.tr-selecionada]="selecionadas.has(tarefa.id)">
+              <td class="td-check" (click)="$event.stopPropagation()">
+                <input
+                  type="checkbox"
+                  class="bulk-check"
+                  [checked]="selecionadas.has(tarefa.id)"
+                  (change)="toggleSelecao(tarefa, $event)" />
               </td>
               <td>
-                <a class="lista-chave chave-link" [routerLink]="['/tarefas', tarefa.chave]">{{ tarefa.chave }}</a>
+                <div class="lista-titulo-cell">
+                  @if (souResponsavel(tarefa)) {
+                    <button class="lista-meu-dia" [class.lista-meu-dia--ativo]="temMeuDia(tarefa)" [matTooltip]="temMeuDia(tarefa) ? 'Remover do Meu dia' : 'Adicionar ao Meu dia'" (click)="$event.stopPropagation(); alternarMeuDia(tarefa)">
+                      <mat-icon>{{ temMeuDia(tarefa) ? 'wb_sunny' : 'light_mode' }}</mat-icon>
+                    </button>
+                  }
+                  <mat-icon class="lista-tipo-icon" [style.color]="tarefa.categoriaCor">{{ tarefa.categoriaIcone }}</mat-icon>
+                  <a class="lista-chave chave-link" [routerLink]="['/tarefas', tarefa.chave]">{{ tarefa.chave }}</a>
+                  <span class="lista-titulo">{{ tarefa.titulo }}</span>
+                </div>
               </td>
               <td>
-                <span class="lista-titulo">{{ tarefa.titulo }}</span>
+                @if (tarefa.colegioNome) {
+                  <span class="lista-colegio" [title]="tarefa.colegioNome">{{ tarefa.colegioNome }}</span>
+                }
               </td>
               <td>
-                <span class="lista-badge">{{ statusLabel(tarefa.status) }}</span>
+                <button type="button" class="lista-status" [class]="'s-' + tarefa.status" [matTooltip]="'Alterar status'" (click)="$event.stopPropagation(); toggleStatusMenu($event, tarefa)">
+                  <mat-icon class="lista-status-icon">{{ statusIcone(tarefa.status) }}</mat-icon>
+                  <span>{{ statusLabel(tarefa.status) }}</span>
+                </button>
+                @if (statusMenu?.id === tarefa.id) {
+                  <div class="status-dropdown" (click)="$event.stopPropagation()" [style.top.px]="statusMenuPos.top" [style.left.px]="statusMenuPos.left">
+                    @for (entry of statusEntries; track entry[0]) {
+                      <div class="status-dropdown-item" [class]="'s-item-' + entry[0]" (click)="alterarStatus(tarefa, entry[0]); statusMenu = null">
+                        <mat-icon>{{ statusIcone(entry[0]) }}</mat-icon>
+                        <span>{{ entry[1] }}</span>
+                      </div>
+                    }
+                  </div>
+                }
               </td>
               <td>
-                <span class="lista-prioridade" [class]="'p-' + tarefa.prioridade">{{ prioridadeLabel(tarefa.prioridade) }}</span>
+                <button type="button" class="lista-prio" [class]="'p-' + tarefa.prioridade" [matTooltip]="'Alterar prioridade'" (click)="$event.stopPropagation(); togglePrioridadeMenu($event, tarefa)">
+                  <mat-icon class="lista-prio-icon">{{ prioridadeIcone(tarefa.prioridade) }}</mat-icon>
+                  <span>{{ prioridadeLabel(tarefa.prioridade) }}</span>
+                </button>
+                @if (prioridadeMenu?.id === tarefa.id) {
+                  <div class="prioridade-dropdown" (click)="$event.stopPropagation()" [style.top.px]="prioridadeMenuPos.top" [style.left.px]="prioridadeMenuPos.left">
+                    @for (p of prioridadeEntries; track p[0]) {
+                      <div class="prioridade-dropdown-item" [class]="'p-item-' + p[0]" (click)="alterarPrioridade(tarefa, p[0]); prioridadeMenu = null">
+                        <mat-icon>{{ prioridadeIcone(p[0]) }}</mat-icon>
+                        <span>{{ p[1] }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </td>
+              <td class="lista-entrega" (click)="$event.stopPropagation()">
+                <input
+                  class="data-entrega-input"
+                  type="datetime-local"
+                  [value]="dataEntregaLocal(tarefa)"
+                  (change)="alterarDataEntrega(tarefa, $event)"
+                />
               </td>
               <td>
                 @if (tarefa.responsaveis.length > 0) {
@@ -252,8 +385,13 @@
                   <mat-icon>more_horiz</mat-icon>
                 </button>
                 @if (tarefaMenu?.id === tarefa.id) {
-                  <div class="acao-dropdown" (click)="$event.stopPropagation()">
+                  <div class="acao-dropdown" (click)="$event.stopPropagation()" [style.top.px]="menuPos.top" [style.left.px]="menuPos.left">
+                    <div class="acao-dropdown-item" (click)="copiarLinkTarefa(tarefa); tarefaMenu = null">
+                      <mat-icon>link</mat-icon>
+                      Copiar link
+                    </div>
                     <div class="acao-dropdown-item" (click)="excluirTarefa(tarefa.id); tarefaMenu = null">
+                      <mat-icon>delete</mat-icon>
                       Excluir
                     </div>
                   </div>
@@ -264,5 +402,57 @@
         </tbody>
       </table>
     </div>
+
+    @if (algumaSelecionada) {
+      <div class="bulk-bar">
+        @if (acaoEmMassa === null) {
+          <span class="bulk-count">{{ quantidadeSelecionada }} {{ quantidadeSelecionada === 1 ? 'selecionada' : 'selecionadas' }}</span>
+          <button type="button" class="bulk-btn" (click)="abrirAcaoEmMassa('status')">
+            <mat-icon>swap_horiz</mat-icon>
+            Status
+          </button>
+          <button type="button" class="bulk-btn" (click)="abrirAcaoEmMassa('prioridade')">
+            <mat-icon>low_priority</mat-icon>
+            Prioridade
+          </button>
+          <button type="button" class="bulk-btn bulk-btn--danger" (click)="excluirSelecionadas()">
+            <mat-icon>delete</mat-icon>
+            Excluir
+          </button>
+          <button type="button" class="bulk-btn bulk-btn--ghost" (click)="limparSelecao()">
+            <mat-icon>close</mat-icon>
+          </button>
+        } @else {
+          <span class="bulk-count">{{ acaoEmMassa === 'status' ? 'Mover para o status' : 'Definir prioridade' }}</span>
+          <mat-form-field appearance="fill" class="bulk-select">
+            <mat-select
+              [(ngModel)]="valorEmMassa"
+              placeholder="Selecione"
+              (openedChange)="valorEmMassaTocado = true">
+              @if (acaoEmMassa === 'status') {
+                @for (entry of statusEntries; track entry[0]) {
+                  <mat-option [value]="entry[0]">
+                    <mat-icon class="bulk-option-icon">{{ statusIcone(entry[0]) }}</mat-icon>
+                    {{ entry[1] }}
+                  </mat-option>
+                }
+              } @else {
+                @for (entry of prioridadeEntries; track entry[0]) {
+                  <mat-option [value]="entry[0]">
+                    <mat-icon class="bulk-option-icon">{{ prioridadeIcone(entry[0]) }}</mat-icon>
+                    {{ entry[1] }}
+                  </mat-option>
+                }
+              }
+            </mat-select>
+          </mat-form-field>
+          @if (valorEmMassa == null && valorEmMassaTocado) {
+            <span class="bulk-required">Campo obrigatório</span>
+          }
+          <button type="button" class="bulk-btn bulk-btn--salvar" [disabled]="valorEmMassa == null" (click)="salvarEmMassa()">Salvar</button>
+          <button type="button" class="bulk-btn bulk-btn--ghost" (click)="fecharAcaoEmMassa()">Cancelar</button>
+        }
+      </div>
+    }
   }
 </div>

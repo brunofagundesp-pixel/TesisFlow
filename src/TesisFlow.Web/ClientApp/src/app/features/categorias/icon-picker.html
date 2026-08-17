@@ -1,0 +1,15 @@
+<button type="button" mat-stroked-button class="icon-picker-btn" [matMenuTriggerFor]="menu" #trigger="matMenuTrigger">
+  <mat-icon class="icon-picker-preview" [style.color]="cor">{{ icone }}</mat-icon>
+  <span class="icon-picker-label">Escolher ícone</span>
+  <mat-icon class="icon-picker-arrow">arrow_drop_down</mat-icon>
+</button>
+
+<mat-menu #menu="matMenu" class="icon-picker-menu">
+  <div class="icon-grid" (click)="$event.stopPropagation()">
+    @for (i of icones; track i.icone) {
+      <button type="button" class="icon-option" [class.active]="i.icone === icone" (click)="escolher(i); trigger.closeMenu()">
+        <mat-icon [style.color]="i.cor">{{ i.icone }}</mat-icon>
+      </button>
+    }
+  </div>
+</mat-menu>

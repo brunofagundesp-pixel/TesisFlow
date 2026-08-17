@@ -13,15 +13,70 @@
 
   <div class="modal-body">
     <div class="modal-main">
-      <mat-form-field appearance="outline" class="modal-field w-100">
-        <textarea matInput cdkTextareaAutosize cdkAutosizeMinRows="1" cdkAutosizeMaxRows="6"
-                  [(ngModel)]="editando.titulo" placeholder="Titulo do atendimento"></textarea>
+      <mat-form-field appearance="outline" class="titulo-field w-100">
+        <input matInput [(ngModel)]="editando.titulo" placeholder="Titulo do atendimento">
       </mat-form-field>
 
-      <mat-form-field appearance="outline" class="modal-field modal-textarea w-100">
-        <mat-label>Detalhe</mat-label>
-        <textarea matInput [(ngModel)]="editando.descricao" rows="10" placeholder="Detalhes do atendimento"></textarea>
-      </mat-form-field>
+      <mat-expansion-panel [expanded]="true" class="descricao-panel" togglePosition="before">
+        <mat-expansion-panel-header>
+          <mat-panel-title>Detalhe</mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <mat-form-field appearance="outline" class="modal-textarea w-100">
+          <textarea matInput [(ngModel)]="editando.descricao" rows="8" placeholder="Detalhes do atendimento"></textarea>
+        </mat-form-field>
+      </mat-expansion-panel>
+
+      @if (temVinculo) {
+        <mat-expansion-panel [expanded]="true" class="atividade-panel" togglePosition="before">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Histórico</mat-panel-title>
+          </mat-expansion-panel-header>
+
+          @if (carregando) {
+            <div class="historico-loading">Carregando histórico...</div>
+          } @else {
+            <div class="historico-list">
+              @for (ev of timeline; track ev.timestamp) {
+                <div class="historico-item">
+                  <div class="historico-icon">
+                    <mat-icon>{{ ev.icon }}</mat-icon>
+                  </div>
+                  <div class="historico-body">
+                    <p [innerHTML]="ev.mensagem"></p>
+                    <span class="historico-data">{{ ev.data | date:'dd/MM/yyyy HH:mm' }} · {{ ev.autor }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </mat-expansion-panel>
+
+        <mat-expansion-panel [expanded]="true" class="anexos-panel" togglePosition="before">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Anexos @if (anexos.length > 0) { <span class="panel-count">{{ anexos.length }}</span> }</mat-panel-title>
+          </mat-expansion-panel-header>
+
+          @if (anexos.length > 0) {
+            <div class="anexos-list">
+              @for (a of anexos; track a.id) {
+                <div class="anexo-item">
+                  <mat-icon class="anexo-icon">attach_file</mat-icon>
+                  <div class="anexo-info">
+                    <span class="anexo-nome">{{ a.nomeArquivo }}</span>
+                    <span class="anexo-meta">{{ formatarTamanho(a.tamanho) }} · {{ a.usuarioNome }} · {{ a.dataCriacao | date:'dd/MM/yyyy' }}</span>
+                  </div>
+                  <a class="anexo-download" [href]="apiUrl + '/Anexos/download/' + a.id" target="_blank" matTooltip="Download">
+                    <mat-icon>download</mat-icon>
+                  </a>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="anexo-vazio">Nenhum anexo.</p>
+          }
+        </mat-expansion-panel>
+      }
     </div>
 
     <div class="modal-sidebar">

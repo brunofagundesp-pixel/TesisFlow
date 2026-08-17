@@ -3,6 +3,7 @@ export interface Usuario {
   nome: string;
   email: string;
   foto?: string;
+  banner?: string;
   cargo?: string;
   ativo: boolean;
 }
@@ -63,7 +64,10 @@ export interface Tarefa {
   descricao?: string;
   status: StatusTarefa;
   prioridade: PrioridadeTarefa;
-  tipo: TipoTarefa;
+  tipo: number;
+  categoriaNome?: string;
+  categoriaIcone?: string;
+  categoriaCor?: string;
   ordem: number;
   projetoId: number;
   projetoNome: string;
@@ -72,9 +76,14 @@ export interface Tarefa {
   responsaveis: TarefaResponsavel[];
   criadorId: number;
   criadorNome: string;
+  colegioId?: number;
+  colegioNome?: string;
+  contatoNome?: string;
   dataConclusao?: string;
+  dataEntrega?: string;
   dataCriacao: string;
   dataAtualizacao?: string;
+  dataExclusao?: string;
   quantidadeComentarios: number;
   criando?: boolean;
 }
@@ -84,17 +93,28 @@ export interface TarefaSave {
   descricao?: string;
   status: StatusTarefa;
   prioridade: PrioridadeTarefa;
-  tipo: TipoTarefa;
+  tipo: number;
   projetoId: number;
   sprintId?: number;
   responsavelIds: number[];
   criadorId: number;
+  atorId?: number;
+  colegioId?: number;
+  colegioNome?: string;
+  contatoNome?: string;
+  dataEntrega?: string;
+}
+
+export interface ColegioRef {
+  id: number;
+  nome: string;
 }
 
 export interface TarefaMove {
   id: number;
   status: StatusTarefa;
   ordem: number;
+  usuarioId?: number;
 }
 
 export interface Sprint {
@@ -152,11 +172,20 @@ export enum PrioridadeTarefa {
   Critica = 4,
 }
 
-export enum TipoTarefa {
-  Tarefa = 1,
-  Bug = 2,
-  Melhoria = 3,
-  Historia = 4,
+export interface Categoria {
+  id: number;
+  projetoId: number;
+  nome: string;
+  icone: string;
+  cor: string;
+  quantidadeTarefas?: number;
+  ativo: boolean;
+}
+
+export interface CategoriaSave {
+  nome: string;
+  icone: string;
+  cor: string;
 }
 
 export interface QuadroConfiguracao {

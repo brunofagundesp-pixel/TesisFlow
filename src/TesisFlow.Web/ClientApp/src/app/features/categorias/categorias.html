@@ -1,0 +1,50 @@
+<div class="categorias-section">
+  <div class="categorias-section-header">
+    <div>
+      <h2>Tipos de tarefa</h2>
+      <span>Gerencie os tipos de tarefa deste projeto</span>
+    </div>
+    <button mat-flat-button color="primary" (click)="nova()">
+      <mat-icon>add</mat-icon>
+      Nova categoria
+    </button>
+  </div>
+
+  @if (carregando) {
+    <div class="categorias-lista">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="categoria-item categoria-item--skeleton">
+          <div class="categoria-skeleton-icone"></div>
+          <div class="categoria-info">
+            <div class="categoria-skeleton-linha w-60"></div>
+            <div class="categoria-skeleton-linha categoria-skeleton-linha--sm w-30"></div>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (erro) {
+    <div class="empty"><p>{{ erro }}</p></div>
+  } @else {
+    <div class="categorias-lista">
+      @for (c of categorias; track c.id) {
+        <div class="categoria-item">
+          <div class="categoria-icone" [style.background]="corComOpacidade(c.cor)" [style.color]="c.cor">
+            <mat-icon>{{ c.icone }}</mat-icon>
+          </div>
+          <div class="categoria-info">
+            <span class="categoria-nome">{{ c.nome }}</span>
+            <span class="categoria-contagem">{{ c.quantidadeTarefas ?? 0 }} tarefas</span>
+          </div>
+          <div class="categoria-acoes">
+            <button type="button" class="categoria-action-btn" (click)="editar(c)" matTooltip="Editar">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button type="button" class="categoria-action-btn" (click)="excluir(c)" matTooltip="Excluir">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

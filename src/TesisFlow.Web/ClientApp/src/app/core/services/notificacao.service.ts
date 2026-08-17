@@ -9,9 +9,11 @@ export interface Notificacao {
   descricao: string;
   data: Date;
   lida: boolean;
-  tipo: 'atendimento' | 'financeiro' | 'diario' | 'sistema' | 'tarefa' | 'mencao' | 'atribuicao';
+  tipo: 'atendimento' | 'financeiro' | 'diario' | 'sistema' | 'tarefa' | 'mencao' | 'atribuicao' | 'prazo';
   link?: string;
   targetUserId?: number;
+  tarefaId?: number;
+  projetoId?: number;
 }
 
 interface NotificacaoRaw {
@@ -24,6 +26,8 @@ interface NotificacaoRaw {
   tipo: string;
   link?: string;
   targetUserId?: number;
+  tarefaId?: number;
+  projetoId?: number;
 }
 
 function normalizar(n: NotificacaoRaw): Notificacao {
@@ -36,6 +40,8 @@ function normalizar(n: NotificacaoRaw): Notificacao {
     tipo: n.tipo as Notificacao['tipo'],
     link: n.link,
     targetUserId: n.targetUserId,
+    tarefaId: n.tarefaId,
+    projetoId: n.projetoId,
   };
 }
 
@@ -45,10 +51,17 @@ export class NotificacaoService {
   private auth = inject(AuthService);
   private hubConnection: signalR.HubConnection | null = null;
 
+  private notificationSound = new Audio('/sounds/notification-new.mp3');
+  private audioDesbloqueado = false;
+
   private _notificacoes = signal<Notificacao[]>([]);
 
   readonly notificacoes = this._notificacoes.asReadonly();
   readonly apenasNaoLidas = signal(false);
+
+  constructor() {
+    this.notificationSound.preload = 'auto';
+  }
 
   get notificacoesFiltradas(): Notificacao[] {
     const lista = this._notificacoes();
@@ -63,11 +76,45 @@ export class NotificacaoService {
     const userId = this.auth.usuario()?.id;
     if (!userId) return;
 
+    this.desbloquearAudio();
+
     this.http.get<NotificacaoRaw[]>(`/api/Notificacoes/usuario/${userId}`).subscribe(notifs => {
       this._notificacoes.set(notifs.map(normalizar));
     });
 
     this.conectarSignalR(userId);
+  }
+
+  private desbloquearAudio(): void {
+    if (this.audioDesbloqueado) return;
+    this.audioDesbloqueado = true;
+
+    const desbloquear = () => {
+      this.notificationSound.volume = 0;
+      this.notificationSound.currentTime = 0;
+      this.notificationSound.play()
+        .then(() => {
+          this.notificationSound.pause();
+          this.notificationSound.currentTime = 0;
+          this.notificationSound.volume = 0.5;
+        })
+        .catch(() => {});
+      window.removeEventListener('pointerdown', desbloquear);
+      window.removeEventListener('keydown', desbloquear);
+      window.removeEventListener('touchstart', desbloquear);
+    };
+
+    window.addEventListener('pointerdown', desbloquear);
+    window.addEventListener('keydown', desbloquear);
+    window.addEventListener('touchstart', desbloquear);
+  }
+
+  private tocarSom(): void {
+    const audio = this.notificationSound;
+    audio.currentTime = 0;
+    audio.volume = 0.5;
+    const play = audio.play();
+    if (play) play.catch(() => {});
   }
 
   private conectarSignalR(userId: number): void {
@@ -82,9 +129,7 @@ export class NotificacaoService {
         normalizar(notificacao),
         ...lista,
       ]);
-      const audio = new Audio('/sounds/notification-new.mp3');
-      audio.volume = 0.5;
-      audio.play().catch(() => {});
+      this.tocarSom();
     });
 
     this.hubConnection.start().catch(err => console.warn('SignalR erro:', err));
@@ -106,6 +151,17 @@ export class NotificacaoService {
 
     this.http.put(`/api/Notificacoes/usuario/${userId}/lidas`, {}).subscribe(() => {
       this._notificacoes.update(lista => lista.map(n => ({ ...n, lida: true })));
+    });
+  }
+
+  marcarTarefaLida(tarefaId: number): void {
+    const userId = this.auth.usuario()?.id;
+    if (!userId) return;
+
+    this.http.put(`/api/Notificacoes/tarefa/${tarefaId}/lida?usuarioId=${userId}`, {}).subscribe(() => {
+      this._notificacoes.update(lista => lista.map(n =>
+        n.tarefaId === tarefaId ? { ...n, lida: true } : n
+      ));
     });
   }
 }

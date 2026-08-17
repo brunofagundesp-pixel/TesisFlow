@@ -1,0 +1,88 @@
+<div class="meu-dia">
+  <div class="meu-dia-content">
+    <div class="meu-dia-list-panel">
+      <div class="meu-dia-header">
+        <div>
+          <h1>Meu dia</h1>
+          <span>Tarefas que voce escolheu como foco de hoje</span>
+        </div>
+        @if (meuDiaService.count() > 0) {
+          <span class="meu-dia-count">{{ meuDiaService.count() }}</span>
+        }
+      </div>
+
+      <div class="meu-dia-scroll">
+        @if (meuDiaService.count() > 0) {
+          <div class="meu-dia-list">
+            @for (t of meuDiaService.tarefas(); track t.id) {
+              <div class="meu-dia-card" [class.meu-dia-card--ativo]="tarefaSelecionada?.id === t.id" [class.meu-dia-card--concluida]="t.status === StatusTarefa.Feito" (click)="abrirTarefa(t)">
+                <button class="meu-dia-toggle" matTooltip="Remover do Meu dia" (click)="$event.stopPropagation(); alternarMeuDia(t)">
+                  <mat-icon>wb_sunny</mat-icon>
+                </button>
+
+                <mat-icon class="meu-dia-tipo" [style.color]="t.categoriaCor">{{ t.categoriaIcone }}</mat-icon>
+
+                <div class="meu-dia-info">
+                  <div class="meu-dia-titulo-row">
+                    <a class="meu-dia-chave chave-link" [routerLink]="['/tarefas', t.chave]" (click)="$event.stopPropagation()">{{ t.chave }}</a>
+                    <span class="meu-dia-titulo">{{ t.titulo }}</span>
+                  </div>
+                  <span class="meu-dia-projeto">{{ t.projetoNome }}</span>
+                </div>
+
+                <button type="button" class="mini-status" [class]="'s-' + t.status" (click)="$event.stopPropagation(); toggleStatusMenu($event, t)">
+                  <mat-icon class="mini-status-icon">{{ statusIcone(t.status) }}</mat-icon>
+                  <span>{{ statusLabel(t.status) }}</span>
+                </button>
+
+                <button type="button" class="mini-prioridade" [class]="'p-' + t.prioridade" matTooltip="Alterar prioridade" (click)="$event.stopPropagation(); togglePrioridadeMenu($event, t)">
+                  <mat-icon class="mini-prioridade-icon">{{ prioridadeIcone(t.prioridade) }}</mat-icon>
+                  <span>{{ prioridadeLabel(t.prioridade) }}</span>
+                </button>
+
+                @if (statusMenu?.id === t.id) {
+                  <div class="status-dropdown" (click)="$event.stopPropagation()" [style.top.px]="statusMenuPos.top" [style.left.px]="statusMenuPos.left">
+                    @for (entry of statusEntries; track entry[0]) {
+                      <div class="status-dropdown-item" [class]="'s-item-' + entry[0]" (click)="alterarStatus(t, entry[0]); statusMenu = null">
+                        <mat-icon>{{ statusIcone(entry[0]) }}</mat-icon>
+                        <span>{{ entry[1] }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+
+                @if (prioridadeMenu?.id === t.id) {
+                  <div class="prioridade-dropdown" (click)="$event.stopPropagation()" [style.top.px]="prioridadeMenuPos.top" [style.left.px]="prioridadeMenuPos.left">
+                    @for (entry of prioridadeEntries; track entry[0]) {
+                      <div class="prioridade-dropdown-item" [class]="'p-item-' + entry[0]" (click)="alterarPrioridade(t, entry[0]); prioridadeMenu = null">
+                        <mat-icon>{{ prioridadeIcone(entry[0]) }}</mat-icon>
+                        <span>{{ entry[1] }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="meu-dia-vazio">
+            <div class="meu-dia-vazio-icon">
+              <mat-icon>wb_sunny</mat-icon>
+            </div>
+            <h3>Seu Meu dia esta vazio</h3>
+            <p>Adicione tarefas ao seu foco de hoje clicando no sol <mat-icon class="meu-dia-vazio-sun">wb_sunny</mat-icon> em uma tarefa.</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    @if (tarefaSelecionada) {
+      <app-tarefa-detalhe-sidebar
+        class="meu-dia-sidebar"
+        [tarefa]="tarefaSelecionada"
+        (fechar)="fecharSidebar()"
+        (alterado)="onTarefaAlterada()"
+      ></app-tarefa-detalhe-sidebar>
+    }
+  </div>
+</div>

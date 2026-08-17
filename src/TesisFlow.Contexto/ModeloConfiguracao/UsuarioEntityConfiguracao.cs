@@ -15,6 +15,7 @@ namespace TesisFlow.Contexto.ModeloConfiguracao
             builder.Property(u => u.Email).IsRequired().HasMaxLength(200);
             builder.Property(u => u.SenhaHash).IsRequired().HasMaxLength(500);
             builder.Property(u => u.Foto).HasMaxLength(1000);
+            builder.Property(u => u.Banner).HasMaxLength(1000);
             builder.Property(u => u.Cargo).HasMaxLength(100);
 
             builder.HasIndex(u => u.Email).IsUnique();

@@ -1,0 +1,35 @@
+<h2 mat-dialog-title class="excluir-title">
+  <span class="excluir-title-icon"><mat-icon>delete_forever</mat-icon></span>
+  <span>Excluir tipo de item</span>
+</h2>
+
+<mat-dialog-content class="excluir-content">
+  @if (temTarefas) {
+    <p class="excluir-subtitle">
+      O projeto tem <strong>{{ data.categoria.quantidadeTarefas }}</strong> ticket(s) do tipo
+      <strong>"{{ data.categoria.nome }}"</strong>. Antes de excluir, reatribua-os para outro tipo.
+    </p>
+
+    <label class="excluir-label">Reatribuir tickets "{{ data.categoria.nome }}" para</label>
+    <mat-form-field appearance="outline" class="excluir-select">
+      <mat-select [(ngModel)]="novaCategoriaId" placeholder="Selecione um tipo">
+        @for (c of outras; track c.id) {
+          <mat-option [value]="c.id">
+            <mat-icon class="excluir-option-icon" [style.color]="c.cor">{{ c.icone }}</mat-icon>
+            {{ c.nome }}
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  } @else {
+    <p class="excluir-subtitle">
+      Tem certeza que deseja excluir o tipo <strong>"{{ data.categoria.nome }}"</strong>?
+      Essa ação não pode ser desfeita.
+    </p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="excluir-actions">
+  <button mat-button (click)="cancelar()">Cancelar</button>
+  <button mat-flat-button color="warn" [disabled]="temTarefas && novaCategoriaId == null" (click)="confirmar()">Excluir</button>
+</mat-dialog-actions>

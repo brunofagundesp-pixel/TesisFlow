@@ -1,0 +1,58 @@
+.excluir-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.excluir-title-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--tf-danger-bg);
+  color: var(--tf-danger);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  mat-icon { font-size: 1.2rem; width: 1.2rem; height: 1.2rem; }
+}
+
+.excluir-content {
+  min-width: 420px;
+  padding-top: 0.5rem;
+}
+
+.excluir-subtitle {
+  font-size: 0.85rem;
+  color: var(--tf-text-muted);
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+.excluir-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--tf-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.2rem;
+}
+
+.excluir-select {
+  width: 100%;
+}
+
+.excluir-option-icon {
+  font-size: 1.05rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-right: 0.5rem;
+  vertical-align: -3px;
+}
+
+.excluir-actions {
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid var(--tf-border);
+}

@@ -12,12 +12,18 @@ import { DatePipe } from '@angular/common';
 import { TarefaService } from '../tarefas/tarefa.service';
 import { ComentarioService } from '../tarefas/comentario.service';
 import { AuthService } from '../../core/services/auth.service';
+import { MeuDiaService } from '../../core/services/meu-dia.service';
 import { MencaoService } from '../../core/services/mencao.service';
+import { NotificacaoService } from '../../core/services/notificacao.service';
 import { MencaoDropdownComponent, MembroMencao } from '../../shared/mencao-dropdown';
 import { AnexoService } from '../tarefas/anexo.service';
 import { HistoricoTarefaService } from '../tarefas/historico-tarefa.service';
 import { ProjetoService } from './projeto.service';
-import { Tarefa, Comentario, Anexo, HistoricoTarefa, Reacao, StatusTarefa, PrioridadeTarefa, TipoTarefa, ProjetoMembro } from '../../core/models';
+import { Tarefa, Comentario, Anexo, HistoricoTarefa, Reacao, StatusTarefa, PrioridadeTarefa, ProjetoMembro, ColegioRef, Categoria } from '../../core/models';
+import { ColegioSelectComponent } from '../../shared/colegio-select/colegio-select';
+import { CategoriaService } from '../categorias/categoria.service';
+import { toDateTimeLocal, toUtcIso } from '../../core/utils/date.util';
+import { ImagemService } from '../../core/services/imagem.service';
 
 interface EventoHistorico {
   icon: string;
@@ -36,6 +42,7 @@ interface EventoHistorico {
     MatExpansionModule,     MatTooltipModule,
     DatePipe,
     MencaoDropdownComponent,
+    ColegioSelectComponent,
   ],
   templateUrl: './tarefa-detalhe-modal.html',
   styleUrl: './tarefa-detalhe-modal.scss',
@@ -85,12 +92,7 @@ export class TarefaDetalheModalComponent {
     { value: PrioridadeTarefa.Critica, label: 'Critica' },
   ];
 
-  tipoOptions = [
-    { value: TipoTarefa.Tarefa, label: 'Tarefa' },
-    { value: TipoTarefa.Bug, label: 'Bug' },
-    { value: TipoTarefa.Melhoria, label: 'Melhoria' },
-    { value: TipoTarefa.Historia, label: 'Historia' },
-  ];
+  categorias: Categoria[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -102,11 +104,19 @@ export class TarefaDetalheModalComponent {
     private historicoService: HistoricoTarefaService,
     public auth: AuthService,
     private projetoService: ProjetoService,
+    private categoriaService: CategoriaService,
+    public meuDiaService: MeuDiaService,
+    private notificacaoService: NotificacaoService,
+    private imagemService: ImagemService,
     private cdr: ChangeDetectorRef,
     @Inject(MAT_DIALOG_DATA) public data: { tarefa: Tarefa; membros: ProjetoMembro[] },
   ) {
     this.tarefa = data.tarefa;
     this.membros = data.membros ?? [];
+    this.meuDiaService.inicializar();
+    this.notificacaoService.marcarTarefaLida(this.tarefa.id);
+
+    this.categoriaService.listarPorProjeto(this.tarefa.projetoId).subscribe(c => this.categorias = c);
 
     if (this.membros.length === 0) {
       this.projetoService.obter(this.tarefa.projetoId).subscribe(p => this.membros = p.membros || []);
@@ -119,6 +129,9 @@ export class TarefaDetalheModalComponent {
       prioridade: [this.tarefa.prioridade, Validators.required],
       tipo: [this.tarefa.tipo, Validators.required],
       responsavelIds: [this.tarefa.responsaveis.map(r => r.id)],
+      colegio: [this.tarefa.colegioId ? { id: this.tarefa.colegioId, nome: this.tarefa.colegioNome || '' } : null],
+      contatoNome: [this.tarefa.contatoNome || ''],
+      dataEntrega: [toDateTimeLocal(this.tarefa.dataEntrega)],
     });
 
     this.comentarioForm = this.fb.group({
@@ -156,7 +169,7 @@ export class TarefaDetalheModalComponent {
         this.novoComentarioHtml = '';
         this.enviandoComentario = false;
         this.carregarComentarios();
-        this.mencaoService.processarMencoes(html, this.membros, this.tarefa.chave || '', this.tarefa.titulo, userId, this.tarefa.projetoNome);
+        this.mencaoService.processarMencoes(html, this.membros, this.tarefa.chave || '', this.tarefa.titulo, userId, this.tarefa.projetoNome, this.tarefa.id, this.tarefa.projetoId);
       },
       error: () => {
         this.enviandoComentario = false;
@@ -248,6 +261,19 @@ export class TarefaDetalheModalComponent {
     return (c: Comentario) => c.usuarioId === this.auth.usuario()?.id;
   }
 
+  temMeuDia(): boolean {
+    return this.meuDiaService.tem(this.tarefa.id);
+  }
+
+  souResponsavel(): boolean {
+    const uid = this.auth.usuario()?.id;
+    return uid != null && this.tarefa.responsaveis.some(r => r.id === uid);
+  }
+
+  alternarMeuDia(): void {
+    this.meuDiaService.alternar(this.tarefa).subscribe();
+  }
+
   excluirComentario(c: Comentario) {
     if (!confirm('Excluir este comentario?')) return;
     this.comentarioService.excluir(c.id, c.usuarioId).subscribe({
@@ -283,7 +309,7 @@ export class TarefaDetalheModalComponent {
         this.respondendoComentarioId = null;
         this.respostaHtml = '';
         this.carregarComentarios();
-        this.mencaoService.processarMencoes(html, this.membros, this.tarefa.chave || '', this.tarefa.titulo, userId, this.tarefa.projetoNome);
+        this.mencaoService.processarMencoes(html, this.membros, this.tarefa.chave || '', this.tarefa.titulo, userId, this.tarefa.projetoNome, this.tarefa.id, this.tarefa.projetoId);
       },
     });
   }
@@ -329,16 +355,6 @@ export class TarefaDetalheModalComponent {
       });
     }
 
-    for (const c of this.comentarios.filter(c => !c.comentarioPaiId)) {
-      eventos.push({
-        icon: 'chat_bubble_outline',
-        mensagem: `<strong>${c.usuarioNome}</strong> comentou nesta tarefa`,
-        autor: c.usuarioNome,
-        data: c.dataCriacao,
-        timestamp: new Date(c.dataCriacao).getTime(),
-      });
-    }
-
     return eventos.sort((a, b) => b.timestamp - a.timestamp);
   }
 
@@ -354,12 +370,52 @@ export class TarefaDetalheModalComponent {
     if (url) document.execCommand('insertImage', false, url);
   }
 
+  imagemAmpliada: string | null = null;
+
+  onDescricaoPaste(event: ClipboardEvent) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        event.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          this.imagemService.upload(file).subscribe({
+            next: res => this.inserirImagemHtml(res.url),
+            error: () => {},
+          });
+        }
+        return;
+      }
+    }
+  }
+
+  private inserirImagemHtml(url: string) {
+    document.execCommand('insertHTML', false, `<img src="${url}" class="descricao-img" />`);
+  }
+
+  onDescricaoViewClick(event: MouseEvent) {
+    const img = (event.target as HTMLElement).closest('img.descricao-img');
+    if (img) {
+      event.stopPropagation();
+      this.imagemAmpliada = (img as HTMLImageElement).src;
+      return;
+    }
+    this.toggleEditDescricao();
+  }
+
+  fecharImagem() {
+    this.imagemAmpliada = null;
+  }
+
   inserirCodigo() {
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0) {
       const range = sel.getRangeAt(0);
       const code = document.createElement('code');
-      code.style.cssText = 'background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:0.85em;';
+      code.style.cssText = 'background:var(--tf-surface-hover);padding:2px 6px;border-radius:4px;font-size:0.85em;';
       code.textContent = range.toString() || 'codigo';
       range.deleteContents();
       range.insertNode(code);
@@ -496,7 +552,14 @@ export class TarefaDetalheModalComponent {
   salvar() {
     if (this.form.invalid) return;
     if (this.editandoDescricao) this.toggleEditDescricao();
-    this.dialogRef.close(this.form.value);
+    const colegio: ColegioRef | null = this.form.value.colegio || null;
+    this.dialogRef.close({
+      ...this.form.value,
+      dataEntrega: toUtcIso(this.form.value.dataEntrega),
+      colegioId: colegio?.id ?? null,
+      colegioNome: colegio?.nome ?? null,
+      colegio: undefined,
+    });
   }
 
   fechar() {

@@ -7,6 +7,7 @@ namespace TesisFlow.Core.Interfaces
         Task<IEnumerable<Mensagem>> ObterConversaAsync(int usuarioA, int usuarioB, int limite = 50);
         Task<IEnumerable<Mensagem>> ObterConversasRecentesAsync(int usuarioId);
         Task<Mensagem> AdicionarAsync(Mensagem mensagem);
-        Task MarcarComoLidasAsync(int remetenteId, int destinatarioId);
+        Task<List<int>> MarcarComoLidasAsync(int remetenteId, int destinatarioId);
+        Task<int?> MarcarEntregueAsync(int mensagemId, int destinatarioId);
     }
 }

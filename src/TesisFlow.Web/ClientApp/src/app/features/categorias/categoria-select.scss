@@ -1,0 +1,117 @@
+.categoria-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 42px;
+  padding: 0 0.75rem;
+  justify-content: flex-start;
+  border: 1px solid var(--tf-border-input);
+  border-radius: 8px;
+  background: var(--tf-surface-subtle);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+
+  &:hover {
+    border-color: var(--tf-scrollbar);
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--tf-primary);
+    box-shadow: 0 0 0 1.5px rgba(var(--tf-primary-rgb, 255 134 21), 0.25);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.categoria-trigger-icon {
+  font-size: 1.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  flex-shrink: 0;
+}
+
+.categoria-trigger-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--tf-text-body);
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.categoria-trigger-placeholder {
+  font-weight: 500;
+  color: var(--tf-text-placeholder);
+}
+
+.categoria-trigger-arrow {
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
+  color: var(--tf-text-muted);
+  flex-shrink: 0;
+}
+
+.categoria-lista {
+  min-width: 220px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.categoria-opcao {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--tf-text-body);
+  font-family: inherit;
+
+  mat-icon { font-size: 1.1rem; width: 1.1rem; height: 1.1rem; }
+
+  &:hover { background: var(--tf-surface-hover); }
+
+  &.active {
+    background: var(--tf-primary-light);
+    font-weight: 600;
+  }
+}
+
+.categoria-footer {
+  display: flex;
+  min-width: 220px;
+  border-top: 1px solid var(--tf-border-light);
+  padding: 4px;
+  gap: 2px;
+}
+
+.categoria-footer-btn {
+  flex: 1;
+  padding: 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--tf-text-secondary);
+  border-radius: 6px;
+  font-family: inherit;
+
+  &:hover { background: var(--tf-surface-hover); color: var(--tf-primary); }
+  &:disabled { opacity: 0.4; cursor: default; }
+}

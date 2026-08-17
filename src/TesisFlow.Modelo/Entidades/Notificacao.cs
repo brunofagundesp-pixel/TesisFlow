@@ -8,5 +8,7 @@ namespace TesisFlow.Modelo.Entidades
         public string? Link { get; set; }
         public bool Lida { get; set; }
         public int? TargetUserId { get; set; }
+        public int? TarefaId { get; set; }
+        public int? ProjetoId { get; set; }
     }
 }

@@ -1,0 +1,35 @@
+<h2 mat-dialog-title class="convite-title">
+  <span class="convite-title-icon"><mat-icon>person_add</mat-icon></span>
+  <span>Convidar membro</span>
+</h2>
+
+<mat-dialog-content class="convite-content">
+  <p class="convite-subtitle">
+    Envie um convite por e-mail para o projeto <strong>{{ data.projetoNome }}</strong>.
+  </p>
+
+  <form [formGroup]="form" class="convite-form">
+    <label class="convite-label">E-mail do usuário</label>
+    <input
+      class="convite-input"
+      formControlName="email"
+      type="email"
+      placeholder="email@exemplo.com"
+      autofocus
+    />
+    @if (form.get('email')?.touched && form.get('email')?.invalid) {
+      <span class="convite-error">
+        @if (form.get('email')?.hasError('required')) {
+          E-mail é obrigatório.
+        } @else if (form.get('email')?.hasError('email')) {
+          E-mail inválido.
+        }
+      </span>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="convite-actions">
+  <button mat-button (click)="fechar()">Cancelar</button>
+  <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="convidar()">Convidar</button>
+</mat-dialog-actions>

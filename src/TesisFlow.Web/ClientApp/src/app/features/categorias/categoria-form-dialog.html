@@ -1,0 +1,20 @@
+<h2 mat-dialog-title>{{ data?.id ? 'Editar categoria' : 'Nova categoria' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="categoria-form">
+    <mat-form-field appearance="outline" class="w-100">
+      <mat-label>Nome</mat-label>
+      <input matInput formControlName="nome" placeholder="Ex: Tarefa" />
+      @if (form.get('nome')?.hasError('required')) {
+        <mat-error>Nome é obrigatório</mat-error>
+      }
+    </mat-form-field>
+
+    <app-icon-picker [icone]="icone" [cor]="cor" (selecionar)="onIcone($event)"></app-icon-picker>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="fechar()">Cancelar</button>
+  <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="salvar()">Salvar</button>
+</mat-dialog-actions>

@@ -2,34 +2,14 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-projeto-membro-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
-  template: `
-    <h2 mat-dialog-title>Convidar membro para {{ data.projetoNome }}</h2>
-    <mat-dialog-content>
-      <form [formGroup]="form" class="dialog-form">
-        <mat-form-field appearance="outline" class="w-100">
-          <mat-label>Email do usuario</mat-label>
-          <input matInput formControlName="email" placeholder="email@exemplo.com" autofocus>
-          @if (form.get('email')?.hasError('required')) {
-            <mat-error>Email e obrigatorio</mat-error>
-          }
-          @if (form.get('email')?.hasError('email')) {
-            <mat-error>Email invalido</mat-error>
-          }
-        </mat-form-field>
-      </form>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button (click)="fechar()">Cancelar</button>
-      <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="convidar()">Convidar</button>
-    </mat-dialog-actions>
-  `,
+  imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, MatIconModule],
+  templateUrl: './projeto-membro-dialog.html',
+  styleUrl: './projeto-membro-dialog.scss',
 })
 export class ProjetoMembroDialogComponent {
   form: FormGroup;

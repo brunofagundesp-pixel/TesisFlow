@@ -114,7 +114,7 @@ import { AuthService } from '../core/services/auth.service';
       backdrop-filter: blur(4px);
     }
     .call-modal {
-      background: #fff; border-radius: 24px;
+      background: var(--tf-surface); border-radius: 24px;
       padding: 2.5rem 2rem 2rem;
       text-align: center;
       box-shadow: 0 25px 80px rgba(0,0,0,0.25);
@@ -138,10 +138,10 @@ import { AuthService } from '../core/services/auth.service';
       min-width: 88px; border: 2px solid transparent;
       transition: border-color 0.3s;
     }
-    .pcard-conectado { border-color: #22c55e; background: #f0fdf4; }
-    .pcard-conectando { border-color: #f59e0b; background: #fffbeb; }
-    .pcard-semresp { border-color: #ef4444; background: #fef2f2; }
-    .pcard-recusou { border-color: #ef4444; background: #fef2f2; }
+    .pcard-conectado { border-color: var(--tf-success); background: var(--tf-success-bg); }
+    .pcard-conectando { border-color: var(--tf-warning); background: var(--tf-warning-bg); }
+    .pcard-semresp { border-color: var(--tf-danger); background: var(--tf-danger-bg); }
+    .pcard-recusou { border-color: var(--tf-danger); background: var(--tf-danger-bg); }
 
     .pcard-avatar {
       width: 52px; height: 52px; border-radius: 16px;
@@ -160,16 +160,16 @@ import { AuthService } from '../core/services/auth.service';
     .pcard-dot {
       width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
     }
-    .dot-verde { background: #22c55e; }
-    .dot-amarelo { background: #f59e0b; animation: pulse-amarelo 1.2s infinite; }
-    .dot-vermelho { background: #ef4444; }
+    .dot-verde { background: var(--tf-success); }
+    .dot-amarelo { background: var(--tf-warning); animation: pulse-amarelo 1.2s infinite; }
+    .dot-vermelho { background: var(--tf-danger); }
 
     .call-timer {
       display: flex; align-items: center; justify-content: center;
       gap: 0.5rem; margin: 0.75rem 0 1.25rem;
     }
     .timer-dot {
-      width: 10px; height: 10px; border-radius: 50%; background: #22c55e;
+      width: 10px; height: 10px; border-radius: 50%; background: var(--tf-success);
       animation: pulse-verde 2s infinite;
     }
     .timer-text {
@@ -181,29 +181,29 @@ import { AuthService } from '../core/services/auth.service';
     .call-add-btn {
       display: inline-flex; align-items: center; gap: 0.5rem;
       padding: 0.45rem 1rem; border-radius: 10px;
-      background: #f8fafc; color: var(--tf-text-body);
+      background: var(--tf-surface-soft); color: var(--tf-text-body);
       border: 1px solid var(--tf-border); cursor: pointer;
       font-size: 0.82rem; font-family: inherit; margin-bottom: 1rem;
       transition: background 0.1s;
-      &:hover { background: #f1f5f9; }
+      &:hover { background: var(--tf-surface-hover); }
       mat-icon { font-size: 1.1rem; width: 1.1rem; height: 1.1rem; }
     }
 
     .call-busca { margin-bottom: 1rem; text-align: left; }
     .call-busca-input {
       width: 100%; padding: 0.4rem 0.75rem;
-      border: 1.5px solid #d1d5db; border-radius: 10px;
+      border: 1.5px solid var(--tf-border-input); border-radius: 10px;
       font-size: 0.82rem; font-family: inherit; outline: none;
       &:focus { border-color: var(--tf-primary); }
     }
     .call-busca-list {
-      background: #fff; border: 1px solid var(--tf-border);
+      background: var(--tf-surface); border: 1px solid var(--tf-border);
       border-radius: 10px; max-height: 160px; overflow-y: auto; margin-top: 0.25rem;
     }
     .call-busca-item {
       display: flex; align-items: center; gap: 0.5rem;
       padding: 0.45rem 0.75rem; cursor: pointer; font-size: 0.82rem;
-      &:hover { background: #f8fafc; }
+      &:hover { background: var(--tf-surface-soft); }
     }
     .call-busca-avatar {
       width: 28px; height: 28px; border-radius: 50%;
@@ -226,10 +226,10 @@ import { AuthService } from '../core/services/auth.service';
       &:hover { transform: scale(1.15); }
       mat-icon { font-size: 1.5rem; width: 1.5rem; height: 1.5rem; color: #fff; }
     }
-    .call-accept { background: #22c55e; }
-    .call-reject { background: #ef4444; }
-    .call-mute { background: #64748b; }
-    .call-mute--active { background: #ef4444; }
+    .call-accept { background: var(--tf-success); }
+    .call-reject { background: var(--tf-danger); }
+    .call-mute { background: var(--tf-text-muted); }
+    .call-mute--active { background: var(--tf-danger); }
   `],
 })
 export class CallModalComponent {

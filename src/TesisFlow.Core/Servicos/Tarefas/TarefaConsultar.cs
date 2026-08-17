@@ -42,6 +42,18 @@ namespace TesisFlow.Core.Servicos.Tarefas
             return tarefas.Select(MapToDTO);
         }
 
+        public async Task<IEnumerable<TarefaDTO>> ObterPorMeuDiaAsync(int usuarioId)
+        {
+            var tarefas = await _repositorio.ObterPorMeuDiaAsync(usuarioId);
+            return tarefas.Select(MapToDTO);
+        }
+
+        public async Task<IEnumerable<TarefaDTO>> ListarLixeiraAsync(int usuarioId)
+        {
+            var tarefas = await _repositorio.ListarLixeiraAsync(usuarioId);
+            return tarefas.Select(MapToDTO);
+        }
+
         public async Task<IEnumerable<TarefaDTO>> BuscarAsync(string termo, int usuarioId)
         {
             var tarefas = await _repositorio.BuscarAsync(termo, usuarioId);
@@ -56,7 +68,10 @@ namespace TesisFlow.Core.Servicos.Tarefas
             Descricao = t.Descricao,
             Status = t.Status,
             Prioridade = t.Prioridade,
-            Tipo = t.Tipo,
+            Tipo = t.CategoriaId,
+            CategoriaNome = t.Categoria?.Nome ?? string.Empty,
+            CategoriaIcone = t.Categoria?.Icone ?? string.Empty,
+            CategoriaCor = t.Categoria?.Cor ?? string.Empty,
             Ordem = t.Ordem,
             ProjetoId = t.ProjetoId,
             ProjetoNome = t.Projeto?.Nome ?? string.Empty,
@@ -67,9 +82,14 @@ namespace TesisFlow.Core.Servicos.Tarefas
                 .ToList(),
             CriadorId = t.CriadorId,
             CriadorNome = t.Criador?.Nome ?? string.Empty,
+            ColegioId = t.ColegioId,
+            ColegioNome = t.ColegioNome,
+            ContatoNome = t.ContatoNome,
             DataConclusao = t.DataConclusao,
+            DataEntrega = t.DataEntrega,
             DataCriacao = t.DataCriacao,
             DataAtualizacao = t.DataAtualizacao,
+            DataExclusao = t.DataExclusao,
             QuantidadeComentarios = t.Comentarios?.Count ?? 0
         };
     }

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using TesisFlow.Core.Interfaces;
+using TesisFlow.Core.Servicos.Categorias;
 using TesisFlow.Core.Servicos.Comentarios;
 using TesisFlow.Core.Servicos.Projetos;
 using TesisFlow.Core.Servicos.QuadroConfiguracoes;
@@ -8,6 +9,7 @@ using TesisFlow.Core.Servicos.Tarefas;
 using TesisFlow.Core.Servicos.Usuarios;
 using TesisFlow.Core.Servicos.Notificacoes;
 using TesisFlow.Core.Servicos.Mensagens;
+using TesisFlow.Core.Servicos.Integracoes;
 
 namespace TesisFlow.DI
 {
@@ -24,6 +26,8 @@ namespace TesisFlow.DI
             services.AddScoped<IQuadroConfiguracaoRepositorio, QuadroConfiguracaoRepositorio>();
             services.AddScoped<INotificacaoRepositorio, NotificacaoRepositorio>();
             services.AddScoped<IMensagemRepositorio, MensagemRepositorio>();
+            services.AddScoped<ICategoriaRepositorio, CategoriaRepositorio>();
+            services.AddScoped<ITarefaMeuDiaRepositorio, TarefaMeuDiaRepositorio>();
 
             // Servicos - Usuarios
             services.AddScoped<UsuarioConsultar>();
@@ -39,6 +43,7 @@ namespace TesisFlow.DI
             services.AddScoped<TarefaConsultar>();
             services.AddScoped<TarefaSalvar>();
             services.AddScoped<TarefaExcluir>();
+            services.AddScoped<TarefaLembreteServico>();
 
             // Servicos - Sprints
             services.AddScoped<SprintConsultar>();
@@ -54,13 +59,25 @@ namespace TesisFlow.DI
             services.AddScoped<QuadroConfiguracaoConsultar>();
             services.AddScoped<QuadroConfiguracaoSalvar>();
 
+            // Servicos - Categorias
+            services.AddScoped<CategoriaConsultar>();
+            services.AddScoped<CategoriaSalvar>();
+            services.AddScoped<CategoriaExcluir>();
+
+            // Servicos - Meu dia
+            services.AddScoped<TarefaMeuDiaServico>();
+
             // Servicos - Notificacoes
             services.AddScoped<NotificacaoConsultar>();
             services.AddScoped<NotificacaoSalvar>();
+            services.AddScoped<NotificacaoServico>();
 
             // Servicos - Mensagens
             services.AddScoped<MensagemConsultar>();
             services.AddScoped<MensagemSalvar>();
+
+            // Servicos - Integracoes externas
+            services.AddScoped<TesisCcService>();
         }
     }
 }

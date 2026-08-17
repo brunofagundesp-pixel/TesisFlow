@@ -17,6 +17,8 @@ export class MencaoService {
     tarefaTitulo: string,
     autorId: number,
     projetoNome: string,
+    tarefaId?: number,
+    projetoId?: number,
   ): void {
     if (!html || !membros.length) return;
 
@@ -37,6 +39,8 @@ export class MencaoService {
           tipo: 'mencao',
           link: `/tarefas/${tarefaChave}`,
           targetUserId: membro.usuarioId,
+          tarefaId,
+          projetoId,
         });
       }
     }

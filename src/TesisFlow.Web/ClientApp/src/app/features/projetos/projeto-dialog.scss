@@ -73,7 +73,7 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  background: #fff;
+  background: var(--tf-surface);
   border-radius: 8px;
   padding: 0.35rem 0.5rem;
   border: 1px solid var(--tf-border);
@@ -81,7 +81,7 @@
 }
 
 .quadro-drag-handle {
-  color: #cbd5e1;
+  color: var(--tf-scrollbar);
   cursor: grab;
   display: flex;
   align-items: center;

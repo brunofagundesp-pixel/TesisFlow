@@ -12,7 +12,7 @@ namespace TesisFlow.Core.Servicos.Notificacoes
             _repositorio = repositorio;
         }
 
-        public async Task<Notificacao> CriarAsync(string titulo, string? descricao, string tipo, string? link, int? targetUserId)
+        public async Task<Notificacao> CriarAsync(string titulo, string? descricao, string tipo, string? link, int? targetUserId, int? tarefaId = null, int? projetoId = null)
         {
             var notificacao = new Notificacao
             {
@@ -22,6 +22,8 @@ namespace TesisFlow.Core.Servicos.Notificacoes
                 Link = link,
                 Lida = false,
                 TargetUserId = targetUserId,
+                TarefaId = tarefaId,
+                ProjetoId = projetoId,
             };
 
             return await _repositorio.AdicionarAsync(notificacao);
@@ -35,6 +37,11 @@ namespace TesisFlow.Core.Servicos.Notificacoes
         public async Task MarcarTodasComoLidasAsync(int usuarioId)
         {
             await _repositorio.MarcarTodasComoLidasAsync(usuarioId);
+        }
+
+        public async Task MarcarTarefaComoLidaAsync(int tarefaId, int usuarioId)
+        {
+            await _repositorio.MarcarTarefaComoLidaAsync(tarefaId, usuarioId);
         }
     }
 }

@@ -1,0 +1,362 @@
+<div class="sidebar-root">
+  <div class="sidebar-header">
+    <div class="sidebar-header-left">
+      <span class="sidebar-task-id">{{ tarefa.chave || ('#' + tarefa.id) }}</span>
+      <span class="sidebar-task-id">{{ tarefa.projetoNome }}</span>
+    </div>
+    <div class="sidebar-header-right">
+      @if (souResponsavel()) {
+        <button mat-icon-button class="sidebar-meu-dia" [class.sidebar-meu-dia--ativo]="temMeuDia()" [matTooltip]="temMeuDia() ? 'Remover do Meu dia' : 'Adicionar ao Meu dia'" (click)="alternarMeuDia()">
+          <mat-icon>{{ temMeuDia() ? 'wb_sunny' : 'light_mode' }}</mat-icon>
+        </button>
+      }
+      <button mat-icon-button class="sidebar-close" (click)="fecharSidebar()" matTooltip="Fechar">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="sidebar-scroll">
+    @if (carregando) {
+      <div class="skeleton-body">
+        <div class="skeleton-row skeleton-title"></div>
+        <div class="skeleton-row skeleton-line w-80"></div>
+        <div class="skeleton-row skeleton-line w-60"></div>
+        <div class="skeleton-row skeleton-line w-90"></div>
+        <div class="skeleton-row skeleton-line w-40"></div>
+        <div class="skeleton-row skeleton-title" style="margin-top: 1.5rem"></div>
+        <div class="skeleton-row skeleton-line w-90"></div>
+        <div class="skeleton-row skeleton-line w-70"></div>
+      </div>
+    } @else {
+      <div class="sidebar-main">
+        <form [formGroup]="form">
+          <mat-form-field appearance="outline" class="titulo-field w-100">
+            <input matInput formControlName="titulo" placeholder="Titulo da tarefa" (blur)="salvar()">
+          </mat-form-field>
+        </form>
+
+        <mat-expansion-panel [expanded]="true" class="descricao-panel" togglePosition="before">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Descricao</mat-panel-title>
+          </mat-expansion-panel-header>
+
+          @if (!editandoDescricao) {
+            <div class="descricao-view" (click)="onDescricaoViewClick($event)" [innerHTML]="descricaoHtml"></div>
+          } @else {
+            <div class="editor-container">
+              <div class="editor-toolbar">
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('bold')" title="Negrito"><b>B</b></button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('italic')" title="Italico"><i>I</i></button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('underline')" title="Sublinhado"><u>U</u></button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('formatBlock', 'h2')" title="Titulo">H</button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('insertUnorderedList')" title="Lista">&bull;</button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('insertOrderedList')" title="Lista numerada">1.</button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); inserirLink()" title="Link">🔗</button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); inserirCodigo()" title="Codigo">&lt;/&gt;</button>
+                <button type="button" class="toolbar-btn toolbar-btn-save" (click)="salvarDescricao()">Salvar</button>
+                <button type="button" class="toolbar-btn" (click)="editandoDescricao = false">Cancelar</button>
+              </div>
+              <div
+                class="editor-content"
+                contenteditable="true"
+                [innerHTML]="form.get('descricao')?.value || ''"
+                (paste)="onDescricaoPaste($event)"
+              ></div>
+            </div>
+          }
+        </mat-expansion-panel>
+
+        <mat-expansion-panel [expanded]="true" class="anexos-panel" togglePosition="before">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Anexos @if (anexos.length > 0) { <span class="panel-count">{{ anexos.length }}</span> }</mat-panel-title>
+          </mat-expansion-panel-header>
+
+          <div class="anexos-list">
+            @for (a of anexos; track a.id) {
+              <div class="anexo-item">
+                <mat-icon class="anexo-icon">attach_file</mat-icon>
+                <div class="anexo-info">
+                  <span class="anexo-nome">{{ a.nomeArquivo }}</span>
+                  <span class="anexo-meta">{{ formatarTamanho(a.tamanho) }} · {{ a.usuarioNome }} · {{ a.dataCriacao | date:'dd/MM/yyyy' }}</span>
+                </div>
+                <div class="anexo-actions">
+                  <a class="anexo-download" [href]="apiUrl + '/Anexos/download/' + a.id" target="_blank" matTooltip="Download">
+                    <mat-icon>download</mat-icon>
+                  </a>
+                  @if (a.usuarioId === auth.usuario()?.id) {
+                    <button class="anexo-delete" (click)="excluirAnexo(a.id)" matTooltip="Remover">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <div class="anexo-dropzone" [class.anexo-dropzone--active]="dragOver" (click)="fileInput.click()" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+                <mat-icon class="dropzone-icon">cloud_upload</mat-icon>
+                <span class="dropzone-text">Arraste arquivos aqui ou clique para anexar</span>
+              </div>
+            }
+          </div>
+
+          <div class="anexo-upload">
+            <input #fileInput type="file" (change)="uploadAnexo($event)" style="display: none" />
+            <button mat-stroked-button (click)="fileInput.click()" [disabled]="enviandoAnexo">
+              <mat-icon>upload</mat-icon>
+              @if (enviandoAnexo) { Enviando... } @else { Anexar arquivo }
+            </button>
+          </div>
+        </mat-expansion-panel>
+
+        <mat-expansion-panel [expanded]="true" class="atividade-panel" togglePosition="before">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Atividade</mat-panel-title>
+          </mat-expansion-panel-header>
+
+          <div class="atividade-tabs">
+            <button class="tab-btn" [class.tab-btn--active]="atividadeTab === 'comentarios'" (click)="atividadeTab = 'comentarios'">Comentarios</button>
+            <button class="tab-btn" [class.tab-btn--active]="atividadeTab === 'historico'" (click)="atividadeTab = 'historico'">Historico</button>
+          </div>
+
+          @if (atividadeTab === 'comentarios') {
+            <div class="editor-container novo-comentario-editor" style="margin-bottom: 1rem; position: relative;" [class.mencionando]="mostrarMencaoDropdown">
+              <div class="editor-toolbar">
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('bold')" title="Negrito"><b>B</b></button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('italic')" title="Italico"><i>I</i></button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('underline')" title="Sublinhado"><u>U</u></button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('formatBlock', 'h2')" title="Titulo">H</button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('insertUnorderedList')" title="Lista">&bull;</button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('insertOrderedList')" title="Lista numerada">1.</button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); inserirLink()" title="Link">🔗</button>
+                <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); inserirCodigo()" title="Codigo">&lt;/&gt;</button>
+                <button type="button" class="toolbar-btn toolbar-btn-save" (click)="enviarComentario()" [disabled]="enviandoComentario">Enviar</button>
+              </div>
+              <div class="editor-content" contenteditable="true" [innerHTML]="novoComentarioHtml" placeholder="Adicionar um comentario..." (input)="onComentarioInput($event)"></div>
+              <app-mencao-dropdown
+                [membros]="membros"
+                [termo]="mencaoTermo"
+                [visivel]="mostrarMencaoDropdown"
+                (selecionado)="inserirMencao($event)"
+              ></app-mencao-dropdown>
+            </div>
+
+            <div class="comentarios-list">
+              @for (c of comentariosPrincipais(); track c.id) {
+                <div class="comentario-item">
+                  <div class="comentario-avatar">{{ c.usuarioNome.charAt(0) }}</div>
+                  <div class="comentario-body">
+                    <div class="comentario-header">
+                      <span class="comentario-autor">{{ c.usuarioNome }}</span>
+                      <span class="comentario-data">{{ c.dataCriacao | date:'dd/MM/yyyy HH:mm' }}</span>
+                    </div>
+                    @if (editandoComentarioId === c.id) {
+                      <div class="editor-container comentario-editor-{{c.id}}">
+                        <div class="editor-toolbar">
+                          <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('bold')" title="Negrito"><b>B</b></button>
+                          <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('italic')" title="Italico"><i>I</i></button>
+                          <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('underline')" title="Sublinhado"><u>U</u></button>
+                          <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('formatBlock', 'h2')" title="Titulo">H</button>
+                          <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('insertUnorderedList')" title="Lista">&bull;</button>
+                          <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('insertOrderedList')" title="Lista numerada">1.</button>
+                          <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); inserirLink()" title="Link">🔗</button>
+                          <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); inserirCodigo()" title="Codigo">&lt;/&gt;</button>
+                          <button type="button" class="toolbar-btn toolbar-btn-save" (click)="salvarEdicaoComentario(c)">Salvar</button>
+                          <button type="button" class="toolbar-btn" (click)="cancelarEdicaoComentario()">Cancelar</button>
+                        </div>
+                        <div class="editor-content" contenteditable="true" [innerHTML]="comentarioEditHtml"></div>
+                      </div>
+                    } @else {
+                      @if (isOwner(c)) {
+                        <div class="comentario-texto comentario-view" (click)="iniciarEdicaoComentario(c)" [innerHTML]="comentarioHtml(c)"></div>
+                      } @else {
+                        <div class="comentario-texto" [innerHTML]="comentarioHtml(c)"></div>
+                      }
+                      <div class="comentario-actions">
+                        <div class="emoji-picker">
+                          @for (emoji of emojis; track emoji) {
+                            <button class="emoji-btn" [class.emoji-btn--active]="minhaReacao[c.id] === emoji" (click)="reagirComentario(c, emoji)" title="{{ emoji }}">
+                              <span class="emoji-char">{{ emoji }}</span>
+                            </button>
+                          }
+                        </div>
+                        @if (getReacoes(c).length > 0) {
+                          <div class="reacoes-display">
+                            @for (r of getReacoes(c); track r.emoji) {
+                              <span class="reacao-chip" [matTooltip]="r.usuarios.map(u => u.usuarioNome).join(', ')" matTooltipPosition="above">
+                                {{ r.emoji }} {{ r.quantidade }}
+                              </span>
+                            }
+                          </div>
+                        }
+                        <button class="action-btn" (click)="responderComentario(c)" title="Responder">
+                          <mat-icon>reply</mat-icon>
+                          Responder
+                        </button>
+                        @if (isOwner(c)) {
+                          <button class="action-btn" (click)="iniciarEdicaoComentario(c)" title="Editar">
+                            <mat-icon>edit</mat-icon>
+                            Editar
+                          </button>
+                          <button class="action-btn action-btn-danger" (click)="excluirComentario(c)" title="Excluir">
+                            <mat-icon>delete</mat-icon>
+                            Excluir
+                          </button>
+                        }
+                      </div>
+                    }
+                    @for (resp of respostasDoComentario(c.id); track resp.id) {
+                      <div class="comentario-item comentario-resposta">
+                        <div class="comentario-avatar">{{ resp.usuarioNome.charAt(0) }}</div>
+                        <div class="comentario-body">
+                          <div class="comentario-header">
+                            <span class="comentario-autor">{{ resp.usuarioNome }}</span>
+                            <span class="comentario-data">{{ resp.dataCriacao | date:'dd/MM/yyyy HH:mm' }}</span>
+                          </div>
+                          <div class="comentario-texto" [innerHTML]="comentarioHtml(resp)"></div>
+                          <div class="comentario-actions">
+                            <div class="emoji-picker">
+                              @for (emoji of emojis; track emoji) {
+                                <button class="emoji-btn" [class.emoji-btn--active]="minhaReacao[resp.id] === emoji" (click)="reagirComentario(resp, emoji)" title="{{ emoji }}">
+                                  <span class="emoji-char">{{ emoji }}</span>
+                                </button>
+                              }
+                            </div>
+                            @if (getReacoes(resp).length > 0) {
+                              <div class="reacoes-display">
+                                @for (r of getReacoes(resp); track r.emoji) {
+                                  <span class="reacao-chip" [matTooltip]="r.usuarios.map(u => u.usuarioNome).join(', ')" matTooltipPosition="above">
+                                    {{ r.emoji }} {{ r.quantidade }}
+                                  </span>
+                                }
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    }
+                    @if (respondendoComentarioId === c.id) {
+                      <div class="editor-container resposta-editor-{{c.id}}" style="margin-left: 44px; margin-top: 0.5rem;">
+                        <div class="editor-toolbar">
+                          <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('bold')" title="Negrito"><b>B</b></button>
+                          <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('italic')" title="Italico"><i>I</i></button>
+                          <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); format('underline')" title="Sublinhado"><u>U</u></button>
+                          <button type="button" class="toolbar-btn toolbar-btn-save" (click)="enviarResposta(c)">Responder</button>
+                          <button type="button" class="toolbar-btn" (click)="cancelarResposta()">Cancelar</button>
+                        </div>
+                        <div class="editor-content" contenteditable="true" [innerHTML]="respostaHtml"></div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              } @empty {
+                <p class="comentario-vazio">Nenhum comentario ainda.</p>
+              }
+            </div>
+          }
+
+          @if (atividadeTab === 'historico') {
+            <div class="historico-list">
+              @for (ev of timeline; track ev.timestamp) {
+                <div class="historico-item">
+                  <div class="historico-icon">
+                    <mat-icon>{{ ev.icon }}</mat-icon>
+                  </div>
+                  <div class="historico-body">
+                    <p [innerHTML]="ev.mensagem"></p>
+                    <span class="historico-data">{{ ev.data | date:'dd/MM/yyyy HH:mm' }} · {{ ev.autor }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </mat-expansion-panel>
+      </div>
+
+      <div class="sidebar-info">
+        <form [formGroup]="form" class="sidebar-form">
+          <div class="info-group">
+            <span class="info-label">Status</span>
+            <mat-form-field appearance="fill" class="sidebar-field">
+              <mat-select formControlName="status" (selectionChange)="salvar()">
+                @for (s of statusOptions; track s.value) {
+                  <mat-option [value]="s.value">{{ s.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="info-group">
+            <span class="info-label">Prioridade</span>
+            <mat-form-field appearance="fill" class="sidebar-field">
+              <mat-select formControlName="prioridade" (selectionChange)="salvar()">
+                @for (p of prioridadeOptions; track p.value) {
+                  <mat-option [value]="p.value">{{ p.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="info-group">
+            <span class="info-label">Tipo</span>
+            <mat-form-field appearance="fill" class="sidebar-field">
+              <mat-select formControlName="tipo" (selectionChange)="salvar()">
+                @for (c of categorias; track c.id) {
+                  <mat-option [value]="c.id">{{ c.nome }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="info-group">
+            <span class="info-label">Responsaveis</span>
+            <mat-form-field appearance="fill" class="sidebar-field">
+              <mat-select formControlName="responsavelIds" multiple (selectionChange)="salvar()">
+                @for (m of membros; track m.usuarioId) {
+                  <mat-option [value]="m.usuarioId">{{ m.usuarioNome }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="info-group">
+            <span class="info-label">Escola</span>
+            <div class="sidebar-field">
+              <app-colegio-select formControlName="colegio" appearance="fill" [hideLabel]="true"></app-colegio-select>
+            </div>
+          </div>
+
+          <div class="info-group">
+            <span class="info-label">Nome do contato</span>
+            <mat-form-field appearance="fill" class="sidebar-field">
+              <input matInput formControlName="contatoNome" placeholder="Com quem foi falado">
+            </mat-form-field>
+          </div>
+
+          <div class="info-group">
+            <span class="info-label">Data de entrega</span>
+            <input class="data-entrega-input" type="datetime-local" formControlName="dataEntrega" (change)="salvar()">
+          </div>
+
+          <div class="info-group info-readonly">
+            <span class="info-label">Criado por</span>
+            <span class="info-value">{{ tarefa.criadorNome }}</span>
+          </div>
+
+          <div class="info-group info-readonly">
+            <span class="info-label">Data de criacao</span>
+            <span class="info-value">{{ tarefa.dataCriacao | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </form>
+      </div>
+    }
+  </div>
+</div>
+
+@if (imagemAmpliada) {
+  <div class="imagem-lightbox" (click)="fecharImagem()">
+    <img [src]="imagemAmpliada" alt="Imagem ampliada" />
+    <button type="button" class="imagem-lightbox-fechar" (click)="fecharImagem()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+}

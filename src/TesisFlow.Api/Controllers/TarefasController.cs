@@ -11,12 +11,18 @@ namespace TesisFlow.Api.Controllers
         private readonly TarefaConsultar _consultar;
         private readonly TarefaSalvar _salvar;
         private readonly TarefaExcluir _excluir;
+        private readonly TarefaMeuDiaServico _meuDia;
 
-        public TarefasController(TarefaConsultar consultar, TarefaSalvar salvar, TarefaExcluir excluir)
+        public TarefasController(
+            TarefaConsultar consultar,
+            TarefaSalvar salvar,
+            TarefaExcluir excluir,
+            TarefaMeuDiaServico meuDia)
         {
             _consultar = consultar;
             _salvar = salvar;
             _excluir = excluir;
+            _meuDia = meuDia;
         }
 
         [HttpGet("buscar")]
@@ -66,6 +72,34 @@ namespace TesisFlow.Api.Controllers
             return Ok(tarefas);
         }
 
+        [HttpGet("meu-dia/{usuarioId}")]
+        public async Task<IActionResult> GetMeuDia(int usuarioId)
+        {
+            var ids = await _meuDia.ObterIdsAsync(usuarioId);
+            return Ok(ids);
+        }
+
+        [HttpGet("meu-dia/{usuarioId}/tarefas")]
+        public async Task<IActionResult> GetMeuDiaTarefas(int usuarioId)
+        {
+            var tarefas = await _consultar.ObterPorMeuDiaAsync(usuarioId);
+            return Ok(tarefas);
+        }
+
+        [HttpGet("lixeira/{usuarioId}")]
+        public async Task<IActionResult> GetLixeira(int usuarioId)
+        {
+            var tarefas = await _consultar.ListarLixeiraAsync(usuarioId);
+            return Ok(tarefas);
+        }
+
+        [HttpPut("meu-dia/toggle")]
+        public async Task<IActionResult> AlternarMeuDia([FromBody] TarefaMeuDiaToggleDTO dto)
+        {
+            var ativo = await _meuDia.AlternarAsync(dto.TarefaId, dto.UsuarioId);
+            return Ok(new { ativo });
+        }
+
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] TarefaSalvarDTO dto)
         {
@@ -86,7 +120,7 @@ namespace TesisFlow.Api.Controllers
             try
             {
                 var tarefa = await _salvar.AtualizarAsync(id, dto);
-                return Ok(tarefa);
+                return Ok(new { tarefa.Id, tarefa.Titulo, tarefa.Chave, tarefa.Status });
             }
             catch (KeyNotFoundException)
             {
@@ -101,12 +135,68 @@ namespace TesisFlow.Api.Controllers
             return Ok();
         }
 
+        [HttpPut("reordenar")]
+        public async Task<IActionResult> Reordenar([FromBody] List<TarefaMoverDTO> itens)
+        {
+            await _salvar.ReordenarAsync(itens);
+            return Ok();
+        }
+
+        [HttpPut("em-massa/status")]
+        public async Task<IActionResult> AlterarStatusEmMassa([FromBody] TarefaEmMassaDTO dto)
+        {
+            await _salvar.AlterarStatusEmMassaAsync(dto.Ids, (Modelo.Enums.StatusTarefa)dto.Valor, dto.UsuarioId ?? 0);
+            return Ok();
+        }
+
+        [HttpPut("em-massa/prioridade")]
+        public async Task<IActionResult> AlterarPrioridadeEmMassa([FromBody] TarefaEmMassaDTO dto)
+        {
+            await _salvar.AlterarPrioridadeEmMassaAsync(dto.Ids, (Modelo.Enums.PrioridadeTarefa)dto.Valor, dto.UsuarioId ?? 0);
+            return Ok();
+        }
+
+        [HttpPost("em-massa/excluir")]
+        public async Task<IActionResult> ExcluirEmMassa([FromBody] TarefaExcluirEmMassaDTO dto)
+        {
+            await _excluir.ExcluirEmMassaAsync(dto.Ids);
+            return Ok();
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             try
             {
                 await _excluir.ExcluirAsync(id);
+                return NoContent();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpPost("{id}/restaurar")]
+        public async Task<IActionResult> Restaurar(int id)
+        {
+            try
+            {
+                var tarefa = await _salvar.RestaurarAsync(id);
+                return Ok(new { tarefa.Id, tarefa.Titulo, tarefa.Chave, tarefa.Status });
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpDelete("{id}/definitivo")]
+        public async Task<IActionResult> ExcluirDefinitivo(int id)
+        {
+            try
+            {
+                await _excluir.ExcluirDefinitivamenteAsync(id);
                 return NoContent();
             }
             catch (KeyNotFoundException)

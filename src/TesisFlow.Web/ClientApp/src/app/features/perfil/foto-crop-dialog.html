@@ -1,0 +1,78 @@
+<h2 mat-dialog-title class="crop-title">
+  <mat-icon>crop</mat-icon>
+  Ajustar foto
+</h2>
+
+<div class="crop-body">
+  <div
+    class="crop-viewport"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerUp()"
+    (pointercancel)="onPointerUp()"
+    (wheel)="onWheel($event)"
+  >
+    @if (!pronto) {
+      <div class="crop-loading">
+        <mat-spinner diameter="32"></mat-spinner>
+      </div>
+    }
+
+    <img
+      #fotoImg
+      class="crop-img"
+      [src]="data.imagem"
+      (load)="onLoad()"
+      [class.crop-img--hidden]="!pronto"
+      [style.width.px]="imgW"
+      [style.height.px]="imgH"
+      [style.transform]="transform"
+      draggable="false"
+      alt=""
+    />
+
+    @if (pronto) {
+      <div class="crop-mask"></div>
+      <div class="crop-ring"></div>
+    }
+  </div>
+
+  <div class="crop-controls">
+    <div class="crop-zoom-row">
+      <mat-icon class="crop-zoom-icon">zoom_out</mat-icon>
+      <mat-slider
+        class="crop-slider"
+        [min]="1"
+        [max]="4"
+        [step]="0.01"
+        [disabled]="!pronto"
+      >
+        <input
+          matSliderThumb
+          [value]="fatorZoom"
+          (valueChange)="onFatorZoomChange($event)"
+        />
+      </mat-slider>
+      <mat-icon class="crop-zoom-icon">zoom_in</mat-icon>
+    </div>
+
+    <p class="crop-hint">
+      Arraste para reposicionar · use a roda do mouse ou o controle para dar zoom
+    </p>
+  </div>
+</div>
+
+<mat-dialog-actions align="end" class="crop-actions">
+  <button mat-button class="crop-recentrar" (click)="recentrar()" [disabled]="!pronto">
+    <mat-icon>crop_free</mat-icon>
+    Recentrar
+  </button>
+
+  <span class="crop-spacer"></span>
+
+  <button mat-button mat-dialog-close>Cancelar</button>
+  <button mat-flat-button color="primary" (click)="confirmar()" [disabled]="!pronto || salvando">
+    <mat-icon>check</mat-icon>
+    Confirmar
+  </button>
+</mat-dialog-actions>

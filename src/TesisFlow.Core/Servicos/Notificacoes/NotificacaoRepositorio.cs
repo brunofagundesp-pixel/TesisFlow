@@ -54,5 +54,33 @@ namespace TesisFlow.Core.Servicos.Notificacoes
 
             await _context.SaveChangesAsync();
         }
+
+        public async Task MarcarTarefaComoLidaAsync(int tarefaId, int usuarioId)
+        {
+            var notificacoes = await _context.Notificacoes
+                .Where(n => n.Ativo && !n.Lida && n.TarefaId == tarefaId && (n.TargetUserId == null || n.TargetUserId == usuarioId))
+                .ToListAsync();
+
+            foreach (var n in notificacoes)
+            {
+                n.Lida = true;
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<int> LimparAntigasAsync(DateTime limite)
+        {
+            var notificacoes = await _context.Notificacoes
+                .Where(n => n.DataCriacao < limite)
+                .ToListAsync();
+
+            if (notificacoes.Count == 0)
+                return 0;
+
+            _context.Notificacoes.RemoveRange(notificacoes);
+            await _context.SaveChangesAsync();
+            return notificacoes.Count;
+        }
     }
 }

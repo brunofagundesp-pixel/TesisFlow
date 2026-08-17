@@ -47,16 +47,34 @@ namespace TesisFlow.Core.Servicos.Mensagens
             return mensagem;
         }
 
-        public async Task MarcarComoLidasAsync(int remetenteId, int destinatarioId)
+        public async Task<List<int>> MarcarComoLidasAsync(int remetenteId, int destinatarioId)
         {
             var mensagens = await _context.Mensagens
                 .Where(m => m.Ativo && !m.Lida && m.RemetenteId == remetenteId && m.DestinatarioId == destinatarioId)
                 .ToListAsync();
 
+            var ids = mensagens.Select(m => m.Id).ToList();
+
             foreach (var m in mensagens)
                 m.Lida = true;
 
             await _context.SaveChangesAsync();
+            return ids;
+        }
+
+        public async Task<int?> MarcarEntregueAsync(int mensagemId, int destinatarioId)
+        {
+            var mensagem = await _context.Mensagens.FindAsync(mensagemId);
+            if (mensagem == null || mensagem.DestinatarioId != destinatarioId)
+                return null;
+
+            if (!mensagem.Entregue)
+            {
+                mensagem.Entregue = true;
+                await _context.SaveChangesAsync();
+            }
+
+            return mensagem.RemetenteId;
         }
     }
 }

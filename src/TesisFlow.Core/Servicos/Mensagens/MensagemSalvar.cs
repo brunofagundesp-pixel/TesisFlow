@@ -25,9 +25,14 @@ namespace TesisFlow.Core.Servicos.Mensagens
             return await _repositorio.AdicionarAsync(mensagem);
         }
 
-        public async Task MarcarComoLidasAsync(int remetenteId, int destinatarioId)
+        public async Task<List<int>> MarcarComoLidasAsync(int remetenteId, int destinatarioId)
         {
-            await _repositorio.MarcarComoLidasAsync(remetenteId, destinatarioId);
+            return await _repositorio.MarcarComoLidasAsync(remetenteId, destinatarioId);
+        }
+
+        public async Task<int?> MarcarEntregueAsync(int mensagemId, int destinatarioId)
+        {
+            return await _repositorio.MarcarEntregueAsync(mensagemId, destinatarioId);
         }
     }
 }

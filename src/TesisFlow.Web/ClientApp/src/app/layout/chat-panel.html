@@ -111,7 +111,12 @@
           }
           <div class="chat-msg-bubble" [class.chat-msg-bubble--meu]="m.remetenteId === meuId">
             <span class="chat-msg-texto">{{ m.texto }}</span>
-            <span class="chat-msg-data">{{ m.data | date:'HH:mm' }}</span>
+            <div class="chat-msg-rodape">
+              <span class="chat-msg-data">{{ m.data | date:'HH:mm' }}</span>
+              @if (m.remetenteId === meuId) {
+                <mat-icon class="chat-msg-check" [class.check-lida]="m.lida">{{ (m.entregue || m.lida) ? 'done_all' : 'done' }}</mat-icon>
+              }
+            </div>
           </div>
         </div>
       }
@@ -119,7 +124,7 @@
         <div class="chat-msg">
           <span class="chat-msg-foto">{{ contatoAtivo?.avatar }}</span>
           <div class="chat-msg-bubble chat-digitando-bubble">
-            <span class="chat-digitando-dots"><span>.</span><span>.</span><span>.</span></span>
+            <span class="chat-digitando-dots"><span></span><span></span><span></span></span>
           </div>
         </div>
       }

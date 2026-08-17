@@ -23,6 +23,7 @@ namespace TesisFlow.Core.Servicos.Mensagens
                 DestinatarioId = m.DestinatarioId,
                 Texto = m.Texto,
                 Lida = m.Lida,
+                Entregue = m.Entregue,
                 DataCriacao = m.DataCriacao,
             });
         }

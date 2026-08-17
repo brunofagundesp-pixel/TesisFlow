@@ -21,6 +21,8 @@ interface TabDef {
 
 const ITENS_POR_VEZ = 20;
 
+const MESES = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
 @Component({
   selector: 'app-cliente-detalhe',
   standalone: true,
@@ -72,7 +74,7 @@ export class ClienteDetalheComponent implements OnInit {
 
   filtroFinanceiroStatus = signal('Todos');
   filtroFinanceiroAno = signal(new Date().getFullYear().toString());
-  filtroFinanceiroMes = signal('Todos');
+  filtroFinanceiroMes = signal(MESES[new Date().getMonth()]);
 
   atendimentosMock: Atendimento[] = [];
   diarioMock: DiarioEntry[] = [];
@@ -82,7 +84,7 @@ export class ClienteDetalheComponent implements OnInit {
 
   readonly tipoUsuarioOptions = ['Todos', 'Aluno', 'Responsavel', 'Professor'];
   readonly statusFinanceiroOptions = ['Todos', 'Pago', 'Pendente', 'Atrasado', 'Cancelado'];
-  readonly mesOptions = ['Todos', 'Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  readonly mesOptions = ['Todos', ...MESES];
 
   readonly usuariosAtendimentoOptions = computed(() => {
     const usuarios = [...new Set(this.atendimentosMock.map(a => a.usuario))].sort();
@@ -121,14 +123,15 @@ export class ClienteDetalheComponent implements OnInit {
   private carregarTudo(id: number): void {
     this.carregarDadosMockFallback();
 
-    const idTesisRaw = this.cliente.idTesis || this.cliente.codigoPortalAluno;
-    const idTesis = idTesisRaw && !idTesisRaw.startsWith('0') ? '0' + idTesisRaw : idTesisRaw;
-    const diarioFromTesis = idTesisRaw ? parseInt(idTesisRaw.substring(0, 8), 10).toString() : null;
+    const diarioBase = this.cliente.idTesis || this.cliente.codigoPortalAluno;
+    const idTesisRaw = this.cliente.codigoPortalAluno || this.cliente.idTesis;
+    const idTesis = idTesisRaw ? idTesisRaw.padStart(15, '0') : '';
+    const diarioFromTesis = diarioBase ? parseInt(diarioBase.substring(0, 8), 10).toString() : null;
     const diarioId = this.cliente.codigoDiario || this.cliente.idDiarioRaw || diarioFromTesis;
 
     let pendentes = 1; // atendimentos
     if (diarioId) pendentes += 2; // senha + professores
-    if (idTesis) pendentes += 1; // app
+    if (idTesis) pendentes += 3; // app + portal aluno + portal admin
     pendentes += 1; // parcelas
 
     let concluidas = 0;
@@ -164,6 +167,16 @@ export class ClienteDetalheComponent implements OnInit {
         },
         error: () => verificarConclusao(),
       });
+
+      this.clienteApiService.getPortalAlunoUsuarios(idTesis).subscribe({
+        next: (data) => { this.portalAlunoMock = data; verificarConclusao(); },
+        error: () => verificarConclusao(),
+      });
+
+      this.clienteApiService.getPortalAlunoAdministradores(idTesis).subscribe({
+        next: (data) => { this.portalAlunoAdminMock = data; verificarConclusao(); },
+        error: () => verificarConclusao(),
+      });
     }
 
     this.clienteApiService.getParcelas(id).subscribe({
@@ -191,10 +204,38 @@ export class ClienteDetalheComponent implements OnInit {
     return `${partes[2]}/${partes[1]}/${partes[0]}`;
   }
 
+  get codigoColegio(): string {
+    return (this.cliente.idTesis || '').replace(/^0+/, '').slice(0, 7);
+  }
+
+  linkProfessor(d: DiarioEntry): string {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const timestamp = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}-${pad(now.getMinutes())}-${now.getSeconds()}`;
+    const senha = this.cliente.senhaMasterDiario || d.senha;
+    const plain = `${this.codigoColegio}:${d.id}:${senha}:${timestamp}`;
+    return `https://professor.tesis.inf.br/#/login/${encodeURIComponent(this.cripta(plain))}`;
+  }
+
+  private cripta(plain: string): string {
+    const chave = 'hbjSDHaYa9uu4MB1Ft5ur2kpwXF9MXg5UTioeClU';
+    let dados = '';
+    let j = 0;
+    for (let i = 0; i < plain.length; i++) {
+      j++;
+      const kc = j < chave.length ? chave.charCodeAt(j) : 0;
+      let l = plain.charCodeAt(i) + kc;
+      if (j === 50) j = 1;
+      if (l > 255) l -= 256;
+      dados += String.fromCharCode(l);
+    }
+    return dados;
+  }
+
   abrirAtendimento(atendimento: Atendimento): void {
     const dialogRef = this.dialog.open(AtendimentoDialogComponent, {
       width: '880px',
-      data: { atendimento },
+      data: { atendimento, idColegio: this.cliente.id },
     });
 
     dialogRef.afterClosed().subscribe((result: Atendimento | undefined) => {

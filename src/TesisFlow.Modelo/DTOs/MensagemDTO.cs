@@ -8,6 +8,7 @@ namespace TesisFlow.Modelo.DTOs
         public int DestinatarioId { get; set; }
         public string Texto { get; set; } = string.Empty;
         public bool Lida { get; set; }
+        public bool Entregue { get; set; }
         public DateTime DataCriacao { get; set; }
     }
 

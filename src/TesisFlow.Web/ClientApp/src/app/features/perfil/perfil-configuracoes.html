@@ -1,0 +1,54 @@
+<div class="perfil-page">
+  <div class="perfil-header">
+    <a routerLink="/dashboard" class="perfil-back">
+      <mat-icon>arrow_back</mat-icon>
+      Voltar
+    </a>
+    <h1>Configurações</h1>
+    <span>Gerencie os dados e a foto do seu perfil</span>
+  </div>
+
+  <div class="perfil-card">
+    <div class="perfil-avatar-section">
+      <div class="perfil-avatar">
+        @if (usuario?.foto) {
+          <img [src]="usuario.foto" alt="Foto de perfil" />
+        } @else {
+          <span class="perfil-avatar-initial">{{ (usuario?.nome ?? '?').charAt(0) }}</span>
+        }
+      </div>
+
+      <div class="perfil-avatar-actions">
+        <button mat-flat-button color="primary" (click)="selecionarArquivo()" [disabled]="carregando">
+          <mat-icon>{{ usuario?.foto ? 'photo_camera' : 'add_a_photo' }}</mat-icon>
+          {{ usuario?.foto ? 'Alterar foto' : 'Adicionar foto' }}
+        </button>
+
+        @if (usuario?.foto) {
+          <button mat-stroked-button color="warn" (click)="removerFoto()" [disabled]="carregando">
+            <mat-icon>delete</mat-icon>
+            Remover
+          </button>
+        }
+      </div>
+
+      <p class="perfil-avatar-hint">JPG, PNG, WebP ou GIF · até 5MB</p>
+
+      <input #fileInput type="file" accept="image/*" hidden (change)="onArquivoSelecionado($event)" />
+    </div>
+
+    <div class="perfil-dados">
+      <h2 class="perfil-nome">{{ usuario?.nome }}</h2>
+
+      <div class="perfil-campo">
+        <span class="perfil-campo-label">Email</span>
+        <span class="perfil-campo-valor">{{ usuario?.email }}</span>
+      </div>
+
+      <div class="perfil-campo">
+        <span class="perfil-campo-label">Cargo</span>
+        <span class="perfil-campo-valor">{{ usuario?.cargo || 'Não informado' }}</span>
+      </div>
+    </div>
+  </div>
+</div>

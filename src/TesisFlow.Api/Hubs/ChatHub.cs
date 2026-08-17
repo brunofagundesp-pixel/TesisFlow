@@ -1,11 +1,18 @@
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
+using TesisFlow.Core.Servicos.Mensagens;
 
 namespace TesisFlow.Api.Hubs
 {
     public class ChatHub : Hub
     {
         private static readonly ConcurrentDictionary<int, string> _statusMap = new();
+        private readonly MensagemSalvar _mensagemSalvar;
+
+        public ChatHub(MensagemSalvar mensagemSalvar)
+        {
+            _mensagemSalvar = mensagemSalvar;
+        }
 
         public override async Task OnConnectedAsync()
         {
@@ -39,6 +46,19 @@ namespace TesisFlow.Api.Hubs
             if (!string.IsNullOrEmpty(userId) && int.TryParse(userId, out var uid))
             {
                 await Clients.Group($"user_{destinatarioId}").SendAsync("UsuarioDigitando", uid, digitando);
+            }
+        }
+
+        public async Task ConfirmarEntrega(int mensagemId)
+        {
+            var userId = Context.GetHttpContext()?.Request.Query["userId"];
+            if (string.IsNullOrEmpty(userId) || !int.TryParse(userId, out var uid))
+                return;
+
+            var remetenteId = await _mensagemSalvar.MarcarEntregueAsync(mensagemId, uid);
+            if (remetenteId.HasValue)
+            {
+                await Clients.Group($"user_{remetenteId.Value}").SendAsync("MensagemEntregue", mensagemId);
             }
         }
 

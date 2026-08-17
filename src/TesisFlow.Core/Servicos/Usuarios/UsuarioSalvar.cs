@@ -38,5 +38,25 @@ namespace TesisFlow.Core.Servicos.Usuarios
 
             return await _repositorio.AtualizarAsync(usuario);
         }
+
+        public async Task<Usuario> DefinirFotoAsync(int id, string? foto)
+        {
+            var usuario = await _repositorio.ObterPorIdAsync(id)
+                ?? throw new KeyNotFoundException("Usuário não encontrado.");
+
+            usuario.Foto = foto;
+
+            return await _repositorio.AtualizarAsync(usuario);
+        }
+
+        public async Task<Usuario> DefinirBannerAsync(int id, string? banner)
+        {
+            var usuario = await _repositorio.ObterPorIdAsync(id)
+                ?? throw new KeyNotFoundException("Usuário não encontrado.");
+
+            usuario.Banner = banner;
+
+            return await _repositorio.AtualizarAsync(usuario);
+        }
     }
 }

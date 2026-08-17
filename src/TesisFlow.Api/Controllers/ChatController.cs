@@ -51,6 +51,7 @@ namespace TesisFlow.Api.Controllers
                 DestinatarioId = mensagem.DestinatarioId,
                 Texto = mensagem.Texto,
                 Lida = mensagem.Lida,
+                Entregue = mensagem.Entregue,
                 DataCriacao = mensagem.DataCriacao,
             };
 
@@ -64,6 +65,11 @@ namespace TesisFlow.Api.Controllers
         public async Task<IActionResult> MarcarLidas(int remetenteId, int destinatarioId)
         {
             await _salvar.MarcarComoLidasAsync(remetenteId, destinatarioId);
+
+            await _hubContext.Clients
+                .Group($"user_{remetenteId}")
+                .SendAsync("MensagensLidas", destinatarioId);
+
             return Ok();
         }
     }

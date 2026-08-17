@@ -10,6 +10,8 @@ namespace TesisFlow.Modelo.DTOs
         public bool Lida { get; set; }
         public DateTime DataCriacao { get; set; }
         public int? TargetUserId { get; set; }
+        public int? TarefaId { get; set; }
+        public int? ProjetoId { get; set; }
     }
 
     public class NotificacaoSalvarDTO
@@ -19,5 +21,7 @@ namespace TesisFlow.Modelo.DTOs
         public required string Tipo { get; set; }
         public string? Link { get; set; }
         public int? TargetUserId { get; set; }
+        public int? TarefaId { get; set; }
+        public int? ProjetoId { get; set; }
     }
 }
