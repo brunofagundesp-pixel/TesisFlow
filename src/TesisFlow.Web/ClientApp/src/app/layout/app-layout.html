@@ -360,8 +360,12 @@
                    routerLinkActive="active"
                    class="sidebar-link sidebar-projeto-link"
                    [matTooltip]="!sidebarOpen() ? p.nome : null"
-                   matTooltipPosition="right">
-                  <span class="sidebar-projeto-icone">{{ p.icone || p.nome.charAt(0) }}</span>
+                  matTooltipPosition="right">
+                  @if (p.icone) {
+                    <mat-icon class="sidebar-projeto-icone" [style.color]="p.cor || null">{{ p.icone }}</mat-icon>
+                  } @else {
+                    <span class="sidebar-projeto-iniciais" [style.color]="p.cor || null">{{ iniciaisProjeto(p.nome) }}</span>
+                  }
                   <span class="sidebar-text sidebar-projeto-nome">{{ p.nome }}</span>
                   @if (naoLidasPorProjeto(p.id) > 0) {
                     <span class="sidebar-projeto-badge">{{ naoLidasPorProjeto(p.id) }}</span>

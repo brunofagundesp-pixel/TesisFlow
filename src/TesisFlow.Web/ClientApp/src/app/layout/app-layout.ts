@@ -87,6 +87,14 @@ export class AppLayoutComponent implements OnInit, OnDestroy {
     return this.notificacaoService.notificacoes().filter(n => !n.lida && n.projetoId === projetoId).length;
   }
 
+  iniciaisProjeto(nome: string): string {
+    const palavras = nome.trim().split(/\s+/).filter(Boolean);
+    if (palavras.length > 1) {
+      return `${palavras[0][0]}${palavras[1][0]}`.toUpperCase();
+    }
+    return (palavras[0] || '?').slice(0, 2).toUpperCase();
+  }
+
   searchControl = new FormControl('');
   resultados: Tarefa[] = [];
   mostrarDropdown = false;

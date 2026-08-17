@@ -773,20 +773,23 @@
 }
 
 .sidebar-projeto-icone {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: var(--tf-primary-light);
-  color: var(--tf-primary);
-  display: flex;
+  color: var(--tf-text-muted);
+}
+
+.sidebar-projeto-iniciais {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-right: 0.25rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 0.75rem;
   flex-shrink: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 0.55rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
 }
 
 .sidebar-projeto-nome {
