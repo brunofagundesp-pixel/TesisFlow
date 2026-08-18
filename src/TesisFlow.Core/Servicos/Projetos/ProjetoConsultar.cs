@@ -1,6 +1,7 @@
 using TesisFlow.Core.Interfaces;
 using TesisFlow.Modelo.DTOs;
 using TesisFlow.Modelo.Entidades;
+using TesisFlow.Modelo.Enums;
 
 namespace TesisFlow.Core.Servicos.Projetos
 {
@@ -35,27 +36,35 @@ namespace TesisFlow.Core.Servicos.Projetos
             return projetos.Select(p => MapToDTO(p, contagens.GetValueOrDefault(p.Id, 0)));
         }
 
-        private static ProjetoDTO MapToDTO(Projeto p, int quantidadeTarefas = 0) => new()
+        private static ProjetoDTO MapToDTO(Projeto p, int quantidadeTarefas = 0)
         {
-            Id = p.Id,
-            Nome = p.Nome,
-            Descricao = p.Descricao,
-            Cor = p.Cor,
-            Icone = p.Icone,
-            LiderId = p.LiderId,
-            LiderNome = p.Lider?.Nome ?? string.Empty,
-            Ativo = p.Ativo,
-            QuantidadeTarefas = quantidadeTarefas,
-            QuantidadeMembros = p.Membros?.Count ?? 0,
-            Membros = p.Membros?.Select(m => new ProjetoMembroDTO
+            var membros = p.Membros?.Select(m => new ProjetoMembroDTO
             {
                 Id = m.Id,
                 ProjetoId = m.ProjetoId,
                 UsuarioId = m.UsuarioId,
                 UsuarioNome = m.Usuario?.Nome ?? string.Empty,
+                UsuarioEmail = m.Usuario?.Email,
                 UsuarioFoto = m.Usuario?.Foto,
-                Papel = m.Papel.ToString()
-            }) ?? new List<ProjetoMembroDTO>()
-        };
+                Papel = m.Papel.ToString(),
+                Status = m.Status.ToString()
+            }).ToList() ?? new List<ProjetoMembroDTO>();
+
+            return new ProjetoDTO
+            {
+                Id = p.Id,
+                Nome = p.Nome,
+                Descricao = p.Descricao,
+                Cor = p.Cor,
+                Icone = p.Icone,
+                LiderId = p.LiderId,
+                LiderNome = p.Lider?.Nome ?? string.Empty,
+                Ativo = p.Ativo,
+                QuantidadeTarefas = quantidadeTarefas,
+                QuantidadeMembros = membros.Count(m => m.Status == StatusConvite.Aceito.ToString()),
+                Membros = membros.Where(m => m.Status == StatusConvite.Aceito.ToString()).ToList(),
+                Convites = membros.Where(m => m.Status == StatusConvite.Pendente.ToString()).ToList()
+            };
+        }
     }
 }

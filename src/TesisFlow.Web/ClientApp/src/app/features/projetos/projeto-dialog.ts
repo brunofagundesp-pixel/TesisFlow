@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { CdkDragDrop, CdkDropList, CdkDrag, CdkDragHandle, moveItemInArray } from '@angular/cdk/drag-drop';
 import { StatusTarefa, QuadroConfiguracaoSave } from '../../core/models';
+import { IconPickerComponent } from '../categorias/icon-picker';
 
 interface QuadroSelecionado {
   status: StatusTarefa;
@@ -29,6 +30,7 @@ interface QuadroSelecionado {
     CdkDropList,
     CdkDrag,
     CdkDragHandle,
+    IconPickerComponent,
   ],
   templateUrl: './projeto-dialog.html',
   styleUrl: './projeto-dialog.scss',
@@ -54,8 +56,12 @@ export class ProjetoDialogComponent {
       nome: ['', [Validators.required, Validators.maxLength(200)]],
       descricao: ['', Validators.maxLength(2000)],
       cor: ['#ff8615'],
-      icone: ['', Validators.maxLength(10)],
+      icone: ['folder'],
     });
+  }
+
+  onIcone(i: { icone: string; cor: string }) {
+    this.form.patchValue({ icone: i.icone });
   }
 
   reordenarQuadros(event: CdkDragDrop<QuadroSelecionado[]>) {

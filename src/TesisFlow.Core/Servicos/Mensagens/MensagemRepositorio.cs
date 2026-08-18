@@ -14,16 +14,32 @@ namespace TesisFlow.Core.Servicos.Mensagens
             _context = context;
         }
 
-        public async Task<IEnumerable<Mensagem>> ObterConversaAsync(int usuarioA, int usuarioB, int limite = 50)
+        public async Task<IEnumerable<Mensagem>> ObterConversaAsync(int usuarioA, int usuarioB, int? antesId = null, int limite = 50)
         {
-            return await _context.Mensagens
+            var query = _context.Mensagens
                 .AsNoTracking()
                 .Where(m => m.Ativo &&
                     ((m.RemetenteId == usuarioA && m.DestinatarioId == usuarioB) ||
-                     (m.RemetenteId == usuarioB && m.DestinatarioId == usuarioA)))
+                     (m.RemetenteId == usuarioB && m.DestinatarioId == usuarioA)));
+
+            if (antesId.HasValue)
+                query = query.Where(m => m.Id < antesId.Value);
+
+            return await query
+                .Include(m => m.Remetente)
+                .Include(m => m.Destinatario)
+                .Include(m => m.MensagemRespondida!.Remetente)
                 .OrderByDescending(m => m.DataCriacao)
                 .Take(limite)
                 .ToListAsync();
+        }
+
+        public async Task<Mensagem?> ObterPorIdAsync(int id)
+        {
+            return await _context.Mensagens
+                .AsNoTracking()
+                .Include(m => m.Remetente)
+                .FirstOrDefaultAsync(m => m.Id == id && m.Ativo);
         }
 
         public async Task<IEnumerable<Mensagem>> ObterConversasRecentesAsync(int usuarioId)

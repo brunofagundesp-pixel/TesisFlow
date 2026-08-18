@@ -6,7 +6,6 @@ namespace TesisFlow.Api.Hubs
 {
     public class ChatHub : Hub
     {
-        private static readonly ConcurrentDictionary<int, string> _statusMap = new();
         private readonly MensagemSalvar _mensagemSalvar;
 
         public ChatHub(MensagemSalvar mensagemSalvar)
@@ -20,10 +19,10 @@ namespace TesisFlow.Api.Hubs
             if (!string.IsNullOrEmpty(userId) && int.TryParse(userId, out var uid))
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{uid}");
-                _statusMap.TryAdd(uid, "online");
+                PresenceStore.Status.TryAdd(uid, "online");
                 await Clients.Others.SendAsync("UsuarioOnline", uid, "online");
 
-                var statuses = _statusMap.Select(kv => new { usuarioId = kv.Key, status = kv.Value }).ToList();
+                var statuses = PresenceStore.Status.Select(kv => new { usuarioId = kv.Key, status = kv.Value }).ToList();
                 await Clients.Caller.SendAsync("StatusInicial", statuses);
             }
             await base.OnConnectedAsync();
@@ -34,7 +33,7 @@ namespace TesisFlow.Api.Hubs
             var userId = Context.GetHttpContext()?.Request.Query["userId"];
             if (!string.IsNullOrEmpty(userId) && int.TryParse(userId, out var uid))
             {
-                _statusMap.TryRemove(uid, out _);
+                PresenceStore.Status.TryRemove(uid, out _);
                 await Clients.Others.SendAsync("UsuarioOnline", uid, "offline");
             }
             await base.OnDisconnectedAsync(exception);
@@ -67,7 +66,13 @@ namespace TesisFlow.Api.Hubs
             var userId = Context.GetHttpContext()?.Request.Query["userId"];
             if (!string.IsNullOrEmpty(userId) && int.TryParse(userId, out var uid))
             {
-                _statusMap[uid] = status;
+                if (PresenceStore.EmChamada.ContainsKey(uid))
+                {
+                    await Clients.Caller.SendAsync("UsuarioOnline", uid, "ocupado");
+                    return;
+                }
+
+                PresenceStore.Status[uid] = status;
                 await Clients.Caller.SendAsync("UsuarioOnline", uid, status);
                 await Clients.Others.SendAsync("UsuarioOnline", uid, status);
             }
@@ -75,7 +80,7 @@ namespace TesisFlow.Api.Hubs
 
         public async Task<List<KeyValuePair<int, string>>> ObterStatus()
         {
-            return _statusMap.ToList();
+            return PresenceStore.Status.ToList();
         }
     }
 }

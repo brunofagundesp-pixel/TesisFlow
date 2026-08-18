@@ -7,6 +7,7 @@ namespace TesisFlow.Core.Servicos.Tarefas
 {
     public class TarefaLembreteServico
     {
+        private static readonly TimeZoneInfo FusoSaoPaulo = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
         private readonly ApplicationDbContextTesisFlow _context;
         private readonly NotificacaoServico _notificacaoServico;
 
@@ -47,6 +48,12 @@ namespace TesisFlow.Core.Servicos.Tarefas
                 var link = tarefa.Chave != null ? $"/tarefas/{tarefa.Chave}" : null;
                 var titulo = TituloLembrete(nivel, tarefa.Chave, tarefa.Titulo);
                 var descricao = $"{tarefa.Titulo} • {tarefa.Projeto?.Nome} • entrega {tarefa.DataEntrega!.Value:dd/MM/yyyy HH:mm}";
+
+                var dataEntrega = tarefa.DataEntrega!.Value.Kind == DateTimeKind.Utc
+                    ? tarefa.DataEntrega.Value
+                    : DateTime.SpecifyKind(tarefa.DataEntrega.Value, DateTimeKind.Utc);
+                var descricaoLocal = $"{tarefa.Titulo} • {tarefa.Projeto?.Nome} • entrega {TimeZoneInfo.ConvertTimeFromUtc(dataEntrega, FusoSaoPaulo):dd/MM/yyyy HH:mm}";
+                descricao = descricaoLocal;
 
                 foreach (var usuarioId in responsaveis)
                 {

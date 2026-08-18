@@ -412,6 +412,25 @@ export class AppLayoutComponent implements OnInit, OnDestroy {
     }
   }
 
+  aceitarConvite(notif: Notificacao) {
+    if (notif.projetoId == null || notif.targetUserId == null) return;
+    this.projetoService.aceitarConvite(notif.projetoId, notif.targetUserId).subscribe({
+      next: () => {
+        this.notificacaoService.alternarLida(notif.id);
+        this.carregarProjetos();
+      },
+      error: () => console.error('Erro ao aceitar convite'),
+    });
+  }
+
+  recusarConvite(notif: Notificacao) {
+    if (notif.projetoId == null || notif.targetUserId == null) return;
+    this.projetoService.recusarConvite(notif.projetoId, notif.targetUserId).subscribe({
+      next: () => this.notificacaoService.alternarLida(notif.id),
+      error: () => console.error('Erro ao recusar convite'),
+    });
+  }
+
   @HostListener('document:click', ['$event'])
   fecharNotificacoes(event: MouseEvent) {
     if (this.mostrarNotificacoes()) {

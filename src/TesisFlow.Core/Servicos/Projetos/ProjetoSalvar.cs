@@ -1,6 +1,7 @@
 using TesisFlow.Core.Interfaces;
 using TesisFlow.Contexto.Contextos;
 using TesisFlow.Modelo.Entidades;
+using TesisFlow.Core.Servicos.Notificacoes;
 
 namespace TesisFlow.Core.Servicos.Projetos
 {
@@ -9,12 +10,14 @@ namespace TesisFlow.Core.Servicos.Projetos
         private readonly IProjetoRepositorio _repositorio;
         private readonly IUsuarioRepositorio _usuarioRepositorio;
         private readonly ApplicationDbContextTesisFlow _context;
+        private readonly NotificacaoServico _notificacaoServico;
 
-        public ProjetoSalvar(IProjetoRepositorio repositorio, IUsuarioRepositorio usuarioRepositorio, ApplicationDbContextTesisFlow context)
+        public ProjetoSalvar(IProjetoRepositorio repositorio, IUsuarioRepositorio usuarioRepositorio, ApplicationDbContextTesisFlow context, NotificacaoServico notificacaoServico)
         {
             _repositorio = repositorio;
             _usuarioRepositorio = usuarioRepositorio;
             _context = context;
+            _notificacaoServico = notificacaoServico;
         }
 
         public async Task<Projeto> CriarAsync(string nome, string? descricao, string? cor, string? icone, int liderId)
@@ -66,7 +69,28 @@ namespace TesisFlow.Core.Servicos.Projetos
             var usuario = await _usuarioRepositorio.ObterPorEmailAsync(email)
                 ?? throw new KeyNotFoundException("Usuario nao encontrado.");
 
+            var projeto = await _repositorio.ObterPorIdAsync(projetoId)
+                ?? throw new KeyNotFoundException("Projeto não encontrado.");
+
             await _repositorio.AdicionarMembroAsync(projetoId, usuario.Id);
+
+            await _notificacaoServico.CriarENotificarAsync(
+                titulo: $"Convite para o projeto {projeto.Nome}",
+                descricao: $"Você foi convidado para participar do projeto {projeto.Nome}. Aceite para começar a colaborar.",
+                tipo: "convite",
+                link: $"/projetos/{projetoId}/configuracoes",
+                targetUserId: usuario.Id,
+                projetoId: projetoId);
+        }
+
+        public async Task AceitarConviteAsync(int projetoId, int usuarioId)
+        {
+            await _repositorio.AceitarConviteAsync(projetoId, usuarioId);
+        }
+
+        public async Task RecusarConviteAsync(int projetoId, int usuarioId)
+        {
+            await _repositorio.RecusarConviteAsync(projetoId, usuarioId);
         }
     }
 }

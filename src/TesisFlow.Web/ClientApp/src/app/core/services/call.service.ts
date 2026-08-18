@@ -5,7 +5,7 @@ import { AuthService } from './auth.service';
 interface Participant {
   userId: number;
   nome: string;
-  status: 'conectando' | 'conectado' | 'semResposta' | 'recusou';
+  status: 'conectando' | 'conectado' | 'semResposta' | 'recusou' | 'ocupado';
 }
 
 interface CallState {
@@ -14,6 +14,7 @@ interface CallState {
   participants: Participant[];
   duracao: string;
   mutado: boolean;
+  compartilhandoTela: boolean;
 }
 
 const ICE_SERVERS: RTCConfiguration = {
@@ -26,12 +27,17 @@ export class CallService {
   private hubConnection: signalR.HubConnection | null = null;
   private peerConnections = new Map<number, RTCPeerConnection>();
   private localStream: MediaStream | null = null;
+  private screenStream: MediaStream | null = null;
   private timerInterval: any;
   private ringtoneAudio: HTMLAudioElement | null = null;
   private participantTimeouts = new Map<number, any>();
 
-  readonly callState = signal<CallState>({ status: 'idle', roomId: '', participants: [], duracao: '00:00', mutado: false });
+  readonly callState = signal<CallState>({ status: 'idle', roomId: '', participants: [], duracao: '00:00', mutado: false, compartilhandoTela: false });
   readonly mostrarModal = signal(false);
+  readonly minimizado = signal(false);
+  readonly remoteVideos = signal<{ userId: number; stream: MediaStream }[]>([]);
+  readonly screenPreview = signal<MediaStream | null>(null);
+  readonly avisoOcupados = signal<{ id: number; nome: string }[]>([]);
 
   private pendingOffers = new Map<number, RTCSessionDescriptionInit>();
   private pendingCandidates = new Map<number, RTCIceCandidateInit[]>();
@@ -42,19 +48,35 @@ export class CallService {
     this.conectarSignalR(userId);
   }
 
+  private async invocar<T>(method: string, ...args: any[]): Promise<T | undefined> {
+    const conn = this.hubConnection;
+    if (!conn || conn.state !== signalR.HubConnectionState.Connected) {
+      return undefined;
+    }
+    try {
+      return await conn.invoke<T>(method, ...args);
+    } catch {
+      return undefined;
+    }
+  }
+
   private conectarSignalR(userId: number): void {
     if (this.hubConnection) return;
     this.hubConnection = new signalR.HubConnectionBuilder()
       .withUrl(`/hubs/chamadas?userId=${userId}`)
+      .withAutomaticReconnect()
       .build();
 
     this.hubConnection.on('ChamadaGrupoRecebida', (roomId: string, iniciadorId: number, iniciadorNome: string, participants: any[]) => {
+      const meuNome = this.auth.usuario()?.nome || '';
       const parts: Participant[] = participants.map((p: any) => ({
         userId: p.id,
-        nome: p.id === iniciadorId ? iniciadorNome : (p.nome || `Usuário ${p.id}`),
+        nome: p.id === iniciadorId ? iniciadorNome : (p.id === userId ? meuNome : (p.nome || `Usuário ${p.id}`)),
         status: 'conectando' as const,
       }));
-      this.callState.set({ status: 'recebendo', roomId, participants: parts, duracao: '00:00', mutado: false });
+      this.callState.set({ status: 'recebendo', roomId, participants: parts, duracao: '00:00', mutado: false, compartilhandoTela: false });
+      this.minimizado.set(false);
+      this.avisoOcupados.set([]);
       this.mostrarModal.set(true);
       this.ringtoneAudio = new Audio('/sounds/ringtone.mp3');
       this.ringtoneAudio.loop = true;
@@ -63,13 +85,18 @@ export class CallService {
     });
 
     this.hubConnection.on('OfertaGrupoRecebida', async (roomId: string, senderId: number, oferta: string) => {
-      await this.criarPeerConnection(senderId);
-      const pc = this.peerConnections.get(senderId);
+      let pc = this.peerConnections.get(senderId);
+      if (!pc) {
+        await this.criarPeerConnection(senderId);
+        pc = this.peerConnections.get(senderId);
+      }
       if (!pc) return;
-      await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(oferta)));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      this.hubConnection?.invoke('EnviarRespostaGrupo', roomId, senderId, JSON.stringify(answer));
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(oferta)));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        this.invocar('EnviarRespostaGrupo', roomId, senderId, JSON.stringify(answer));
+      } catch { /* ignora renegociação concorrente */ }
     });
 
     this.hubConnection.on('RespostaGrupoRecebida', async (roomId: string, senderId: number, resposta: string) => {
@@ -106,6 +133,13 @@ export class CallService {
       }));
     });
 
+    this.hubConnection.on('ParticipanteOcupado', (userId: number, nome: string) => {
+      this.avisoOcupados.update(arr => {
+        if (arr.some(o => o.id === userId)) return arr;
+        return [...arr, { id: userId, nome: nome || `Usuário ${userId}` }];
+      });
+    });
+
     this.hubConnection.on('SalaEncerrada', (roomId: string) => {
       this.limparChamada();
     });
@@ -122,19 +156,48 @@ export class CallService {
     const others: Participant[] = destinos.map(d => ({ userId: d.id, nome: d.nome, status: 'conectando' as const }));
     const destIds = destinos.map(d => d.id);
 
-    this.callState.set({ status: 'chamando', roomId: '', participants: [me, ...others], duracao: '00:00', mutado: false });
+    this.callState.set({ status: 'chamando', roomId: '', participants: [me, ...others], duracao: '00:00', mutado: false, compartilhandoTela: false });
     this.mostrarModal.set(true);
     this.callState.update(s => ({ ...s, status: 'emAndamento' }));
 
-    await this.criarLocalStream();
-    const roomId = await this.hubConnection!.invoke<string>('CriarSalaGrupo', destIds, meuNome) || '';
-    if (!roomId) return;
+    try {
+      await this.criarLocalStream();
+    } catch {
+      this.limparChamada();
+      return;
+    }
 
-    this.hubConnection?.invoke('EntrarSalaGrupo', roomId);
+    const resultado = await this.invocar<any>('CriarSalaGrupo', destIds, meuNome);
+    if (!resultado?.roomId) {
+      const ocupados: { id: number; nome: string }[] = resultado?.ocupados || [];
+      if (ocupados.length === 0) {
+        this.limparChamada();
+        return;
+      }
+      this.avisoOcupados.set(ocupados);
+      this.callState.set({ status: 'idle', roomId: '', participants: [], duracao: '00:00', mutado: false, compartilhandoTela: false });
+      this.mostrarModal.set(true);
+      return;
+    }
+
+    const roomId: string = resultado.roomId;
+    const ocupados: { id: number; nome: string }[] = resultado.ocupados || [];
+
+    if (ocupados.length > 0) {
+      this.avisoOcupados.set(ocupados);
+      this.callState.update(s => ({
+        ...s,
+        participants: s.participants.map(p =>
+          ocupados.some(o => o.id === p.userId) ? { ...p, status: 'ocupado' as const } : p),
+      }));
+    }
+
+    this.invocar('EntrarSalaGrupo', roomId);
     this.callState.update(s => ({ ...s, roomId }));
     this.iniciarTimer();
 
-    for (const id of destIds) {
+    const disponiveis = destIds.filter(id => !ocupados.some(o => o.id === id));
+    for (const id of disponiveis) {
       await this.conectarComParticipante(roomId, id);
       this.iniciarTimeoutParticipante(id);
     }
@@ -146,7 +209,7 @@ export class CallService {
     const meuId = this.auth.usuario()?.id;
     if (!roomId || !meuId) return;
 
-    this.hubConnection?.invoke('EntrarSalaGrupo', roomId);
+    this.invocar('EntrarSalaGrupo', roomId);
     this.callState.update(s => ({ ...s, status: 'emAndamento' }));
     await this.criarLocalStream();
     this.iniciarTimer();
@@ -164,10 +227,22 @@ export class CallService {
     this.limparChamada();
   }
 
+  minimizar(): void {
+    this.minimizado.set(true);
+  }
+
+  maximizar(): void {
+    this.minimizado.set(false);
+  }
+
+  alternarMinimizado(): void {
+    this.minimizado.update(v => !v);
+  }
+
   encerrarChamada(): void {
     this.pararRingtone();
     const roomId = this.callState().roomId;
-    if (roomId) this.hubConnection?.invoke('EncerrarSala', roomId);
+    if (roomId) this.invocar('EncerrarSala', roomId);
     this.limparChamada();
   }
 
@@ -178,10 +253,24 @@ export class CallService {
       ...s,
       participants: [...s.participants, { userId, nome: `Usuário ${userId}`, status: 'conectando' as const }],
     }));
-    this.hubConnection?.invoke('AdicionarParticipanteSala', roomId, userId).then(() => {
+    this.invocar<boolean>('AdicionarParticipanteSala', roomId, userId).then(adicionado => {
+      if (!adicionado) {
+        this.callState.update(s => ({
+          ...s,
+          participants: s.participants.map(p => p.userId === userId ? { ...p, status: 'ocupado' as const } : p),
+        }));
+        return;
+      }
       this.conectarComParticipante(roomId, userId);
       this.iniciarTimeoutParticipante(userId);
     });
+  }
+
+  limparAviso(): void {
+    this.avisoOcupados.set([]);
+    this.callState.set({ status: 'idle', roomId: '', participants: [], duracao: '00:00', mutado: false, compartilhandoTela: false });
+    this.minimizado.set(false);
+    this.mostrarModal.set(false);
   }
 
   mutar(): void {
@@ -192,6 +281,70 @@ export class CallService {
         this.callState.update(s => ({ ...s, mutado: !s.mutado }));
       }
     }
+  }
+
+  async compartilharTela(): Promise<void> {
+    if (this.screenStream) return;
+
+    try {
+      this.screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+    } catch {
+      this.screenStream = null;
+      return;
+    }
+
+    const videoTrack = this.screenStream.getVideoTracks()[0];
+    if (!videoTrack) {
+      this.pararCompartilhamento();
+      return;
+    }
+
+    videoTrack.onended = () => this.pararCompartilhamento();
+
+    for (const pc of this.peerConnections.values()) {
+      pc.addTrack(videoTrack, this.screenStream);
+    }
+
+    this.screenPreview.set(this.screenStream);
+    this.callState.update(s => ({ ...s, compartilhandoTela: true }));
+
+    for (const userId of Array.from(this.peerConnections.keys())) {
+      await this.renegociarPc(userId);
+    }
+  }
+
+  pararCompartilhamento(): void {
+    const screen = this.screenStream;
+    if (!screen) return;
+
+    for (const pc of this.peerConnections.values()) {
+      for (const sender of pc.getSenders()) {
+        if (sender.track && sender.track.kind === 'video') {
+          try { pc.removeTrack(sender); } catch { /* ignora */ }
+        }
+      }
+    }
+
+    screen.getTracks().forEach(t => t.stop());
+    this.screenStream = null;
+    this.screenPreview.set(null);
+    this.callState.update(s => ({ ...s, compartilhandoTela: false }));
+
+    for (const userId of Array.from(this.peerConnections.keys())) {
+      this.renegociarPc(userId);
+    }
+  }
+
+  private async renegociarPc(userId: number): Promise<void> {
+    const pc = this.peerConnections.get(userId);
+    const roomId = this.callState().roomId;
+    if (!pc || !roomId) return;
+
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      this.invocar('EnviarOfertaGrupo', roomId, userId, JSON.stringify(offer));
+    } catch { /* ignora renegociação concorrente */ }
   }
 
   private async conectarComParticipante(roomId: string, userId: number): Promise<void> {
@@ -213,16 +366,37 @@ export class CallService {
       pc.addTrack(track, this.localStream);
     }
 
+    if (this.screenStream) {
+      for (const track of this.screenStream.getTracks()) {
+        pc.addTrack(track, this.screenStream);
+      }
+    }
+
     pc.ontrack = (event) => {
-      const audio = new Audio();
-      audio.srcObject = event.streams[0];
-      audio.play();
+      const stream = event.streams[0];
+      if (!stream) return;
+
+      if (event.track.kind === 'video') {
+        event.track.onended = () => {
+          this.remoteVideos.update(videos => videos.filter(v => v.userId !== userId));
+        };
+        this.remoteVideos.update(videos => {
+          if (videos.some(v => v.userId === userId)) {
+            return videos.map(v => v.userId === userId ? { ...v, stream } : v);
+          }
+          return [...videos, { userId, stream }];
+        });
+      } else {
+        const audio = new Audio();
+        audio.srcObject = stream;
+        audio.play();
+      }
     };
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         const roomId = this.callState().roomId;
-        this.hubConnection?.invoke('EnviarCandidatoICEGrupo', roomId, userId, JSON.stringify(event.candidate));
+        this.invocar('EnviarCandidatoICEGrupo', roomId, userId, JSON.stringify(event.candidate));
       }
     };
 
@@ -246,6 +420,7 @@ export class CallService {
       pc.close();
       this.peerConnections.delete(userId);
     }
+    this.remoteVideos.update(videos => videos.filter(v => v.userId !== userId));
   }
 
   private async criarLocalStream(): Promise<void> {
@@ -265,7 +440,7 @@ export class CallService {
 
   private enviarSairSala(): void {
     const roomId = this.callState().roomId;
-    if (roomId) this.hubConnection?.invoke('SairSalaGrupo', roomId);
+    if (roomId) this.invocar('SairSalaGrupo', roomId);
   }
 
   private iniciarTimeoutParticipante(userId: number): void {
@@ -290,7 +465,15 @@ export class CallService {
       this.localStream.getTracks().forEach(t => t.stop());
       this.localStream = null;
     }
-    this.callState.set({ status: 'idle', roomId: '', participants: [], duracao: '00:00', mutado: false });
+    if (this.screenStream) {
+      this.screenStream.getTracks().forEach(t => t.stop());
+      this.screenStream = null;
+    }
+    this.screenPreview.set(null);
+    this.remoteVideos.set([]);
+    this.avisoOcupados.set([]);
+    this.callState.set({ status: 'idle', roomId: '', participants: [], duracao: '00:00', mutado: false, compartilhandoTela: false });
+    this.minimizado.set(false);
     this.mostrarModal.set(false);
   }
 

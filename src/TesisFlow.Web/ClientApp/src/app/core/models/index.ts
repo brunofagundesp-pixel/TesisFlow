@@ -31,6 +31,7 @@ export interface Projeto {
   quantidadeTarefas: number;
   quantidadeMembros: number;
   membros?: ProjetoMembro[];
+  convites?: ProjetoMembro[];
 }
 
 export interface ProjetoSave {
@@ -47,8 +48,10 @@ export interface ProjetoMembro {
   projetoId: number;
   usuarioId: number;
   usuarioNome: string;
+  usuarioEmail?: string;
   usuarioFoto?: string;
   papel: string;
+  status: string;
 }
 
 export interface TarefaResponsavel {

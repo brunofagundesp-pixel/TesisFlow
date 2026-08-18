@@ -12,5 +12,7 @@ namespace TesisFlow.Core.Interfaces
         Task ExcluirAsync(int id);
         Task<Dictionary<int, int>> ObterQuantidadeTarefasAsync();
         Task AdicionarMembroAsync(int projetoId, int usuarioId);
+        Task AceitarConviteAsync(int projetoId, int usuarioId);
+        Task RecusarConviteAsync(int projetoId, int usuarioId);
     }
 }

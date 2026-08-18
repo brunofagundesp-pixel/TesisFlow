@@ -34,4 +34,12 @@ export class ProjetoService {
   convidarMembro(projetoId: number, email: string): Observable<void> {
     return this.api.post<void>(`Projetos/${projetoId}/membros`, { email });
   }
+
+  aceitarConvite(projetoId: number, usuarioId: number): Observable<void> {
+    return this.api.put<void>(`Projetos/${projetoId}/membros/aceitar`, { usuarioId });
+  }
+
+  recusarConvite(projetoId: number, usuarioId: number): Observable<void> {
+    return this.api.put<void>(`Projetos/${projetoId}/membros/recusar`, { usuarioId });
+  }
 }

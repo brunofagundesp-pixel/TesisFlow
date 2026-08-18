@@ -12,6 +12,12 @@ namespace TesisFlow.Core.Servicos.Tarefas
             _repositorio = repositorio;
         }
 
+        private static DateTime ComoUtc(DateTime data) =>
+            data.Kind == DateTimeKind.Utc ? data : DateTime.SpecifyKind(data, DateTimeKind.Utc);
+
+        private static DateTime? ComoUtc(DateTime? data) =>
+            data.HasValue ? ComoUtc(data.Value) : null;
+
         public async Task<TarefaDTO?> ObterPorChaveAsync(string chave)
         {
             var tarefa = await _repositorio.ObterPorChaveAsync(chave);
@@ -85,11 +91,11 @@ namespace TesisFlow.Core.Servicos.Tarefas
             ColegioId = t.ColegioId,
             ColegioNome = t.ColegioNome,
             ContatoNome = t.ContatoNome,
-            DataConclusao = t.DataConclusao,
-            DataEntrega = t.DataEntrega,
-            DataCriacao = t.DataCriacao,
-            DataAtualizacao = t.DataAtualizacao,
-            DataExclusao = t.DataExclusao,
+            DataConclusao = ComoUtc(t.DataConclusao),
+            DataEntrega = ComoUtc(t.DataEntrega),
+            DataCriacao = ComoUtc(t.DataCriacao),
+            DataAtualizacao = ComoUtc(t.DataAtualizacao),
+            DataExclusao = ComoUtc(t.DataExclusao),
             QuantidadeComentarios = t.Comentarios?.Count ?? 0
         };
     }

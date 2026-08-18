@@ -13,6 +13,7 @@ namespace TesisFlow.Modelo.DTOs
         public int QuantidadeTarefas { get; set; }
         public int QuantidadeMembros { get; set; }
         public IEnumerable<ProjetoMembroDTO> Membros { get; set; } = new List<ProjetoMembroDTO>();
+        public IEnumerable<ProjetoMembroDTO> Convites { get; set; } = new List<ProjetoMembroDTO>();
     }
 
     public class ProjetoSalvarDTO
@@ -30,12 +31,19 @@ namespace TesisFlow.Modelo.DTOs
         public int ProjetoId { get; set; }
         public int UsuarioId { get; set; }
         public string UsuarioNome { get; set; } = string.Empty;
+        public string? UsuarioEmail { get; set; }
         public string? UsuarioFoto { get; set; }
         public string Papel { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
     }
 
     public class ConvidarMembroDTO
     {
         public required string Email { get; set; }
+    }
+
+    public class MembroAcaoDTO
+    {
+        public int UsuarioId { get; set; }
     }
 }

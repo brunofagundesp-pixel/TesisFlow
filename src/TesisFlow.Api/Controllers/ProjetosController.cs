@@ -47,7 +47,8 @@ namespace TesisFlow.Api.Controllers
             try
             {
                 var projeto = await _salvar.CriarAsync(dto.Nome, dto.Descricao, dto.Cor, dto.Icone, dto.LiderId);
-                return CreatedAtAction(nameof(GetById), new { id = projeto.Id }, projeto);
+                var projetoDto = await _consultar.ObterPorIdAsync(projeto.Id);
+                return CreatedAtAction(nameof(GetById), new { id = projeto.Id }, projetoDto);
             }
             catch (KeyNotFoundException ex)
             {
@@ -60,8 +61,9 @@ namespace TesisFlow.Api.Controllers
         {
             try
             {
-                var projeto = await _salvar.AtualizarAsync(id, dto.Nome, dto.Descricao, dto.Cor, dto.Icone, dto.LiderId);
-                return Ok(projeto);
+                await _salvar.AtualizarAsync(id, dto.Nome, dto.Descricao, dto.Cor, dto.Icone, dto.LiderId);
+                var projetoDto = await _consultar.ObterPorIdAsync(id);
+                return Ok(projetoDto);
             }
             catch (KeyNotFoundException)
             {
@@ -97,6 +99,34 @@ namespace TesisFlow.Api.Controllers
             catch (KeyNotFoundException ex)
             {
                 return NotFound(new { mensagem = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}/membros/aceitar")]
+        public async Task<IActionResult> AceitarConvite(int id, [FromBody] MembroAcaoDTO dto)
+        {
+            try
+            {
+                await _salvar.AceitarConviteAsync(id, dto.UsuarioId);
+                return Ok();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
+        [HttpPut("{id}/membros/recusar")]
+        public async Task<IActionResult> RecusarConvite(int id, [FromBody] MembroAcaoDTO dto)
+        {
+            try
+            {
+                await _salvar.RecusarConviteAsync(id, dto.UsuarioId);
+                return Ok();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
             }
         }
     }

@@ -15,7 +15,7 @@ namespace TesisFlow.Contexto.ModeloConfiguracao
             builder.Property(p => p.Nome).IsRequired().HasMaxLength(200);
             builder.Property(p => p.Descricao).HasMaxLength(2000);
             builder.Property(p => p.Cor).HasMaxLength(7);
-            builder.Property(p => p.Icone).HasMaxLength(10).HasConversion<EmojiValueConverter>();
+            builder.Property(p => p.Icone).HasMaxLength(50).HasConversion<EmojiValueConverter>();
 
             builder.HasOne(p => p.Lider)
                 .WithMany()

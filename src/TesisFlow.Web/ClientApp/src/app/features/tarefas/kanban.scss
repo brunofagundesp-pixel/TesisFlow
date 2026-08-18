@@ -9,6 +9,8 @@
   color: var(--tf-primary);
   display: flex; align-items: center; justify-content: center;
   font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+
+  &.mat-icon { font-size: 1.25rem; }
 }
 
 .projeto-config-btn {
@@ -350,7 +352,6 @@
   padding: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem;
   flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: visible;
   background: var(--tf-surface-soft);
-  border-radius: 0 0 12px 12px;
 }
 
 .tarefa-card {
@@ -572,18 +573,22 @@
 }
 
 .tarefa-ghost {
+  flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; gap: 0.4rem;
-  padding: 0.75rem; border-radius: 10px;
-  border: 2px dashed var(--tf-scrollbar); color: var(--tf-text-faint);
-  cursor: pointer; font-size: 0.82rem; flex-shrink: 0;
-  opacity: 0; transition: border-color 0.15s, color 0.15s, opacity 0.15s;
+  padding: 0.6rem; border-radius: 0 0 12px 12px;
+  border: none;
+  background: transparent;
+  color: var(--tf-text-muted);
+  cursor: pointer; font-size: 0.8rem; font-weight: 500;
+  transition: background 0.15s, color 0.15s;
 
-  mat-icon { font-size: 1.1rem; width: 1.1rem; height: 1.1rem; }
+  mat-icon { font-size: 1.05rem; width: 1.05rem; height: 1.05rem; }
 
-  &:hover { border-color: var(--tf-primary); color: var(--tf-primary); }
+  &:hover {
+    background: var(--tf-surface-hover);
+    color: var(--tf-primary);
+  }
 }
-
-.kanban-coluna:hover .tarefa-ghost { opacity: 1; }
 
 .cdk-drag-preview { box-shadow: 0 8px 24px rgba(0,0,0,0.15) !important; border-radius: 10px !important; }
 .cdk-drag-placeholder { opacity: 0.3; }
@@ -734,6 +739,97 @@
   &:last-child { border-right: none; }
 }
 
+.th-sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover { color: var(--tf-primary); }
+  &:hover .th-sort-icon { color: var(--tf-primary); }
+
+  .th-sort-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .th-sort-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .th-sort-label {
+    display: inline;
+    vertical-align: middle;
+  }
+
+  .th-sort-icon {
+    font-size: 0.95rem;
+    width: 0.95rem;
+    height: 0.95rem;
+    flex-shrink: 0;
+    opacity: 0;
+    color: var(--tf-text-faint);
+    transition: color 0.15s, transform 0.15s, opacity 0.12s;
+  }
+
+  .th-menu-btn {
+    width: 22px !important;
+    height: 22px !important;
+    line-height: 1 !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    opacity: 0;
+    transition: opacity 0.12s, background 0.12s;
+
+    mat-icon {
+      font-size: 1rem;
+      width: 1rem;
+      height: 1rem;
+      color: var(--tf-text-muted);
+    }
+  }
+
+  &:hover .th-sort-icon,
+  &:hover .th-menu-btn,
+  .th-menu-btn--open { opacity: 1 !important; }
+
+  &.th-sort-ativo .th-sort-label { color: var(--tf-primary); }
+  &.th-sort-ativo .th-sort-icon { color: var(--tf-primary); opacity: 1; }
+}
+
+.sort-dropdown {
+  position: fixed;
+  background: var(--tf-surface);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--tf-border-strong);
+  z-index: 300;
+  padding: 4px;
+  min-width: 150px;
+}
+
+.sort-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--tf-text-body);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.1s;
+
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; color: var(--tf-text-muted); }
+
+  &:hover { background: var(--tf-border-light); }
+}
+
 .tarefa-lista td {
   padding: 0.55rem 0.75rem; font-size: 0.82rem;
   border-bottom: 1px solid var(--tf-border-light);
@@ -789,7 +885,12 @@
 }
 
 .lista-chave {
-  font-size: 0.75rem; font-weight: 600; color: var(--tf-text-faint);
+  font-size: 0.75rem; font-weight: 600; color: var(--tf-blue);
+}
+
+.lista-chave--concluida,
+.lista-chave--concluida:hover {
+  text-decoration: line-through;
 }
 
 .lista-badge {

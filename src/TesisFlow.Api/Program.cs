@@ -22,7 +22,13 @@ var serverVersion = ServerVersion.AutoDetect(connectionString);
 
 builder.Services.AddDbContext<ApplicationDbContextTesisFlow>(options =>
 {
-    options.UseMySql(connectionString, serverVersion);
+    options.UseMySql(connectionString, serverVersion, mysql =>
+    {
+        mysql.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null);
+    });
 });
 
 var tesisCcBaseUrl = builder.Configuration["TesisCc:BaseUrl"]!;
@@ -71,10 +77,25 @@ static async Task AplicarMigracoesAsync(WebApplication app)
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContextTesisFlow>();
 
         await GarantirColunaAsync(db, "Mensagens", "Entregue", "TINYINT(1) NOT NULL DEFAULT 0");
+        await GarantirColunaAsync(db, "Mensagens", "Audio", "VARCHAR(500) NULL");
+        await GarantirColunaAsync(db, "Mensagens", "AudioDuracao", "INT NULL");
+        await GarantirColunaAsync(db, "Mensagens", "MensagemRespondidaId", "INT NULL");
+        await GarantirColunaAsync(db, "Mensagens", "VinculoTipo", "VARCHAR(20) NULL");
+        await GarantirColunaAsync(db, "Mensagens", "VinculoId", "INT NULL");
+        await GarantirColunaAsync(db, "Mensagens", "VinculoTitulo", "VARCHAR(300) NULL");
+        await GarantirColunaAsync(db, "Mensagens", "VinculoSubtitulo", "VARCHAR(300) NULL");
+        await GarantirColunaAsync(db, "Mensagens", "VinculoLink", "VARCHAR(500) NULL");
+        await GarantirColunaAsync(db, "Mensagens", "VinculoIcone", "VARCHAR(50) NULL");
+        await GarantirColunaAsync(db, "Mensagens", "Imagem", "VARCHAR(500) NULL");
+        await GarantirColunaAsync(db, "Mensagens", "ImagemNome", "VARCHAR(255) NULL");
         await GarantirColunaAsync(db, "Tarefas", "DataEntrega", "DATETIME NULL");
         await GarantirColunaAsync(db, "Tarefas", "LembreteNivel", "INT NOT NULL DEFAULT 0");
         await GarantirColunaAsync(db, "Notificacoes", "TarefaId", "INT NULL");
         await GarantirColunaAsync(db, "Notificacoes", "ProjetoId", "INT NULL");
+        await GarantirColunaAsync(db, "Projetos", "Cor", "VARCHAR(7) NULL");
+        await GarantirColunaAsync(db, "Projetos", "Icone", "VARCHAR(50) NULL");
+        await GarantirTamanhoColunaAsync(db, "Projetos", "Icone", 50, "VARCHAR(50) NULL");
+        await GarantirColunaAsync(db, "ProjetoMembros", "Status", "INT NOT NULL DEFAULT 2");
     }
     catch (Exception ex)
     {
@@ -94,5 +115,19 @@ static async Task GarantirColunaAsync(ApplicationDbContextTesisFlow db, string t
     if (existe == 0)
     {
         await db.Database.ExecuteSqlRawAsync($"ALTER TABLE `{tabela}` ADD COLUMN `{coluna}` {definicao}");
+    }
+}
+
+static async Task GarantirTamanhoColunaAsync(ApplicationDbContextTesisFlow db, string tabela, string coluna, int tamanhoMinimo, string definicao)
+{
+    var tamanhoAtual = await db.Database
+        .SqlQueryRaw<int>(
+            "SELECT COALESCE(CHARACTER_MAXIMUM_LENGTH, 0) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = {0} AND COLUMN_NAME = {1}",
+            tabela, coluna)
+        .FirstOrDefaultAsync();
+
+    if (tamanhoAtual < tamanhoMinimo)
+    {
+        await db.Database.ExecuteSqlRawAsync($"ALTER TABLE `{tabela}` MODIFY COLUMN `{coluna}` {definicao}");
     }
 }

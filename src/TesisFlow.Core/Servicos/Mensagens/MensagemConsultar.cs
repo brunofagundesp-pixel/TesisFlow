@@ -12,20 +12,67 @@ namespace TesisFlow.Core.Servicos.Mensagens
             _repositorio = repositorio;
         }
 
-        public async Task<IEnumerable<MensagemDTO>> ObterConversaAsync(int usuarioA, int usuarioB)
+        private static DateTime ComoUtc(DateTime data) =>
+            data.Kind == DateTimeKind.Utc ? data : DateTime.SpecifyKind(data, DateTimeKind.Utc);
+
+        public async Task<IEnumerable<MensagemDTO>> ObterConversaAsync(int usuarioA, int usuarioB, int? antesId = null, int limite = 50)
         {
-            var mensagens = await _repositorio.ObterConversaAsync(usuarioA, usuarioB);
+            var mensagens = await _repositorio.ObterConversaAsync(usuarioA, usuarioB, antesId, limite);
             return mensagens.OrderBy(m => m.DataCriacao).Select(m => new MensagemDTO
             {
                 Id = m.Id,
                 RemetenteId = m.RemetenteId,
                 RemetenteNome = m.Remetente?.Nome ?? "",
+                RemetenteFoto = m.Remetente?.Foto,
                 DestinatarioId = m.DestinatarioId,
                 Texto = m.Texto,
                 Lida = m.Lida,
                 Entregue = m.Entregue,
-                DataCriacao = m.DataCriacao,
+                DataCriacao = ComoUtc(m.DataCriacao),
+                Audio = m.Audio,
+                AudioDuracao = m.AudioDuracao,
+                Imagem = m.Imagem,
+                ImagemNome = m.ImagemNome,
+                MensagemRespondidaId = m.MensagemRespondidaId,
+                MensagemRespondida = m.MensagemRespondida == null ? null : new MensagemRespostaDTO
+                {
+                    Id = m.MensagemRespondida.Id,
+                    Texto = m.MensagemRespondida.Texto,
+                    Audio = m.MensagemRespondida.Audio,
+                    Imagem = m.MensagemRespondida.Imagem,
+                    RemetenteNome = m.MensagemRespondida.Remetente?.Nome ?? "",
+                },
+                Vinculo = string.IsNullOrEmpty(m.VinculoTipo) ? null : new VinculoDTO
+                {
+                    Tipo = m.VinculoTipo!,
+                    Id = m.VinculoId ?? 0,
+                    Titulo = m.VinculoTitulo ?? "",
+                    Subtitulo = m.VinculoSubtitulo ?? "",
+                    Link = m.VinculoLink ?? "",
+                    Icone = m.VinculoIcone ?? "",
+                },
             });
+        }
+
+        public async Task<MensagemDTO?> ObterPorIdAsync(int id)
+        {
+            var m = await _repositorio.ObterPorIdAsync(id);
+            if (m == null) return null;
+
+            return new MensagemDTO
+            {
+                Id = m.Id,
+                RemetenteId = m.RemetenteId,
+                RemetenteNome = m.Remetente?.Nome ?? "",
+                RemetenteFoto = m.Remetente?.Foto,
+                DestinatarioId = m.DestinatarioId,
+                Texto = m.Texto,
+                Lida = m.Lida,
+                Entregue = m.Entregue,
+                DataCriacao = ComoUtc(m.DataCriacao),
+                Audio = m.Audio,
+                AudioDuracao = m.AudioDuracao,
+            };
         }
 
         public async Task<IEnumerable<ContatoChatDTO>> ObterContatosAsync(int usuarioId)
@@ -44,8 +91,9 @@ namespace TesisFlow.Core.Servicos.Mensagens
                     {
                         UsuarioId = outro.Id,
                         Nome = outro.Nome,
-                        UltimaMensagem = m.Texto,
-                        UltimaData = m.DataCriacao,
+                        Foto = outro.Foto,
+                        UltimaMensagem = !string.IsNullOrEmpty(m.Audio) ? "[Áudio]" : !string.IsNullOrEmpty(m.Imagem) ? "[Imagem]" : !string.IsNullOrEmpty(m.VinculoTipo) ? "[Tarefa]" : m.Texto,
+                        UltimaData = ComoUtc(m.DataCriacao),
                         NaoLidas = 0,
                     };
                 }

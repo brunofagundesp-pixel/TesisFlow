@@ -14,7 +14,11 @@
       @for (p of projetos; track p.id) {
         <mat-card class="projeto-card" [routerLink]="['/projetos', p.id, 'kanban']">
           <div class="projeto-card-header">
-            <div class="projeto-card-icone">{{ p.icone || p.nome.charAt(0) }}</div>
+            @if (p.icone) {
+              <mat-icon class="projeto-card-icone">{{ p.icone }}</mat-icon>
+            } @else {
+              <div class="projeto-card-icone">{{ p.nome.charAt(0) }}</div>
+            }
             <div class="projeto-card-info">
               <h3>{{ p.nome }}</h3>
               @if (p.descricao) {

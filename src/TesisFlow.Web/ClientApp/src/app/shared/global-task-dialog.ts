@@ -136,6 +136,7 @@ export class GlobalTaskDialogComponent {
         usuarioId: projeto.liderId,
         usuarioNome: projeto.liderNome || 'Líder',
         papel: 'Lider',
+        status: 'Aceito',
       });
     }
     return membros;

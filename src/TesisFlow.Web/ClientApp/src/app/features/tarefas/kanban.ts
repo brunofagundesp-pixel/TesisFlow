@@ -117,6 +117,9 @@ export class KanbanComponent implements OnInit, OnDestroy {
   somenteMinhas = false;
   termoBusca = '';
 
+  tipoOrdenacao: 'titulo' | 'escola' | 'status' | 'prioridade' | 'entrega' | 'responsavel' | 'criacao' | null = null;
+  direcaoOrdenacao: 'asc' | 'desc' = 'asc';
+
   selecionadas = new Set<number>();
   acaoEmMassa: 'status' | 'prioridade' | null = null;
   valorEmMassa: number | null = null;
@@ -352,8 +355,104 @@ export class KanbanComponent implements OnInit, OnDestroy {
       }
     }
 
+    tarefas = this.ordenarTarefas(tarefas);
+
     this.tarefasFiltradas = tarefas;
     this.distribuirTarefas(tarefas);
+  }
+
+  ordenar(coluna: 'titulo' | 'escola' | 'status' | 'prioridade' | 'entrega' | 'responsavel' | 'criacao') {
+    if (this.tipoOrdenacao === coluna) {
+      this.direcaoOrdenacao = this.direcaoOrdenacao === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.tipoOrdenacao = coluna;
+      this.direcaoOrdenacao = 'asc';
+    }
+    this.aplicarFiltros();
+  }
+
+  sortIcone(coluna: 'titulo' | 'escola' | 'status' | 'prioridade' | 'entrega' | 'responsavel' | 'criacao'): string {
+    if (this.tipoOrdenacao !== coluna) return 'unfold_more';
+    return this.direcaoOrdenacao === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  sortTooltip(coluna: 'titulo' | 'escola' | 'status' | 'prioridade' | 'entrega' | 'responsavel' | 'criacao'): string {
+    switch (coluna) {
+      case 'titulo':
+        return 'Ordenar título: A → Z / Z → A';
+      case 'escola':
+        return 'Ordenar escola: A → Z / Z → A';
+      case 'status':
+        return 'Ordenar status: Backlog → Concluído / inverso';
+      case 'prioridade':
+        return 'Ordenar prioridade: Baixa → Crítica / inverso';
+      case 'entrega':
+        return 'Ordenar entrega: mais próxima → mais distante / inverso';
+      case 'responsavel':
+        return 'Ordenar responsável: A → Z / Z → A';
+      case 'criacao':
+        return 'Ordenar criação: mais antiga → mais recente / inverso';
+    }
+  }
+
+  sortMenuColuna: 'titulo' | 'escola' | 'status' | 'prioridade' | 'entrega' | 'responsavel' | 'criacao' | null = null;
+  sortMenuPos = { top: 0, left: 0 };
+
+  toggleSortMenu(event: Event, coluna: 'titulo' | 'escola' | 'status' | 'prioridade' | 'entrega' | 'responsavel' | 'criacao') {
+    if (this.sortMenuColuna === coluna) {
+      this.sortMenuColuna = null;
+      return;
+    }
+    this.sortMenuColuna = coluna;
+    const el = (event.target as HTMLElement).closest('.th-menu-btn') ?? (event.target as HTMLElement);
+    const rect = el.getBoundingClientRect();
+    this.sortMenuPos = { top: rect.bottom + 6, left: rect.right - 150 };
+  }
+
+  limparOrdenacao(coluna: 'titulo' | 'escola' | 'status' | 'prioridade' | 'entrega' | 'responsavel' | 'criacao') {
+    this.sortMenuColuna = null;
+    if (this.tipoOrdenacao === coluna) {
+      this.tipoOrdenacao = null;
+      this.direcaoOrdenacao = 'asc';
+      this.aplicarFiltros();
+    }
+  }
+
+  private ordenarTarefas(tarefas: Tarefa[]): Tarefa[] {
+    if (!this.tipoOrdenacao) return tarefas;
+
+    const dir = this.direcaoOrdenacao === 'asc' ? 1 : -1;
+    const coluna = this.tipoOrdenacao;
+
+    const texto = (v: string | null | undefined) => (v ?? '').toLocaleLowerCase();
+    const compararTexto = (a: string | null | undefined, b: string | null | undefined) =>
+      texto(a).localeCompare(texto(b), 'pt', { sensitivity: 'base' });
+
+    const nomeResponsavel = (t: Tarefa) => t.responsaveis[0]?.nome ?? '';
+
+    const dataEntrega = (t: Tarefa) => t.dataEntrega ? new Date(t.dataEntrega).getTime() : Number.POSITIVE_INFINITY;
+    const dataCriacao = (t: Tarefa) => t.dataCriacao ? new Date(t.dataCriacao).getTime() : 0;
+
+    return [...tarefas].sort((a, b) => {
+      switch (coluna) {
+        case 'titulo':
+          return compararTexto(a.titulo, b.titulo) * dir;
+        case 'escola':
+          return compararTexto(a.colegioNome, b.colegioNome) * dir;
+        case 'status':
+          return (a.status - b.status) * dir;
+        case 'prioridade':
+          return (a.prioridade - b.prioridade) * dir;
+        case 'entrega':
+          return (dataEntrega(a) - dataEntrega(b)) * dir;
+        case 'responsavel':
+          return compararTexto(nomeResponsavel(a), nomeResponsavel(b)) * dir;
+        case 'criacao':
+          return (dataCriacao(a) - dataCriacao(b)) * dir;
+        default:
+          return 0;
+      }
+    });
   }
 
   limparFiltros() {
@@ -701,6 +800,8 @@ export class KanbanComponent implements OnInit, OnDestroy {
     this.prioridadeMenu = null;
     if (target.closest('.lista-status') || target.closest('.status-dropdown')) return;
     this.statusMenu = null;
+    if (target.closest('.th-menu-btn') || target.closest('.sort-dropdown')) return;
+    this.sortMenuColuna = null;
   }
 
   togglePrioridadeMenu(event: Event, tarefa: Tarefa) {

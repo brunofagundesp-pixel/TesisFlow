@@ -2,7 +2,11 @@
   <div class="page-header">
     <div class="page-header-top">
       <div class="page-header-left">
-        <span class="page-icon">{{ projeto?.icone || projeto?.nome?.charAt(0) }}</span>
+        @if (projeto?.icone) {
+          <mat-icon class="page-icon">{{ projeto!.icone }}</mat-icon>
+        } @else {
+          <span class="page-icon">{{ projeto?.nome?.charAt(0) }}</span>
+        }
         <h1>{{ projeto?.nome || 'Projeto' }}</h1>
         <button type="button" class="projeto-config-btn projeto-config-btn--bordered" matTooltip="Convidar" (click)="abrirConvidar()">
           <mat-icon>person_add</mat-icon>
@@ -253,10 +257,10 @@
                   }
                 </div>
               }
-              <div class="tarefa-ghost" (click)="abrirNovaTarefa(coluna.status); $event.stopPropagation()">
-                <mat-icon>add</mat-icon>
-                <span>Nova tarefa</span>
-              </div>
+            </div>
+            <div class="tarefa-ghost" (click)="abrirNovaTarefa(coluna.status); $event.stopPropagation()">
+              <mat-icon>add</mat-icon>
+              <span>Nova tarefa</span>
             </div>
           </div>
         </div>
@@ -290,13 +294,83 @@
                 (change)="toggleSelecionarTodas()"
                 title="Selecionar tudo" />
             </th>
-            <th>Titulo</th>
-            <th style="width: 180px">Escola</th>
-            <th style="width: 130px">Status</th>
-            <th style="width: 110px">Prioridade</th>
-            <th style="width: 170px">Entrega</th>
-            <th style="width: 130px">Responsavel</th>
-            <th style="width: 90px">Criacao</th>
+            <th class="th-sortable" [class.th-sort-ativo]="tipoOrdenacao === 'titulo'" [matTooltip]="sortTooltip('titulo')" (click)="ordenar('titulo')">
+              <span class="th-sort-inner">
+                <span class="th-sort-label">Titulo</span>
+                <span class="th-sort-right">
+                  <mat-icon class="th-sort-icon">{{ sortIcone('titulo') }}</mat-icon>
+                  <button mat-icon-button class="th-menu-btn" (click)="$event.stopPropagation(); toggleSortMenu($event, 'titulo')" aria-label="Opções de ordenação">
+                    <mat-icon>more_horiz</mat-icon>
+                  </button>
+                </span>
+              </span>
+            </th>
+            <th class="th-sortable" [class.th-sort-ativo]="tipoOrdenacao === 'escola'" [matTooltip]="sortTooltip('escola')" style="width: 180px" (click)="ordenar('escola')">
+              <span class="th-sort-inner">
+                <span class="th-sort-label">Escola</span>
+                <span class="th-sort-right">
+                  <mat-icon class="th-sort-icon">{{ sortIcone('escola') }}</mat-icon>
+                  <button mat-icon-button class="th-menu-btn" (click)="$event.stopPropagation(); toggleSortMenu($event, 'escola')" aria-label="Opções de ordenação">
+                    <mat-icon>more_horiz</mat-icon>
+                  </button>
+                </span>
+              </span>
+            </th>
+            <th class="th-sortable" [class.th-sort-ativo]="tipoOrdenacao === 'status'" [matTooltip]="sortTooltip('status')" style="width: 130px" (click)="ordenar('status')">
+              <span class="th-sort-inner">
+                <span class="th-sort-label">Status</span>
+                <span class="th-sort-right">
+                  <mat-icon class="th-sort-icon">{{ sortIcone('status') }}</mat-icon>
+                  <button mat-icon-button class="th-menu-btn" (click)="$event.stopPropagation(); toggleSortMenu($event, 'status')" aria-label="Opções de ordenação">
+                    <mat-icon>more_horiz</mat-icon>
+                  </button>
+                </span>
+              </span>
+            </th>
+            <th class="th-sortable" [class.th-sort-ativo]="tipoOrdenacao === 'prioridade'" [matTooltip]="sortTooltip('prioridade')" style="width: 110px" (click)="ordenar('prioridade')">
+              <span class="th-sort-inner">
+                <span class="th-sort-label">Prioridade</span>
+                <span class="th-sort-right">
+                  <mat-icon class="th-sort-icon">{{ sortIcone('prioridade') }}</mat-icon>
+                  <button mat-icon-button class="th-menu-btn" (click)="$event.stopPropagation(); toggleSortMenu($event, 'prioridade')" aria-label="Opções de ordenação">
+                    <mat-icon>more_horiz</mat-icon>
+                  </button>
+                </span>
+              </span>
+            </th>
+            <th class="th-sortable" [class.th-sort-ativo]="tipoOrdenacao === 'entrega'" [matTooltip]="sortTooltip('entrega')" style="width: 170px" (click)="ordenar('entrega')">
+              <span class="th-sort-inner">
+                <span class="th-sort-label">Entrega</span>
+                <span class="th-sort-right">
+                  <mat-icon class="th-sort-icon">{{ sortIcone('entrega') }}</mat-icon>
+                  <button mat-icon-button class="th-menu-btn" (click)="$event.stopPropagation(); toggleSortMenu($event, 'entrega')" aria-label="Opções de ordenação">
+                    <mat-icon>more_horiz</mat-icon>
+                  </button>
+                </span>
+              </span>
+            </th>
+            <th class="th-sortable" [class.th-sort-ativo]="tipoOrdenacao === 'responsavel'" [matTooltip]="sortTooltip('responsavel')" style="width: 130px" (click)="ordenar('responsavel')">
+              <span class="th-sort-inner">
+                <span class="th-sort-label">Responsavel</span>
+                <span class="th-sort-right">
+                  <mat-icon class="th-sort-icon">{{ sortIcone('responsavel') }}</mat-icon>
+                  <button mat-icon-button class="th-menu-btn" (click)="$event.stopPropagation(); toggleSortMenu($event, 'responsavel')" aria-label="Opções de ordenação">
+                    <mat-icon>more_horiz</mat-icon>
+                  </button>
+                </span>
+              </span>
+            </th>
+            <th class="th-sortable" [class.th-sort-ativo]="tipoOrdenacao === 'criacao'" [matTooltip]="sortTooltip('criacao')" style="width: 90px" (click)="ordenar('criacao')">
+              <span class="th-sort-inner">
+                <span class="th-sort-label">Criacao</span>
+                <span class="th-sort-right">
+                  <mat-icon class="th-sort-icon">{{ sortIcone('criacao') }}</mat-icon>
+                  <button mat-icon-button class="th-menu-btn" (click)="$event.stopPropagation(); toggleSortMenu($event, 'criacao')" aria-label="Opções de ordenação">
+                    <mat-icon>more_horiz</mat-icon>
+                  </button>
+                </span>
+              </span>
+            </th>
             <th style="width: 60px">Ações</th>
           </tr>
         </thead>
@@ -318,7 +392,7 @@
                     </button>
                   }
                   <mat-icon class="lista-tipo-icon" [style.color]="tarefa.categoriaCor">{{ tarefa.categoriaIcone }}</mat-icon>
-                  <a class="lista-chave chave-link" [routerLink]="['/tarefas', tarefa.chave]">{{ tarefa.chave }}</a>
+                  <a class="lista-chave chave-link" [class.lista-chave--concluida]="isConcluida(tarefa)" [routerLink]="['/tarefas', tarefa.chave]">{{ tarefa.chave }}</a>
                   <span class="lista-titulo">{{ tarefa.titulo }}</span>
                 </div>
               </td>
@@ -379,7 +453,7 @@
                   </div>
                 }
               </td>
-              <td class="lista-data">{{ tarefa.dataCriacao | date:'dd/MM' }}</td>
+              <td class="lista-data">{{ tarefa.dataCriacao | date:'dd/MM/yyyy' }}</td>
               <td>
                 <button mat-icon-button class="lista-menu-btn" (click)="toggleMenuAcoes($event, tarefa)">
                   <mat-icon>more_horiz</mat-icon>
@@ -401,6 +475,15 @@
           }
         </tbody>
       </table>
+
+      @if (sortMenuColuna) {
+        <div class="sort-dropdown" (click)="$event.stopPropagation()" [style.top.px]="sortMenuPos.top" [style.left.px]="sortMenuPos.left">
+          <div class="sort-dropdown-item" (click)="limparOrdenacao(sortMenuColuna)">
+            <mat-icon>filter_list_off</mat-icon>
+            <span>Limpar ordenação</span>
+          </div>
+        </div>
+      }
     </div>
 
     @if (algumaSelecionada) {

@@ -19,7 +19,7 @@ namespace TesisFlow.Core.Servicos.Projetos
             return await _context.Projetos
                 .AsNoTracking()
                 .Include(p => p.Lider)
-                .Include(p => p.Membros)
+                .Include(p => p.Membros).ThenInclude(m => m.Usuario)
                 .Where(p => p.Ativo)
                 .ToListAsync();
         }
@@ -35,10 +35,48 @@ namespace TesisFlow.Core.Servicos.Projetos
 
         public async Task AdicionarMembroAsync(int projetoId, int usuarioId)
         {
-            if (!await _context.ProjetoMembros.AnyAsync(pm => pm.ProjetoId == projetoId && pm.UsuarioId == usuarioId))
+            var existente = await _context.ProjetoMembros
+                .FirstOrDefaultAsync(pm => pm.ProjetoId == projetoId && pm.UsuarioId == usuarioId);
+
+            if (existente == null)
             {
-                var membro = new ProjetoMembro { ProjetoId = projetoId, UsuarioId = usuarioId, Papel = Modelo.Enums.PapelProjeto.Membro };
+                var membro = new ProjetoMembro
+                {
+                    ProjetoId = projetoId,
+                    UsuarioId = usuarioId,
+                    Papel = Modelo.Enums.PapelProjeto.Membro,
+                    Status = Modelo.Enums.StatusConvite.Pendente
+                };
                 await _context.ProjetoMembros.AddAsync(membro);
+                await _context.SaveChangesAsync();
+            }
+            else if (existente.Status == Modelo.Enums.StatusConvite.Recusado)
+            {
+                existente.Status = Modelo.Enums.StatusConvite.Pendente;
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task AceitarConviteAsync(int projetoId, int usuarioId)
+        {
+            var membro = await _context.ProjetoMembros
+                .FirstOrDefaultAsync(pm => pm.ProjetoId == projetoId && pm.UsuarioId == usuarioId);
+
+            if (membro != null)
+            {
+                membro.Status = Modelo.Enums.StatusConvite.Aceito;
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task RecusarConviteAsync(int projetoId, int usuarioId)
+        {
+            var membro = await _context.ProjetoMembros
+                .FirstOrDefaultAsync(pm => pm.ProjetoId == projetoId && pm.UsuarioId == usuarioId);
+
+            if (membro != null)
+            {
+                membro.Status = Modelo.Enums.StatusConvite.Recusado;
                 await _context.SaveChangesAsync();
             }
         }

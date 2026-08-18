@@ -21,11 +21,10 @@
       <span class="color-value">{{ form.get('cor')?.value }}</span>
     </div>
 
-    <mat-form-field appearance="outline" class="w-100">
-      <mat-label>Icone (emoji ou letra)</mat-label>
-      <input matInput formControlName="icone" placeholder="Ex: 🚀 ou W" maxlength="2">
-      <mat-hint>Um emoji ou ate 2 caracteres para identificar o projeto</mat-hint>
-    </mat-form-field>
+    <div class="color-picker-row">
+      <label class="color-label">Ícone</label>
+      <app-icon-picker [icone]="form.get('icone')?.value" [cor]="form.get('cor')?.value" (selecionar)="onIcone($event)"></app-icon-picker>
+    </div>
 
     <div class="quadros-section">
       <div class="quadros-header">

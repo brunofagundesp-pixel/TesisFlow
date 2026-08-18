@@ -208,14 +208,20 @@
               @if (notificacoesFiltradas.length > 0) {
                 @for (n of notificacoesFiltradas; track n.id) {
                   <div class="notificacao-card" [class.notificacao-card--lida]="n.lida" [class.notificacao-card--link]="!!n.link" (click)="navegarNotificacao(n)">
-                    <div class="notificacao-card-icon" [class.icon-atendimento]="n.tipo === 'atendimento'" [class.icon-financeiro]="n.tipo === 'financeiro'" [class.icon-diario]="n.tipo === 'diario'" [class.icon-sistema]="n.tipo === 'sistema'" [class.icon-tarefa]="n.tipo === 'tarefa'" [class.icon-mencao]="n.tipo === 'mencao'" [class.icon-atribuicao]="n.tipo === 'atribuicao'" [class.icon-prazo]="n.tipo === 'prazo'">
-                      <mat-icon>{{ n.tipo === 'atendimento' ? 'headset_mic' : n.tipo === 'financeiro' ? 'payments' : n.tipo === 'diario' ? 'menu_book' : n.tipo === 'tarefa' ? 'task_alt' : n.tipo === 'mencao' ? 'chat' : n.tipo === 'atribuicao' ? 'person_add' : n.tipo === 'prazo' ? 'event' : 'settings' }}</mat-icon>
+                    <div class="notificacao-card-icon" [class.icon-atendimento]="n.tipo === 'atendimento'" [class.icon-financeiro]="n.tipo === 'financeiro'" [class.icon-diario]="n.tipo === 'diario'" [class.icon-sistema]="n.tipo === 'sistema'" [class.icon-tarefa]="n.tipo === 'tarefa'" [class.icon-mencao]="n.tipo === 'mencao'" [class.icon-atribuicao]="n.tipo === 'atribuicao'" [class.icon-prazo]="n.tipo === 'prazo'" [class.icon-convite]="n.tipo === 'convite'">
+                      <mat-icon>{{ n.tipo === 'atendimento' ? 'headset_mic' : n.tipo === 'financeiro' ? 'payments' : n.tipo === 'diario' ? 'menu_book' : n.tipo === 'tarefa' ? 'task_alt' : n.tipo === 'mencao' ? 'chat' : n.tipo === 'atribuicao' ? 'person_add' : n.tipo === 'prazo' ? 'event' : n.tipo === 'convite' ? 'group_add' : 'settings' }}</mat-icon>
                     </div>
                     <div class="notificacao-card-content">
                       <span class="notificacao-card-titulo">{{ n.titulo }}</span>
                       <span class="notificacao-card-desc">{{ n.descricao }}</span>
                       @if (n.link) {
                         <span class="notificacao-card-chave">{{ n.link.split('/').pop() }}</span>
+                      }
+                      @if (n.tipo === 'convite' && !n.lida) {
+                        <div class="notificacao-card-actions">
+                          <button class="notif-btn notif-btn--aceitar" (click)="$event.stopPropagation(); aceitarConvite(n)">Aceitar</button>
+                          <button class="notif-btn notif-btn--recusar" (click)="$event.stopPropagation(); recusarConvite(n)">Recusar</button>
+                        </div>
                       }
                       <span class="notificacao-card-data">{{ n.data | date:'dd/MM/yyyy HH:mm' }}</span>
                     </div>
@@ -398,7 +404,7 @@
           <app-chat-panel class="chat-panel-slot" (fechar)="chatAberto.set(false)"></app-chat-panel>
         }
       </div>
-      <app-call-modal></app-call-modal>
     </mat-sidenav-content>
   </mat-sidenav-container>
+  <app-call-modal></app-call-modal>
 </div>

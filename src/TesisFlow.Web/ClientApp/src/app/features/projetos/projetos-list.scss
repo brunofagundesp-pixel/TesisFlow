@@ -21,6 +21,8 @@
   font-weight: 700;
   font-size: 1rem;
   flex-shrink: 0;
+
+  &.mat-icon { font-size: 1.4rem; }
 }
 .projeto-card-info { flex: 1; min-width: 0; }
 .projeto-card-header h3 { font-size: 1rem; font-weight: 700; color: var(--tf-text-primary); margin-bottom: 0.2rem; }

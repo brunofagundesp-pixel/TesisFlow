@@ -12,6 +12,9 @@ namespace TesisFlow.Core.Servicos.Notificacoes
             _repositorio = repositorio;
         }
 
+        private static DateTime ComoUtc(DateTime data) =>
+            data.Kind == DateTimeKind.Utc ? data : DateTime.SpecifyKind(data, DateTimeKind.Utc);
+
         public async Task<IEnumerable<NotificacaoDTO>> ObterPorUsuarioAsync(int usuarioId)
         {
             var notificacoes = await _repositorio.ObterPorUsuarioAsync(usuarioId);
@@ -26,7 +29,7 @@ namespace TesisFlow.Core.Servicos.Notificacoes
             Tipo = n.Tipo,
             Link = n.Link,
             Lida = n.Lida,
-            DataCriacao = n.DataCriacao,
+            DataCriacao = ComoUtc(n.DataCriacao),
             TargetUserId = n.TargetUserId,
             TarefaId = n.TarefaId,
             ProjetoId = n.ProjetoId,

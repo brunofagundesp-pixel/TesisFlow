@@ -672,7 +672,7 @@
 }
 
 .sidebar-badge {
-  margin-left: auto;
+  margin-left: 8px;
   flex-shrink: 0;
   min-width: 1.25rem;
   padding: 0.1rem 0.45rem;
@@ -751,16 +751,27 @@
 .sidebar-add-btn {
   width: 28px;
   height: 28px;
-  line-height: 28px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--tf-text-muted);
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
 
   mat-icon {
-    font-size: 1.1rem;
-    width: 1.1rem;
-    height: 1.1rem;
-    color: var(--tf-text-muted);
+    font-size: 1.15rem;
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
+  &:hover {
+    background: var(--tf-surface-hover);
+    color: var(--tf-primary);
   }
 }
 
@@ -1010,6 +1021,7 @@
   &.icon-mencao { background: var(--tf-sky-bg); color: var(--tf-sky); }
   &.icon-atribuicao { background: var(--tf-warning-bg); color: var(--tf-warning); }
   &.icon-prazo { background: var(--tf-danger-bg); color: var(--tf-danger); }
+  &.icon-convite { background: var(--tf-primary-light); color: var(--tf-primary); }
 }
 
 .notificacao-card-content {
@@ -1057,6 +1069,39 @@
   font-size: 0.72rem;
   color: var(--tf-text-faint);
   margin-top: 0.15rem;
+}
+
+.notificacao-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.notif-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  padding: 0 0.8rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: filter 0.15s, background 0.15s;
+
+  &--aceitar {
+    background: var(--tf-primary);
+    color: #fff;
+  }
+
+  &--recusar {
+    background: var(--tf-surface-hover);
+    color: var(--tf-text-secondary);
+  }
+
+  &:hover { filter: brightness(1.05); }
 }
 
 .notificacao-empty {

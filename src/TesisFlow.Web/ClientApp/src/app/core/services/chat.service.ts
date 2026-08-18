@@ -7,20 +7,46 @@ export interface ContatoChat {
   usuarioId: number;
   nome: string;
   avatar: string;
+  foto?: string;
   ultimaMensagem: string;
   ultimaData: Date;
   naoLidas: number;
+}
+
+export interface MensagemResposta {
+  id: number;
+  texto: string;
+  audio?: string;
+  imagem?: string;
+  remetenteNome: string;
+}
+
+export interface MensagemVinculo {
+  tipo: string;
+  id: number;
+  titulo: string;
+  subtitulo: string;
+  link: string;
+  icone: string;
 }
 
 export interface MensagemChat {
   id: number;
   remetenteId: number;
   remetenteNome: string;
+  remetenteFoto?: string;
   destinatarioId: number;
   texto: string;
   lida: boolean;
   entregue: boolean;
   data: Date;
+  audio?: string;
+  audioDuracao?: number;
+  mensagemRespondidaId?: number;
+  mensagemRespondida?: MensagemResposta;
+  vinculo?: MensagemVinculo;
+  imagem?: string;
+  imagemNome?: string;
 }
 
 export type StatusUsuario = 'online' | 'offline' | 'ausente' | 'ocupado';
@@ -96,6 +122,7 @@ export class ChatService {
       msg.data = dataDe(msg);
       const ehMinha = msg.remetenteId === userId;
       const outroId = ehMinha ? msg.destinatarioId : msg.remetenteId;
+      const resumo = msg.audio ? '[Áudio]' : msg.imagem ? '[Imagem]' : msg.vinculo ? `[${msg.vinculo.tipo === 'colegio' ? 'Escola' : 'Tarefa'}]` : msg.texto;
 
       this.inserirMensagemSeNova(outroId, {
         ...msg,
@@ -105,7 +132,7 @@ export class ChatService {
 
       if (ehMinha) {
         this.contatos.update(lista => lista.map(c =>
-          c.usuarioId === outroId ? { ...c, ultimaMensagem: msg.texto, ultimaData: msg.data } : c));
+          c.usuarioId === outroId ? { ...c, ultimaMensagem: resumo, ultimaData: msg.data } : c));
         return;
       }
 
@@ -125,13 +152,14 @@ export class ChatService {
         const existe = lista.find(c => c.usuarioId === outroId);
         if (existe) {
           return lista.map(c => c.usuarioId === outroId
-            ? { ...c, ultimaMensagem: msg.texto, ultimaData: msg.data, naoLidas: conversaAberta ? 0 : c.naoLidas + 1 }
+            ? { ...c, ultimaMensagem: resumo, ultimaData: msg.data, naoLidas: conversaAberta ? 0 : c.naoLidas + 1 }
             : c);
         }
         return [...lista, {
           usuarioId: outroId, nome: msg.remetenteNome,
           avatar: msg.remetenteNome.charAt(0).toUpperCase(),
-          ultimaMensagem: msg.texto, ultimaData: msg.data, naoLidas: conversaAberta ? 0 : 1,
+          foto: msg.remetenteFoto,
+          ultimaMensagem: resumo, ultimaData: msg.data, naoLidas: conversaAberta ? 0 : 1,
         }];
       });
       if (!conversaAberta) this.totalNaoLidas.update(v => v + 1);
@@ -165,6 +193,7 @@ export class ChatService {
 
     this.hubConnection.on('UsuarioOnline', (uid: number, status: StatusUsuario) => {
       this.statusMap.update(map => ({ ...map, [uid]: status }));
+      if (uid === userId) this.meuStatus.set(status);
     });
 
     this.hubConnection.on('StatusInicial', (statuses: { usuarioId: number; status: StatusUsuario }[]) => {
@@ -180,9 +209,34 @@ export class ChatService {
     const meuId = this.auth.usuario()?.id;
     if (!meuId) return;
 
-    this.http.get<any[]>(`/api/Chat/conversas/${meuId}/${usuarioId}`).subscribe(msgs => {
+    this.http.get<any[]>(`/api/Chat/conversas/${meuId}/${usuarioId}?limite=50`).subscribe(msgs => {
       const normalizadas: MensagemChat[] = msgs.map(m => ({ ...m, data: dataDe(m) }));
       this._mensagensMap.update(map => ({ ...map, [usuarioId]: normalizadas }));
+    });
+  }
+
+  carregarMensagensAntigas(usuarioId: number): Promise<boolean> {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId) return Promise.resolve(false);
+
+    const atuais = this._mensagensMap()[usuarioId] || [];
+    if (atuais.length === 0) return Promise.resolve(false);
+
+    const antesId = atuais[0].id;
+    return new Promise(resolve => {
+      this.http.get<any[]>(`/api/Chat/conversas/${meuId}/${usuarioId}?antesId=${antesId}&limite=30`).subscribe(msgs => {
+        const antigas: MensagemChat[] = msgs.map(m => ({ ...m, data: dataDe(m) }));
+
+        const idsAtuais = new Set(atuais.map(m => m.id));
+        const novas = antigas.filter(m => !idsAtuais.has(m.id));
+
+        this._mensagensMap.update(map => ({
+          ...map,
+          [usuarioId]: [...novas, ...(map[usuarioId] || [])],
+        }));
+
+        resolve(antigas.length >= 30);
+      });
     });
   }
 
@@ -214,7 +268,7 @@ export class ChatService {
     this.conversaAtiva.set(null);
   }
 
-  enviarMensagem(usuarioId: number, texto: string): void {
+  enviarMensagem(usuarioId: number, texto: string, mensagemRespondidaId?: number): void {
     const meuId = this.auth.usuario()?.id;
     if (!meuId) return;
 
@@ -222,7 +276,7 @@ export class ChatService {
     this.digitandoAtual.delete(usuarioId);
     this.enviarDigitando(usuarioId, false);
 
-    const dto = { texto, remetenteId: meuId, destinatarioId: usuarioId };
+    const dto = { texto, remetenteId: meuId, destinatarioId: usuarioId, mensagemRespondidaId };
     this.http.post<any>('/api/Chat', dto).subscribe(msg => {
       msg.data = dataDe(msg);
       msg.entregue = msg.entregue ?? false;
@@ -230,6 +284,64 @@ export class ChatService {
       this.inserirMensagemSeNova(usuarioId, msg as MensagemChat);
       this.contatos.update(lista => lista.map(c =>
         c.usuarioId === usuarioId ? { ...c, ultimaMensagem: texto, ultimaData: msg.data } : c));
+    });
+  }
+
+  enviarAudio(usuarioId: number, blob: Blob, duracao: number, mensagemRespondidaId?: number): void {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId) return;
+
+    const form = new FormData();
+    form.append('audio', blob, 'audio.webm');
+    form.append('remetenteId', String(meuId));
+    form.append('destinatarioId', String(usuarioId));
+    form.append('duracao', String(duracao));
+    if (mensagemRespondidaId) form.append('mensagemRespondidaId', String(mensagemRespondidaId));
+
+    this.http.post<any>('/api/Chat/audio', form).subscribe(msg => {
+      msg.data = dataDe(msg);
+      msg.entregue = msg.entregue ?? false;
+      msg.lida = msg.lida ?? false;
+      this.inserirMensagemSeNova(usuarioId, msg as MensagemChat);
+      this.contatos.update(lista => lista.map(c =>
+        c.usuarioId === usuarioId ? { ...c, ultimaMensagem: '[Áudio]', ultimaData: msg.data } : c));
+    });
+  }
+
+  enviarVinculo(usuarioId: number, vinculo: MensagemVinculo): void {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId) return;
+
+    const resumo = vinculo.tipo === 'colegio' ? '[Escola]' : '[Tarefa]';
+    const dto = { texto: '', remetenteId: meuId, destinatarioId: usuarioId, vinculo };
+
+    this.http.post<any>('/api/Chat', dto).subscribe(msg => {
+      msg.data = dataDe(msg);
+      msg.entregue = msg.entregue ?? false;
+      msg.lida = msg.lida ?? false;
+      this.inserirMensagemSeNova(usuarioId, msg as MensagemChat);
+      this.contatos.update(lista => lista.map(c =>
+        c.usuarioId === usuarioId ? { ...c, ultimaMensagem: resumo, ultimaData: msg.data } : c));
+    });
+  }
+
+  enviarImagem(usuarioId: number, blob: Blob, nomeArquivo: string, mensagemRespondidaId?: number): void {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId) return;
+
+    const form = new FormData();
+    form.append('arquivo', blob, nomeArquivo || 'imagem.png');
+    form.append('remetenteId', String(meuId));
+    form.append('destinatarioId', String(usuarioId));
+    if (mensagemRespondidaId) form.append('mensagemRespondidaId', String(mensagemRespondidaId));
+
+    this.http.post<any>('/api/Chat/imagem', form).subscribe(msg => {
+      msg.data = dataDe(msg);
+      msg.entregue = msg.entregue ?? false;
+      msg.lida = msg.lida ?? false;
+      this.inserirMensagemSeNova(usuarioId, msg as MensagemChat);
+      this.contatos.update(lista => lista.map(c =>
+        c.usuarioId === usuarioId ? { ...c, ultimaMensagem: '[Imagem]', ultimaData: msg.data } : c));
     });
   }
 
@@ -259,7 +371,7 @@ export class ChatService {
     this.hubConnection?.invoke('AlterarStatus', status).catch(() => {});
   }
 
-  private cacheUsuarios: { id: number; nome: string }[] | null = null;
+  private cacheUsuarios: { id: number; nome: string; foto?: string }[] | null = null;
 
   buscarUsuarios(termo: string, excluir?: Set<number>): void {
     const userId = this.auth.usuario()?.id;
@@ -269,13 +381,13 @@ export class ChatService {
       return;
     }
 
-    const filtrar = (usuarios: { id: number; nome: string }[]) => {
+    const filtrar = (usuarios: { id: number; nome: string; foto?: string }[]) => {
       const t = termo.toLowerCase().trim();
       this.sugestoesBusca.set(
         usuarios
           .filter(u => u.id !== userId && !excl.has(u.id) && u.nome.toLowerCase().includes(t))
           .slice(0, 6)
-          .map(u => ({ usuarioId: u.id, nome: u.nome, avatar: u.nome.charAt(0).toUpperCase() }))
+          .map(u => ({ usuarioId: u.id, nome: u.nome, avatar: u.nome.charAt(0).toUpperCase(), foto: u.foto }))
       );
     };
 
@@ -285,10 +397,10 @@ export class ChatService {
     }
 
     this.http.get<any[]>('/api/Usuarios').subscribe(usuarios => {
-      this.cacheUsuarios = usuarios.map((u: any) => ({ id: u.id, nome: u.nome }));
+      this.cacheUsuarios = usuarios.map((u: any) => ({ id: u.id, nome: u.nome, foto: u.foto }));
       filtrar(this.cacheUsuarios);
     });
   }
 
-  readonly sugestoesBusca = signal<{ usuarioId: number; nome: string; avatar: string }[]>([]);
+  readonly sugestoesBusca = signal<{ usuarioId: number; nome: string; avatar: string; foto?: string }[]>([]);
 }

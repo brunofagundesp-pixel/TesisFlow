@@ -12,6 +12,8 @@ namespace TesisFlow.Contexto.ModeloConfiguracao
 
             builder.HasKey(pm => pm.Id);
 
+            builder.Property(pm => pm.Status);
+
             builder.HasOne(pm => pm.Projeto)
                 .WithMany(p => p.Membros)
                 .HasForeignKey(pm => pm.ProjetoId)

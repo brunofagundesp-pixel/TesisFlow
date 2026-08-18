@@ -6,7 +6,10 @@
       </button>
       <div class="chat-contato-info">
         <div class="chat-foto-wrapper">
-          <span class="chat-contato-foto">{{ contatoAtivo?.avatar }}</span>
+          <span class="chat-contato-foto">
+            @if (contatoAtivo?.foto) { <img [src]="contatoAtivo?.foto" alt="" /> }
+            @else { {{ contatoAtivo?.avatar }} }
+          </span>
           <span class="chat-status-dot" [class.s-online]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'online'" [class.s-ausente]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'ausente'" [class.s-ocupado]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'ocupado'"></span>
         </div>
         <span class="chat-contato-nome">{{ contatoAtivo?.nome }}</span>
@@ -47,7 +50,10 @@
             <div class="chat-busca-dropdown" style="position: relative; top: 0; left: 0; right: 0; margin-top: 0.25rem;">
               @for (u of chatService.sugestoesBusca(); track u.usuarioId) {
                 <div class="chat-busca-item" (click)="toggleParticipante(u.usuarioId); termoBuscaGrupo = ''">
-                  <span class="chat-contato-foto">{{ u.avatar }}</span>
+                  <span class="chat-contato-foto">
+                    @if (u.foto) { <img [src]="u.foto" alt="" /> }
+                    @else { {{ u.avatar }} }
+                  </span>
                   <span>{{ u.nome }}</span>
                 </div>
               }
@@ -72,7 +78,10 @@
         <div class="chat-busca-dropdown">
           @for (u of chatService.sugestoesBusca(); track u.usuarioId) {
             <div class="chat-busca-item" (click)="abrirConversa(u.usuarioId); termoBusca = ''">
-              <span class="chat-contato-foto">{{ u.avatar }}</span>
+              <span class="chat-contato-foto">
+                @if (u.foto) { <img [src]="u.foto" alt="" /> }
+                @else { {{ u.avatar }} }
+              </span>
               <span>{{ u.nome }}</span>
             </div>
           }
@@ -83,7 +92,10 @@
       @for (c of chatService.contatos(); track c.usuarioId) {
         <div class="chat-contato-card" (click)="abrirConversa(c.usuarioId)">
           <div class="chat-foto-wrapper">
-            <span class="chat-contato-foto">{{ c.avatar }}</span>
+            <span class="chat-contato-foto">
+              @if (c.foto) { <img [src]="c.foto" alt="" /> }
+              @else { {{ c.avatar }} }
+            </span>
             <span class="chat-status-dot" [class.s-online]="chatService.getStatus(c.usuarioId) === 'online'" [class.s-ausente]="chatService.getStatus(c.usuarioId) === 'ausente'" [class.s-ocupado]="chatService.getStatus(c.usuarioId) === 'ocupado'"></span>
           </div>
           <div class="chat-contato-content">
@@ -103,26 +115,80 @@
     </div>
     }
   } @else {
-    <div class="chat-mensagens">
+    <div class="chat-mensagens" #mensagensContainer (scroll)="onScrollMensagens()">
       @for (m of mensagensAtivas; track m.id) {
-        <div class="chat-msg" [class.chat-msg--meu]="m.remetenteId === meuId">
-          @if (m.remetenteId !== meuId) {
-            <span class="chat-msg-foto">{{ m.remetenteNome.charAt(0) }}</span>
-          }
+        @let rotuloData = dataSeparador($index);
+        @if (rotuloData) {
+          <div class="chat-data-separador">{{ rotuloData }}</div>
+        }
+        <div class="chat-msg" id="msg-{{ m.id }}" [class.chat-msg--meu]="m.remetenteId === meuId">
           <div class="chat-msg-bubble" [class.chat-msg-bubble--meu]="m.remetenteId === meuId">
-            <span class="chat-msg-texto">{{ m.texto }}</span>
+            @if (m.mensagemRespondida) {
+              <div class="chat-resposta-preview" (click)="rolarParaMensagem(m.mensagemRespondida.id)">
+                <span class="chat-resposta-nome">{{ m.mensagemRespondida.remetenteNome }}</span>
+                <span class="chat-resposta-texto">{{ m.mensagemRespondida.audio ? '[Áudio]' : m.mensagemRespondida.imagem ? '[Imagem]' : m.mensagemRespondida.texto }}</span>
+              </div>
+            }
+            @if (m.vinculo) {
+              <div class="chat-vinculo" (click)="abrirVinculo(m.vinculo)">
+                <span class="chat-vinculo-icone"><mat-icon>{{ m.vinculo.icone || 'task' }}</mat-icon></span>
+                <div class="chat-vinculo-info">
+                  <span class="chat-vinculo-titulo">{{ m.vinculo.titulo }}</span>
+                  @if (m.vinculo.subtitulo) {
+                    <span class="chat-vinculo-sub">{{ m.vinculo.subtitulo }}</span>
+                  }
+                </div>
+                <mat-icon class="chat-vinculo-seta">chevron_right</mat-icon>
+              </div>
+            } @else if (m.imagem) {
+              <img class="chat-imagem-mini" [src]="m.imagem" alt="" (click)="abrirImagem(m)" />
+            } @else if (m.audio) {
+              <div class="chat-audio">
+                <audio #player
+                  [src]="m.audio"
+                  preload="metadata"
+                  (loadedmetadata)="aoCarregarMetadata(m, player)"
+                  (timeupdate)="aoAtualizarTempo(m, player)"
+                  (play)="aoPlay(m)"
+                  (pause)="aoPause(m)"
+                  (ended)="aoEnded(m)"></audio>
+                <button class="chat-audio-play" (click)="alternarPlay(m, player)">
+                  <mat-icon>{{ estaTocando(m) ? 'pause' : 'play_arrow' }}</mat-icon>
+                </button>
+                <div class="chat-audio-main">
+                  <div class="chat-audio-barra" (click)="buscarNoAudio($event, m, player)">
+                    <div class="chat-audio-progresso" [style.width.%]="progressoAudio(m)"></div>
+                  </div>
+                  <div class="chat-audio-meta">
+                    <span class="chat-audio-tempo">{{ tempoAtualAudio(m) }}</span>
+                    <button class="chat-audio-velocidade" (click)="alternarVelocidade(m, player)">{{ rotuloVelocidade(m) }}</button>
+                    <span class="chat-audio-tempo chat-audio-tempo--total">{{ duracaoTotalAudio(m) }}</span>
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <span class="chat-msg-texto">{{ m.texto }}</span>
+            }
             <div class="chat-msg-rodape">
               <span class="chat-msg-data">{{ m.data | date:'HH:mm' }}</span>
               @if (m.remetenteId === meuId) {
-                <mat-icon class="chat-msg-check" [class.check-lida]="m.lida">{{ (m.entregue || m.lida) ? 'done_all' : 'done' }}</mat-icon>
+                <mat-icon
+                  class="chat-msg-check"
+                  [class.check-entregue]="m.entregue && !m.lida"
+                  [class.check-lida]="m.lida"
+                  [matTooltip]="statusMensagem(m)"
+                  matTooltipPosition="above"
+                >{{ (m.entregue || m.lida) ? 'done_all' : 'done' }}</mat-icon>
               }
             </div>
           </div>
+          <button class="chat-responder-btn" (click)="responder(m)" title="Responder">
+            <mat-icon>reply</mat-icon>
+          </button>
         </div>
       }
       @if (digitandoAtivo) {
         <div class="chat-msg">
-          <span class="chat-msg-foto">{{ contatoAtivo?.avatar }}</span>
           <div class="chat-msg-bubble chat-digitando-bubble">
             <span class="chat-digitando-dots"><span></span><span></span><span></span></span>
           </div>
@@ -130,20 +196,52 @@
       }
     </div>
 
+    @if (respondendoA) {
+      <div class="chat-respondendo">
+        <div class="chat-respondendo-info">
+          <span class="chat-respondendo-label">Respondendo a {{ respondendoA.remetenteId === meuId ? 'você' : respondendoA.remetenteNome }}</span>
+          <span class="chat-respondendo-texto">{{ resumoRespondida(respondendoA) }}</span>
+        </div>
+        <button class="chat-respondendo-cancelar" (click)="cancelarResposta()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    }
+
     <div class="chat-input-area">
-      <textarea
-        class="chat-input"
-        placeholder="Digite uma mensagem..."
-        [(ngModel)]="novaMensagem"
-        (keydown)="onKeydown($event)"
-        (input)="onInput()"
-        cdkTextareaAutosize
-        cdkAutosizeMinRows="1"
-        cdkAutosizeMaxRows="5"
-      ></textarea>
-      <button class="chat-enviar" (click)="enviar()" [disabled]="!novaMensagem.trim()">
-        <mat-icon>send</mat-icon>
-      </button>
+      @if (gravando) {
+        <button class="chat-mic-btn chat-mic-btn--cancelar" (click)="cancelarGravacao()" title="Cancelar">
+          <mat-icon>delete</mat-icon>
+        </button>
+        <span class="chat-gravando">
+          <span class="chat-gravando-dot"></span>
+          {{ tempoGravacaoFormatado }}
+        </span>
+        <button class="chat-enviar" (click)="pararGravacao()" title="Enviar áudio">
+          <mat-icon>send</mat-icon>
+        </button>
+      } @else {
+        <button class="chat-mic-btn" (click)="anexarTarefa()" title="Compartilhar tarefa">
+          <mat-icon>task_alt</mat-icon>
+        </button>
+        <button class="chat-mic-btn" (click)="iniciarGravacao()" title="Gravar áudio">
+          <mat-icon>mic</mat-icon>
+        </button>
+        <textarea
+          class="chat-input"
+          placeholder="Digite uma mensagem..."
+          [(ngModel)]="novaMensagem"
+          (keydown)="onKeydown($event)"
+          (input)="onInput()"
+          (paste)="onPaste($event)"
+          cdkTextareaAutosize
+          cdkAutosizeMinRows="1"
+          cdkAutosizeMaxRows="5"
+        ></textarea>
+        <button class="chat-enviar" (click)="enviar()" [disabled]="!novaMensagem.trim()">
+          <mat-icon>send</mat-icon>
+        </button>
+      }
     </div>
   }
 </div>
