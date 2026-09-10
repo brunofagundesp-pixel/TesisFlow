@@ -12,6 +12,7 @@ import { Subscription, skip } from 'rxjs';
 import { TarefaService } from '../tarefas/tarefa.service';
 import { ComentarioService } from '../tarefas/comentario.service';
 import { AuthService } from '../../core/services/auth.service';
+import { AuthUrlPipe, tokenizarHtml } from '../../core/auth-url';
 import { MeuDiaService } from '../../core/services/meu-dia.service';
 import { MencaoService } from '../../core/services/mencao.service';
 import { NotificacaoService } from '../../core/services/notificacao.service';
@@ -44,6 +45,7 @@ interface EventoHistorico {
     DatePipe,
     MencaoDropdownComponent,
     ColegioSelectComponent,
+    AuthUrlPipe,
   ],
   templateUrl: './tarefa-detalhe-sidebar.html',
   styleUrl: './tarefa-detalhe-sidebar.scss',
@@ -589,7 +591,7 @@ export class TarefaDetalheSidebarComponent implements OnChanges, OnDestroy {
   get descricaoHtml(): string {
     const val = this.form.get('descricao')?.value || '';
     if (!val || val.trim().length === 0) return '<span class="descricao-placeholder">Adicione uma descricao...</span>';
-    return val;
+    return tokenizarHtml(val);
   }
 
   comentarioHtml(c: Comentario): string {

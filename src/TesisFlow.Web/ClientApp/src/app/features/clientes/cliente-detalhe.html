@@ -90,6 +90,12 @@
                 </div>
               </div>
               <div class="cliente-header-actions">
+                @if (totalNotas() > 0) {
+                  <button class="cliente-header-notas" (click)="selecionarTab(1)" title="Notas deste colégio">
+                    <mat-icon>sticky_note_2</mat-icon>
+                    <span>{{ totalNotas() }}</span>
+                  </button>
+                }
                 <span class="cliente-header-status" [class.status-inativo]="cliente.status === 'Inativo'">
                   <span class="status-dot-header" [class.dot-inativo]="cliente.status === 'Inativo'"></span>
                   {{ cliente.status }}
@@ -192,6 +198,82 @@
             }
 
             @if (tabIndex() === 1) {
+              <div class="notas-container">
+                <div class="notas-toolbar">
+                  <span class="notas-total">{{ totalNotas() }} nota{{ totalNotas() === 1 ? '' : 's' }}</span>
+                  <button class="notas-nova-btn" (click)="abrirCriarNota()">
+                    <mat-icon>add</mat-icon> Nova nota
+                  </button>
+                </div>
+
+                @if (criandoNota()) {
+                  <div class="nota-card nota-card--composer">
+                    <input class="nota-input" placeholder="Titulo" [value]="novaNotaTitulo()" (input)="novaNotaTitulo.set(($any($event.target).value))" />
+                    <textarea class="nota-textarea" placeholder="Escreva..." [value]="novaNotaConteudo()" (input)="novaNotaConteudo.set(($any($event.target).value))"></textarea>
+                    <div class="nota-footer">
+                      <div class="nota-paleta">
+                        @for (c of notaCores; track c.valor) {
+                          <button class="nota-cor-dot" [class.nota-cor-dot--ativa]="novaNotaCor() === c.valor" [style.background]="c.valor || 'var(--tf-surface)'" [title]="c.rotulo" (click)="novaNotaCor.set(c.valor)"></button>
+                        }
+                      </div>
+                      <div class="nota-acoes">
+                        <button class="nota-acao" (click)="cancelarCriarNota()" title="Cancelar"><mat-icon>close</mat-icon></button>
+                        <button class="nota-acao" (click)="salvarNovaNota()" title="Salvar"><mat-icon>check</mat-icon></button>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                @if (notas().length > 0) {
+                  <div class="notas-grid">
+                    @for (nota of notas(); track nota.id) {
+                      <div class="nota-card" [class.nota-card--fixa]="nota.fixa" [class.nota-card--colorida]="!!nota.cor" [style.background]="nota.cor || 'var(--tf-surface)'">
+                        @if (editandoNotaId() === nota.id) {
+                          <input class="nota-input" [value]="editNotaTitulo()" (input)="editNotaTitulo.set(($any($event.target).value)); onNotaEditChange()" />
+                          <textarea class="nota-textarea" [value]="editNotaConteudo()" (input)="editNotaConteudo.set(($any($event.target).value)); onNotaEditChange()"></textarea>
+                          <div class="nota-footer">
+                            <div class="nota-paleta">
+                              @for (c of notaCores; track c.valor) {
+                                <button class="nota-cor-dot" [class.nota-cor-dot--ativa]="editNotaCor() === c.valor" [style.background]="c.valor || 'var(--tf-surface)'" [title]="c.rotulo" (click)="editNotaCor.set(c.valor); onNotaEditChange()"></button>
+                              }
+                            </div>
+                            <div class="nota-acoes">
+                              <button class="nota-acao" (click)="cancelarEdicao()" title="Concluir"><mat-icon>check</mat-icon></button>
+                            </div>
+                          </div>
+                        } @else {
+                          @if (nota.titulo) { <div class="nota-titulo">{{ nota.titulo }}</div> }
+                          @if (nota.conteudo) { <div class="nota-conteudo">{{ nota.conteudo }}</div> }
+                          <div class="nota-footer">
+                            <div class="nota-acoes nota-acoes--direita">
+                              @if (confirmandoExclusaoId() === nota.id) {
+                                <span class="nota-confirmar">Excluir?</span>
+                                <button class="nota-acao" (click)="confirmarExclusaoNota(nota.id)" title="Confirmar"><mat-icon>check</mat-icon></button>
+                                <button class="nota-acao" (click)="cancelarExclusao()" title="Cancelar"><mat-icon>close</mat-icon></button>
+                              } @else {
+                                <button class="nota-acao" [class.nota-acao--ativa]="nota.fixa" (click)="alternarFixa(nota)" [title]="nota.fixa ? 'Desafixar' : 'Fixar'"><mat-icon>push_pin</mat-icon></button>
+                                @if (!ehNotaParceiro(nota)) {
+                                  <button class="nota-acao" (click)="editarNota(nota)" title="Editar"><mat-icon>edit</mat-icon></button>
+                                  <button class="nota-acao" (click)="pedirExcluirNota(nota.id)" title="Excluir"><mat-icon>delete</mat-icon></button>
+                                }
+                              }
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                } @else if (!notasCarregando()) {
+                  <div class="tab-empty">Nenhuma nota ainda. Clique em "Nova nota" para começar.</div>
+                }
+
+                @if (temMaisNotas) {
+                  <div class="scroll-sentinel">Rolando para carregar mais notas...</div>
+                }
+              </div>
+            }
+
+            @if (tabIndex() === 2) {
               @if (diarioVisiveis().length > 0) {
                 <div class="tab-table">
                   <div class="tab-table-header">
@@ -219,7 +301,7 @@
               }
             }
 
-            @if (tabIndex() === 2) {
+            @if (tabIndex() === 3) {
               @if (portalAlunoFiltrados().length > 0) {
                 <div class="tab-table">
                   <div class="tab-table-header">
@@ -245,7 +327,7 @@
               }
             }
 
-            @if (tabIndex() === 3) {
+            @if (tabIndex() === 4) {
               @if (portalAlunoAdminFiltrados().length > 0) {
                 <div class="tab-table">
                   <div class="tab-table-header">
@@ -271,7 +353,7 @@
               }
             }
 
-            @if (tabIndex() === 4) {
+            @if (tabIndex() === 5) {
               @if (financeiroVisiveis().length > 0) {
                 <div class="tab-table">
                   <div class="tab-table-header">
@@ -304,6 +386,10 @@
         <div class="detalhe-filtros">
           <div class="filtro-titulo">Filtros</div>
 
+          @if (tabIndex() === 1) {
+            <span class="filtro-hint">Sem filtros para notas.</span>
+          }
+
           @if (tabIndex() === 0) {
             <label class="filtro-label">Descricao / Titulo</label>
             <div class="filtro-input">
@@ -327,7 +413,7 @@
             </mat-form-field>
           }
 
-          @if (tabIndex() === 1) {
+          @if (tabIndex() === 2) {
             <label class="filtro-label">Nome do Professor</label>
             <div class="filtro-input">
               <mat-icon class="filtro-input-icon">search</mat-icon>
@@ -341,7 +427,7 @@
             </div>
           }
 
-          @if (tabIndex() === 2) {
+          @if (tabIndex() === 3) {
             <label class="filtro-label">Nome do Usuario</label>
             <div class="filtro-input">
               <mat-icon class="filtro-input-icon">search</mat-icon>
@@ -364,7 +450,7 @@
             </mat-form-field>
           }
 
-          @if (tabIndex() === 3) {
+          @if (tabIndex() === 4) {
             <label class="filtro-label">Nome do Admin</label>
             <div class="filtro-input">
               <mat-icon class="filtro-input-icon">search</mat-icon>
@@ -378,7 +464,7 @@
             </div>
           }
 
-          @if (tabIndex() === 4) {
+          @if (tabIndex() === 5) {
             <label class="filtro-label">Status da Parcela</label>
             <mat-form-field appearance="fill" class="filtro-field">
               <mat-select [(ngModel)]="filtroFinanceiroStatus" (selectionChange)="financeiroFilterChange()">

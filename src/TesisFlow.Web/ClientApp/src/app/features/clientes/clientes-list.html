@@ -11,51 +11,61 @@
 
   <div class="clientes-layout">
     <div class="clientes-main">
-      @if (carregando()) {
-        <div class="clientes-grid">
-          @for (i of [1,2,3,4,5,6,7,8]; track i) {
-            <div class="cliente-card skeleton-card">
-              <div class="cliente-card-header">
-                <div class="skeleton skeleton-icone"></div>
-                <div class="cliente-card-info">
-                  <div class="skeleton skeleton-line skeleton-line--long"></div>
+      <div class="clientes-scroll">
+        @if (carregando()) {
+          <div class="clientes-grid">
+            @for (i of [1,2,3,4,5,6,7,8]; track i) {
+              <div class="cliente-card skeleton-card">
+                <div class="cliente-card-header">
+                  <div class="skeleton skeleton-icone"></div>
+                  <div class="cliente-card-info">
+                    <div class="skeleton skeleton-line skeleton-line--long"></div>
+                    <div class="skeleton skeleton-line skeleton-line--short"></div>
+                  </div>
+                  <div class="skeleton skeleton-badge"></div>
+                </div>
+                <div class="skeleton skeleton-divider"></div>
+                <div class="cliente-card-footer">
                   <div class="skeleton skeleton-line skeleton-line--short"></div>
+                  <div class="skeleton skeleton-line skeleton-line--sm"></div>
                 </div>
-                <div class="skeleton skeleton-badge"></div>
               </div>
-              <div class="skeleton skeleton-divider"></div>
-              <div class="cliente-card-footer">
-                <div class="skeleton skeleton-line skeleton-line--short"></div>
-                <div class="skeleton skeleton-line skeleton-line--sm"></div>
-              </div>
-            </div>
-          }
-        </div>
-      } @else if (clientesPaginados().length > 0) {
-        <div class="clientes-grid">
-          @for (c of clientesPaginados(); track c.id) {
-            <mat-card class="cliente-card" [routerLink]="['/clientes', c.id]">
-              <div class="cliente-card-header">
-                <div class="cliente-card-icone">{{ c.nome.charAt(0) }}</div>
-                <div class="cliente-card-info">
-                  <h3>{{ c.nome }}</h3>
-                  <p>{{ c.apelido }}</p>
+            }
+          </div>
+        } @else if (clientesPaginados().length > 0) {
+          <div class="clientes-grid">
+            @for (c of clientesPaginados(); track c.id) {
+              <mat-card class="cliente-card" [routerLink]="['/clientes', c.id]">
+                <div class="cliente-card-header">
+                  <div class="cliente-card-icone">{{ c.nome.charAt(0) }}</div>
+                  <div class="cliente-card-info">
+                    <h3>{{ c.nome }}</h3>
+                    <p>{{ c.apelido }}</p>
+                  </div>
+                  <span class="cliente-status-badge" [class.status-inativo]="c.status === 'Inativo'">{{ c.status }}</span>
                 </div>
-                <span class="cliente-status-badge" [class.status-inativo]="c.status === 'Inativo'">{{ c.status }}</span>
-              </div>
-              <mat-divider></mat-divider>
-              <div class="cliente-card-footer">
-                <span><mat-icon>location_on</mat-icon> {{ c.cidade }}, {{ c.estado }}</span>
-                @if (c.contato) {
-                  <span><mat-icon>person</mat-icon> {{ c.contato }}</span>
-                }
-                @if (c.telefone) {
-                  <span><mat-icon>call</mat-icon> {{ c.telefone }}</span>
-                }
-              </div>
-            </mat-card>
-          }
-        </div>
+                <mat-divider></mat-divider>
+                <div class="cliente-card-footer">
+                  <span><mat-icon>location_on</mat-icon> {{ c.cidade }}, {{ c.estado }}</span>
+                  @if (c.contato) {
+                    <span><mat-icon>person</mat-icon> {{ c.contato }}</span>
+                  }
+                  @if (c.telefone) {
+                    <span><mat-icon>call</mat-icon> {{ c.telefone }}</span>
+                  }
+                </div>
+              </mat-card>
+            }
+          </div>
+        } @else {
+          <div class="empty">
+            <mat-icon>search_off</mat-icon>
+            <h3>Nenhuma escola encontrada</h3>
+            <p>Tente ajustar os filtros para encontrar o que procura.</p>
+          </div>
+        }
+      </div>
+      @if (!carregando() && clientesPaginados().length > 0) {
         <mat-paginator
           class="clientes-paginator"
           [length]="totalFiltrados()"
@@ -65,12 +75,6 @@
           (page)="onPageChange($event)"
           showFirstLastButtons
         ></mat-paginator>
-      } @else {
-        <div class="empty">
-          <mat-icon>search_off</mat-icon>
-          <h3>Nenhuma escola encontrada</h3>
-          <p>Tente ajustar os filtros para encontrar o que procura.</p>
-        </div>
       }
     </div>
 

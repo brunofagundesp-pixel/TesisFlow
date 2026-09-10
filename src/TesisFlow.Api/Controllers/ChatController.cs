@@ -50,6 +50,16 @@ namespace TesisFlow.Api.Controllers
             return Ok(mensagens);
         }
 
+        [HttpGet("buscar/{usuarioId}")]
+        public async Task<IActionResult> Buscar(int usuarioId, [FromQuery] string termo, [FromQuery] int? contatoId = null)
+        {
+            if (string.IsNullOrWhiteSpace(termo) || termo.Trim().Length < 2)
+                return Ok(new List<MensagemBuscaDTO>());
+
+            var resultados = await _consultar.BuscarAsync(usuarioId, termo.Trim(), contatoId);
+            return Ok(resultados);
+        }
+
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] MensagemSalvarDTO dto)
         {

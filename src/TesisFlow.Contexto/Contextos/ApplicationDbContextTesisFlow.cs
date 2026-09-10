@@ -26,6 +26,7 @@ namespace TesisFlow.Contexto.Contextos
         public DbSet<QuadroConfiguracao> QuadroConfiguracoes { get; set; } = null!;
         public DbSet<Notificacao> Notificacoes { get; set; } = null!;
         public DbSet<Mensagem> Mensagens { get; set; } = null!;
+        public DbSet<ColegioNota> ColegioNotas { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -43,6 +44,7 @@ namespace TesisFlow.Contexto.Contextos
             modelBuilder.ApplyConfiguration(new QuadroConfiguracaoEntityConfiguracao());
             modelBuilder.ApplyConfiguration(new NotificacaoEntityConfiguracao());
             modelBuilder.ApplyConfiguration(new MensagemEntityConfiguracao());
+            modelBuilder.ApplyConfiguration(new ColegioNotaEntityConfiguracao());
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

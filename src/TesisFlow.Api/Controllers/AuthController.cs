@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TesisFlow.Api.Services;
 using TesisFlow.Core.Servicos.Usuarios;
 using TesisFlow.Modelo.DTOs;
 
@@ -10,15 +12,19 @@ namespace TesisFlow.Api.Controllers
     {
         private readonly UsuarioConsultar _usuarioConsultar;
         private readonly UsuarioSalvar _usuarioSalvar;
+        private readonly TokenServico _tokenServico;
 
         public AuthController(
             UsuarioConsultar usuarioConsultar,
-            UsuarioSalvar usuarioSalvar)
+            UsuarioSalvar usuarioSalvar,
+            TokenServico tokenServico)
         {
             _usuarioConsultar = usuarioConsultar;
             _usuarioSalvar = usuarioSalvar;
+            _tokenServico = tokenServico;
         }
 
+        [AllowAnonymous]
         [HttpPost("registro")]
         public async Task<IActionResult> Registro([FromBody] UsuarioRegistroDTO dto)
         {
@@ -33,6 +39,7 @@ namespace TesisFlow.Api.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] UsuarioLoginDTO dto)
         {
@@ -44,7 +51,8 @@ namespace TesisFlow.Api.Controllers
                 return Unauthorized(new { mensagem = "Email ou senha invalidos." });
 
             var usuarioDto = await _usuarioConsultar.ObterPorIdAsync(usuario.Id);
-            return Ok(new { token = "jwt-token-tesisflow", usuario = usuarioDto });
+            var token = _tokenServico.GerarToken(usuario);
+            return Ok(new { token, usuario = usuarioDto });
         }
     }
 }

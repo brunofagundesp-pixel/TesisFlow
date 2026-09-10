@@ -12,7 +12,7 @@
     <div class="perfil-avatar-section">
       <div class="perfil-avatar">
         @if (usuario?.foto) {
-          <img [src]="usuario.foto" alt="Foto de perfil" />
+          <img [src]="usuario.foto | authUrl" alt="Foto de perfil" />
         } @else {
           <span class="perfil-avatar-initial">{{ (usuario?.nome ?? '?').charAt(0) }}</span>
         }

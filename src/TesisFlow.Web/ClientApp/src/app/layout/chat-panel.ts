@@ -7,7 +7,8 @@ import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../core/services/auth.service';
-import { ChatService, ContatoChat, MensagemChat, MensagemVinculo } from '../core/services/chat.service';
+import { AuthUrlPipe, comToken } from '../core/auth-url';
+import { ChatService, ContatoChat, MensagemChat, MensagemVinculo, MensagemBuscaChat } from '../core/services/chat.service';
 import { CallService } from '../core/services/call.service';
 import { ChatAnexarTarefaDialogComponent } from '../shared/chat-anexar-tarefa-dialog';
 import { ChatLightboxDialogComponent } from '../shared/chat-lightbox-dialog';
@@ -15,7 +16,7 @@ import { ChatLightboxDialogComponent } from '../shared/chat-lightbox-dialog';
 @Component({
   selector: 'app-chat-panel',
   standalone: true,
-  imports: [FormsModule, MatIconModule, MatTooltipModule, DatePipe, TextFieldModule],
+  imports: [FormsModule, MatIconModule, MatTooltipModule, DatePipe, TextFieldModule, AuthUrlPipe],
   templateUrl: './chat-panel.html',
   styleUrl: './chat-panel.scss',
 })
@@ -31,6 +32,9 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
 
   respondendoA: MensagemChat | null = null;
   carregandoAntigas = false;
+  mostrarRolarAbaixo = false;
+  buscando = false;
+  termoBuscaMensagem = '';
 
   gravando = false;
   tempoGravacao = 0;
@@ -113,10 +117,14 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   }
 
   abrirConversa(id: number): void {
+    this.mostrarRolarAbaixo = false;
+    this.fecharBusca();
     this.chatService.abrirConversa(id);
   }
 
   voltar(): void {
+    this.mostrarRolarAbaixo = false;
+    this.fecharBusca();
     this.chatService.fecharConversa();
   }
 
@@ -164,7 +172,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
       maxWidth: '100vw',
       maxHeight: '100vh',
       panelClass: 'chat-lightbox-panel',
-      data: { src: m.imagem, nome: m.imagemNome || '' },
+      data: { src: comToken(m.imagem), nome: m.imagemNome || '' },
     });
   }
 
@@ -222,7 +230,50 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   onScrollMensagens(): void {
     const el = this.mensagensContainer?.nativeElement;
     if (!el || this.carregandoAntigas) return;
+    this.mostrarRolarAbaixo = el.scrollHeight - el.scrollTop - el.clientHeight > 120;
     if (el.scrollTop <= 30) this.carregarAntigas();
+  }
+
+  rolarParaBaixo(): void {
+    const el = this.mensagensContainer?.nativeElement;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    this.mostrarRolarAbaixo = false;
+  }
+
+  alternarBusca(): void {
+    this.buscando = !this.buscando;
+    if (!this.buscando) this.fecharBusca();
+  }
+
+  fecharBusca(): void {
+    this.buscando = false;
+    this.termoBuscaMensagem = '';
+    clearTimeout(this.buscaMensagemTimer);
+    this.chatService.resultadosBusca.set([]);
+  }
+
+  onBuscaMensagem(termo: string): void {
+    this.termoBuscaMensagem = termo;
+    clearTimeout(this.buscaMensagemTimer);
+    if (!termo || termo.trim().length < 2) {
+      this.chatService.resultadosBusca.set([]);
+      return;
+    }
+    this.buscaMensagemTimer = setTimeout(() => {
+      const contatoId = this.chatService.conversaAtiva() ?? undefined;
+      this.chatService.buscarMensagens(termo, contatoId);
+    }, 150);
+  }
+
+  irParaResultado(r: MensagemBuscaChat): void {
+    const ativa = this.chatService.conversaAtiva();
+    if (ativa === r.contatoId) {
+      this.rolarParaMensagem(r.id);
+    } else {
+      this.abrirConversa(r.contatoId);
+      setTimeout(() => this.rolarParaMensagem(r.id), 350);
+    }
   }
 
   private async carregarAntigas(): Promise<void> {
@@ -429,6 +480,7 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   }
 
   private buscaTimer: any;
+  private buscaMensagemTimer: any;
 
   onBuscaChange(termo: string): void {
     this.termoBusca = termo;

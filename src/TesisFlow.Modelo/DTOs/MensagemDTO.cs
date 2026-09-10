@@ -49,6 +49,21 @@ namespace TesisFlow.Modelo.DTOs
         public string RemetenteNome { get; set; } = string.Empty;
     }
 
+    public class MensagemBuscaDTO
+    {
+        public int Id { get; set; }
+        public int RemetenteId { get; set; }
+        public string RemetenteNome { get; set; } = string.Empty;
+        public int DestinatarioId { get; set; }
+        public string Texto { get; set; } = string.Empty;
+        public DateTime DataCriacao { get; set; }
+        public string? ImagemNome { get; set; }
+        public string? VinculoTitulo { get; set; }
+        public int ContatoId { get; set; }
+        public string ContatoNome { get; set; } = string.Empty;
+        public string? ContatoFoto { get; set; }
+    }
+
     public class MensagemSalvarDTO
     {
         public required string Texto { get; set; }

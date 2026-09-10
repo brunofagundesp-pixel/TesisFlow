@@ -11,7 +11,7 @@ import {
   Cliente, Atendimento, DiarioEntry, PortalAlunoEntry, FinanceiroEntry,
   CLIENTES_MOCK,
 } from './clientes-data';
-import { ClienteApiService } from './cliente-api.service';
+import { ClienteApiService, ColegioNota } from './cliente-api.service';
 import { AtendimentoDialogComponent } from './atendimento-dialog';
 
 interface TabDef {
@@ -20,6 +20,18 @@ interface TabDef {
 }
 
 const ITENS_POR_VEZ = 20;
+const NOTAS_POR_VEZ = 8;
+
+const NOTA_CORES = [
+  { valor: '', rotulo: 'Padrão' },
+  { valor: '#F28B82', rotulo: 'Vermelho' },
+  { valor: '#FBBC04', rotulo: 'Laranja' },
+  { valor: '#FFF475', rotulo: 'Amarelo' },
+  { valor: '#CCFF90', rotulo: 'Verde' },
+  { valor: '#CBF0F8', rotulo: 'Azul' },
+  { valor: '#D7AEFB', rotulo: 'Roxo' },
+  { valor: '#E8EAED', rotulo: 'Cinza' },
+];
 
 const MESES = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -46,12 +58,31 @@ export class ClienteDetalheComponent implements OnInit {
   mostrarSenha = signal(false);
   headerExpandido = signal(false);
 
+  readonly notaCores = NOTA_CORES;
+
+  notas = signal<ColegioNota[]>([]);
+  totalNotas = signal(0);
+  notasCarregando = signal(false);
+
+  criandoNota = signal(false);
+  novaNotaTitulo = signal('');
+  novaNotaConteudo = signal('');
+  novaNotaCor = signal('');
+
+  editandoNotaId = signal<number | null>(null);
+  editNotaTitulo = signal('');
+  editNotaConteudo = signal('');
+  editNotaCor = signal('');
+
+  confirmandoExclusaoId = signal<number | null>(null);
+
   itensVisiveisAtendimento = signal(ITENS_POR_VEZ);
   itensVisiveisDiario = signal(ITENS_POR_VEZ);
   itensVisiveisFinanceiro = signal(ITENS_POR_VEZ);
 
   readonly tabs: TabDef[] = [
     { label: 'Atendimentos', icon: 'headset_mic' },
+    { label: 'Notas', icon: 'sticky_note_2' },
     { label: 'Diario', icon: 'menu_book' },
     { label: 'Portal do Aluno', icon: 'school' },
     { label: 'Portal Admin', icon: 'admin_panel_settings' },
@@ -93,6 +124,7 @@ export class ClienteDetalheComponent implements OnInit {
 
   readonly tabCounts = computed(() => [
     this.atendimentosMock.length,
+    this.totalNotas(),
     this.diarioMock.length,
     this.portalAlunoMock.length,
     this.portalAlunoAdminMock.length,
@@ -104,8 +136,12 @@ export class ClienteDetalheComponent implements OnInit {
   private clienteApiService = inject(ClienteApiService);
   private dialog = inject(MatDialog);
 
+  private colegioId = 0;
+  private notaSaveTimer: any;
+
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
+    this.colegioId = id;
 
     this.clienteApiService.obterPorId(id).subscribe({
       next: (cliente) => {
@@ -117,6 +153,15 @@ export class ClienteDetalheComponent implements OnInit {
         this.cliente = CLIENTES_MOCK[0];
         this.carregarTudo(id);
       },
+    });
+
+    this.sincronizarParceirosEcarregar();
+  }
+
+  private sincronizarParceirosEcarregar(): void {
+    this.clienteApiService.sincronizarParceiros(this.colegioId).subscribe({
+      next: () => this.carregarNotas(),
+      error: () => this.carregarNotas(),
     });
   }
 
@@ -195,6 +240,148 @@ export class ClienteDetalheComponent implements OnInit {
 
   toggleHeader(): void {
     this.headerExpandido.update(v => !v);
+  }
+
+  private ordenarNotas(lista: ColegioNota[]): ColegioNota[] {
+    return [...lista].sort((a, b) => {
+      if (a.fixa !== b.fixa) return a.fixa ? -1 : 1;
+      if (a.fixa) {
+        const da = a.dataFixacao ? new Date(a.dataFixacao).getTime() : 0;
+        const db = b.dataFixacao ? new Date(b.dataFixacao).getTime() : 0;
+        return db - da;
+      }
+      return new Date(b.dataCriacao).getTime() - new Date(a.dataCriacao).getTime();
+    });
+  }
+
+  get temMaisNotas(): boolean {
+    return this.notas().length < this.totalNotas();
+  }
+
+  private carregarNotas(): void {
+    if (this.notasCarregando()) return;
+
+    this.notasCarregando.set(true);
+    this.clienteApiService.getNotas(this.colegioId, NOTAS_POR_VEZ, 0).subscribe({
+      next: (res) => {
+        this.notas.set(this.ordenarNotas(res.itens));
+        this.totalNotas.set(res.total);
+        this.notasCarregando.set(false);
+      },
+      error: () => this.notasCarregando.set(false),
+    });
+  }
+
+  carregarMaisNotas(): void {
+    if (!this.temMaisNotas || this.notasCarregando()) return;
+
+    this.notasCarregando.set(true);
+    this.clienteApiService.getNotas(this.colegioId, NOTAS_POR_VEZ, this.notas().length).subscribe({
+      next: (res) => {
+        this.notas.set(this.ordenarNotas([...this.notas(), ...res.itens]));
+        this.totalNotas.set(res.total);
+        this.notasCarregando.set(false);
+      },
+      error: () => this.notasCarregando.set(false),
+    });
+  }
+
+  abrirCriarNota(): void {
+    this.novaNotaTitulo.set('');
+    this.novaNotaConteudo.set('');
+    this.novaNotaCor.set('');
+    this.criandoNota.set(true);
+  }
+
+  cancelarCriarNota(): void {
+    this.criandoNota.set(false);
+  }
+
+  salvarNovaNota(): void {
+    const titulo = this.novaNotaTitulo().trim();
+    const conteudo = this.novaNotaConteudo().trim();
+    if (!titulo && !conteudo) {
+      this.criandoNota.set(false);
+      return;
+    }
+
+    this.clienteApiService.criarNota({
+      colegioId: this.colegioId,
+      titulo,
+      conteudo,
+      cor: this.novaNotaCor(),
+      fixa: false,
+    }).subscribe(nota => {
+      this.notas.set(this.ordenarNotas([nota, ...this.notas()]));
+      this.totalNotas.update(v => v + 1);
+      this.criandoNota.set(false);
+    });
+  }
+
+  ehNotaParceiro(nota: ColegioNota): boolean {
+    return !!nota.parceiroId;
+  }
+
+  editarNota(nota: ColegioNota): void {
+    this.editandoNotaId.set(nota.id);
+    this.editNotaTitulo.set(nota.titulo);
+    this.editNotaConteudo.set(nota.conteudo);
+    this.editNotaCor.set(nota.cor);
+  }
+
+  cancelarEdicao(): void {
+    this.editandoNotaId.set(null);
+    clearTimeout(this.notaSaveTimer);
+  }
+
+  onNotaEditChange(): void {
+    clearTimeout(this.notaSaveTimer);
+    this.notaSaveTimer = setTimeout(() => this.salvarEdicao(), 800);
+  }
+
+  private salvarEdicao(): void {
+    const id = this.editandoNotaId();
+    if (!id) return;
+
+    const atual = this.notas().find(n => n.id === id);
+    if (!atual) return;
+
+    this.clienteApiService.atualizarNota(id, {
+      titulo: this.editNotaTitulo(),
+      conteudo: this.editNotaConteudo(),
+      cor: this.editNotaCor(),
+      fixa: atual.fixa,
+    }).subscribe(nota => {
+      this.notas.update(lista => this.ordenarNotas(lista.map(n => n.id === id ? nota : n)));
+    });
+  }
+
+  alternarFixa(nota: ColegioNota): void {
+    this.clienteApiService.atualizarNota(nota.id, {
+      titulo: nota.titulo,
+      conteudo: nota.conteudo,
+      cor: nota.cor,
+      fixa: !nota.fixa,
+    }).subscribe(atualizada => {
+      this.notas.update(lista => this.ordenarNotas(lista.map(n => n.id === atualizada.id ? atualizada : n)));
+    });
+  }
+
+  pedirExcluirNota(id: number): void {
+    this.confirmandoExclusaoId.set(id);
+  }
+
+  cancelarExclusao(): void {
+    this.confirmandoExclusaoId.set(null);
+  }
+
+  confirmarExclusaoNota(id: number): void {
+    this.clienteApiService.excluirNota(id).subscribe(() => {
+      this.notas.update(lista => lista.filter(n => n.id !== id));
+      this.totalNotas.update(v => Math.max(0, v - 1));
+      this.confirmandoExclusaoId.set(null);
+      if (this.editandoNotaId() === id) this.cancelarEdicao();
+    });
   }
 
   formatarData(data: string): string {
@@ -370,7 +557,8 @@ export class ClienteDetalheComponent implements OnInit {
 
     const tab = this.tabIndex();
     if (tab === 0 && this.temMaisAtendimentos()) this.carregarMaisAtendimento();
-    else if (tab === 1 && this.temMaisDiario()) this.carregarMaisDiario();
-    else if (tab === 4 && this.temMaisFinanceiro()) this.carregarMaisFinanceiro();
+    else if (tab === 1 && this.temMaisNotas) this.carregarMaisNotas();
+    else if (tab === 2 && this.temMaisDiario()) this.carregarMaisDiario();
+    else if (tab === 5 && this.temMaisFinanceiro()) this.carregarMaisFinanceiro();
   }
 }

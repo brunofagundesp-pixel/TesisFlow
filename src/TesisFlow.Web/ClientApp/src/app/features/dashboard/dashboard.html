@@ -1,7 +1,7 @@
 <div class="dashboard">
   <div class="dashboard-banner" #banner [class.dashboard-banner--vazio]="!usuario?.banner">
     @if (usuario?.banner) {
-      <img class="dashboard-banner-img" [src]="usuario.banner" alt="" />
+      <img class="dashboard-banner-img" [src]="usuario.banner | authUrl" alt="" />
     } @else {
       <div class="dashboard-banner-placeholder"></div>
     }

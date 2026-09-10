@@ -12,6 +12,7 @@ import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/materia
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SlicePipe, DatePipe } from '@angular/common';
 import { Atendimento, STATUS_CONTATO_OPTIONS } from './clientes-data';
+import { AuthUrlPipe } from '../../core/auth-url';
 import { ClienteApiService } from './cliente-api.service';
 import { TarefaService } from '../tarefas/tarefa.service';
 import { HistoricoTarefaService } from '../tarefas/historico-tarefa.service';
@@ -34,6 +35,7 @@ interface EventoHistorico {
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatExpansionModule, MatTooltipModule,
     FormsModule, SlicePipe, DatePipe, TextFieldModule, MatSnackBarModule,
+    AuthUrlPipe,
   ],
   templateUrl: './atendimento-dialog.html',
   styleUrl: './atendimento-dialog.scss',

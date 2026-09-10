@@ -7,6 +7,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { TarefaService } from '../tarefas/tarefa.service';
 import { AuthService } from '../../core/services/auth.service';
+import { AuthUrlPipe } from '../../core/auth-url';
 import { UsuarioService } from '../../core/services/usuario.service';
 import { MeuDiaService } from '../../core/services/meu-dia.service';
 import { TarefaDetalheModalComponent } from '../projetos/tarefa-detalhe-modal';
@@ -31,7 +32,7 @@ const STATUS_LABEL: Record<number, string> = {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, MatIconModule, MatButtonModule, MatProgressSpinnerModule, MatSnackBarModule],
+  imports: [RouterLink, MatIconModule, MatButtonModule, MatProgressSpinnerModule, MatSnackBarModule, AuthUrlPipe],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })

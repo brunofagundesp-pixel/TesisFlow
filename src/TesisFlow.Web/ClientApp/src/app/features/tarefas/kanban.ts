@@ -28,6 +28,7 @@ import { TarefaDetalheModalComponent } from '../projetos/tarefa-detalhe-modal';
 import { ProjetoMembroDialogComponent } from '../projetos/projeto-membro-dialog';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog';
 import { AuthService } from '../../core/services/auth.service';
+import { AuthUrlPipe } from '../../core/auth-url';
 import { MeuDiaService } from '../../core/services/meu-dia.service';
 import { NotificacaoService } from '../../core/services/notificacao.service';
 import { Projeto, Tarefa, StatusTarefa, PrioridadeTarefa, QuadroConfiguracao, TarefaSave, TarefaMove, Categoria } from '../../core/models';
@@ -73,7 +74,7 @@ const TITULOS_STATUS: Record<number, string> = {
 @Component({
   selector: 'app-kanban',
   standalone: true,
-  imports: [CommonModule, CdkDropList, CdkDrag, CdkDropListGroup, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatMenuModule, MatChipsModule, MatBadgeModule, MatDividerModule, MatTooltipModule, MatSnackBarModule, RouterLink, FormsModule],
+  imports: [CommonModule, CdkDropList, CdkDrag, CdkDropListGroup, MatButtonModule, MatIconModule, MatProgressSpinnerModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatMenuModule, MatChipsModule, MatBadgeModule, MatDividerModule, MatTooltipModule, MatSnackBarModule, RouterLink, FormsModule, AuthUrlPipe],
   templateUrl: './kanban.html',
   styleUrl: './kanban.scss',
 })

@@ -14,6 +14,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, switchMap, Subscription, of, EMPTY, tap, finalize } from 'rxjs';
 import { AuthService } from '../core/services/auth.service';
+import { AuthUrlPipe } from '../core/auth-url';
 import { ThemeService } from '../core/services/theme.service';
 import { NotificacaoService, Notificacao } from '../core/services/notificacao.service';
 import { ChatService } from '../core/services/chat.service';
@@ -59,6 +60,7 @@ const STATUS_LABEL: Record<number, string> = {
     MatBadgeModule,
     ReactiveFormsModule,
     DatePipe,
+    AuthUrlPipe,
     ChatPanelComponent,
     CallModalComponent,
   ],

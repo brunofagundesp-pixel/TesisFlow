@@ -1,6 +1,7 @@
 import { Injectable, signal, inject } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
 import { AuthService } from './auth.service';
+import { obterToken } from '../token-storage';
 
 interface Participant {
   userId: number;
@@ -63,7 +64,9 @@ export class CallService {
   private conectarSignalR(userId: number): void {
     if (this.hubConnection) return;
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`/hubs/chamadas?userId=${userId}`)
+      .withUrl(`/hubs/chamadas?userId=${userId}`, {
+        accessTokenFactory: () => obterToken() ?? '',
+      })
       .withAutomaticReconnect()
       .build();
 

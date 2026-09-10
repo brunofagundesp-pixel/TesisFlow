@@ -45,7 +45,7 @@
 
       <button class="minhas-btn" [class.minhas-btn--ativo]="somenteMinhas" (click)="toggleMinhasTarefas()" [matTooltip]="'Mostrar apenas minhas tarefas'">
         @if (auth.usuario()?.foto) {
-          <img class="minhas-avatar" [src]="auth.usuario()?.foto" alt="" />
+          <img class="minhas-avatar" [src]="auth.usuario()?.foto | authUrl" alt="" />
         } @else {
           <span class="minhas-avatar minhas-avatar--init">{{ (auth.usuario()?.nome ?? '?').charAt(0) }}</span>
         }

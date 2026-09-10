@@ -7,18 +7,24 @@
       <div class="chat-contato-info">
         <div class="chat-foto-wrapper">
           <span class="chat-contato-foto">
-            @if (contatoAtivo?.foto) { <img [src]="contatoAtivo?.foto" alt="" /> }
+            @if (contatoAtivo?.foto) { <img [src]="contatoAtivo?.foto | authUrl" alt="" /> }
             @else { {{ contatoAtivo?.avatar }} }
           </span>
           <span class="chat-status-dot" [class.s-online]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'online'" [class.s-ausente]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'ausente'" [class.s-ocupado]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'ocupado'"></span>
         </div>
         <span class="chat-contato-nome">{{ contatoAtivo?.nome }}</span>
       </div>
+      <button class="chat-call-btn" (click)="alternarBusca()" title="Buscar na conversa">
+        <mat-icon>search</mat-icon>
+      </button>
       <button class="chat-call-btn" (click)="ligar()" title="Ligar">
         <mat-icon>call</mat-icon>
       </button>
     } @else {
       <span class="chat-panel-titulo">Mensagens</span>
+      <button class="chat-call-btn" (click)="alternarBusca()" title="Buscar mensagens">
+        <mat-icon>search</mat-icon>
+      </button>
       <button class="chat-call-btn" (click)="mostrarLigacaoGrupo = !mostrarLigacaoGrupo" title="Ligar">
         <mat-icon>call</mat-icon>
       </button>
@@ -27,6 +33,37 @@
       <mat-icon>close</mat-icon>
     </button>
   </div>
+
+  @if (buscando) {
+    <div class="chat-busca-mensagens">
+      <mat-icon class="chat-busca-icon">search</mat-icon>
+      <input
+        class="chat-busca-input chat-busca-mensagens-input"
+        [placeholder]="chatService.conversaAtiva() ? 'Buscar na conversa...' : 'Buscar em todas as conversas...'"
+        [ngModel]="termoBuscaMensagem"
+        (ngModelChange)="onBuscaMensagem($event)"
+        (keydown.escape)="fecharBusca()"
+      />
+      <button class="chat-busca-fechar" (click)="fecharBusca()" title="Fechar busca">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    @if (chatService.resultadosBusca().length > 0) {
+      <div class="chat-resultados-busca">
+        @for (r of chatService.resultadosBusca(); track r.id) {
+          <div class="chat-resultado-item" (click)="irParaResultado(r)">
+            <span class="chat-resultado-top">
+              @if (!chatService.conversaAtiva()) {
+                <span class="chat-resultado-contato">{{ r.contatoNome }}</span>
+              }
+              <span class="chat-resultado-data">{{ r.data | date:'dd/MM/yyyy HH:mm' }}</span>
+            </span>
+            <span class="chat-resultado-texto">{{ r.texto || r.vinculoTitulo || (r.imagemNome ? '[Imagem]' : '') }}</span>
+          </div>
+        }
+      </div>
+    }
+  }
 
   @if (!chatService.conversaAtiva()) {
     @if (mostrarLigacaoGrupo) {
@@ -51,7 +88,7 @@
               @for (u of chatService.sugestoesBusca(); track u.usuarioId) {
                 <div class="chat-busca-item" (click)="toggleParticipante(u.usuarioId); termoBuscaGrupo = ''">
                   <span class="chat-contato-foto">
-                    @if (u.foto) { <img [src]="u.foto" alt="" /> }
+                    @if (u.foto) { <img [src]="u.foto | authUrl" alt="" /> }
                     @else { {{ u.avatar }} }
                   </span>
                   <span>{{ u.nome }}</span>
@@ -79,7 +116,7 @@
           @for (u of chatService.sugestoesBusca(); track u.usuarioId) {
             <div class="chat-busca-item" (click)="abrirConversa(u.usuarioId); termoBusca = ''">
               <span class="chat-contato-foto">
-                @if (u.foto) { <img [src]="u.foto" alt="" /> }
+                @if (u.foto) { <img [src]="u.foto | authUrl" alt="" /> }
                 @else { {{ u.avatar }} }
               </span>
               <span>{{ u.nome }}</span>
@@ -93,7 +130,7 @@
         <div class="chat-contato-card" (click)="abrirConversa(c.usuarioId)">
           <div class="chat-foto-wrapper">
             <span class="chat-contato-foto">
-              @if (c.foto) { <img [src]="c.foto" alt="" /> }
+              @if (c.foto) { <img [src]="c.foto | authUrl" alt="" /> }
               @else { {{ c.avatar }} }
             </span>
             <span class="chat-status-dot" [class.s-online]="chatService.getStatus(c.usuarioId) === 'online'" [class.s-ausente]="chatService.getStatus(c.usuarioId) === 'ausente'" [class.s-ocupado]="chatService.getStatus(c.usuarioId) === 'ocupado'"></span>
@@ -115,6 +152,7 @@
     </div>
     }
   } @else {
+    <div class="chat-conversa">
     <div class="chat-mensagens" #mensagensContainer (scroll)="onScrollMensagens()">
       @for (m of mensagensAtivas; track m.id) {
         @let rotuloData = dataSeparador($index);
@@ -141,11 +179,11 @@
                 <mat-icon class="chat-vinculo-seta">chevron_right</mat-icon>
               </div>
             } @else if (m.imagem) {
-              <img class="chat-imagem-mini" [src]="m.imagem" alt="" (click)="abrirImagem(m)" />
+              <img class="chat-imagem-mini" [src]="m.imagem | authUrl" alt="" (click)="abrirImagem(m)" />
             } @else if (m.audio) {
               <div class="chat-audio">
                 <audio #player
-                  [src]="m.audio"
+                  [src]="m.audio | authUrl"
                   preload="metadata"
                   (loadedmetadata)="aoCarregarMetadata(m, player)"
                   (timeupdate)="aoAtualizarTempo(m, player)"
@@ -194,6 +232,13 @@
           </div>
         </div>
       }
+    </div>
+
+    @if (mostrarRolarAbaixo) {
+      <button class="chat-rolar-abaixo" (click)="rolarParaBaixo()" title="Ir para a última mensagem">
+        <mat-icon>keyboard_arrow_down</mat-icon>
+      </button>
+    }
     </div>
 
     @if (respondendoA) {

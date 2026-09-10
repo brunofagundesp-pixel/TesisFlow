@@ -102,7 +102,7 @@
                   <span class="anexo-meta">{{ formatarTamanho(a.tamanho) }} · {{ a.usuarioNome }} · {{ a.dataCriacao | date:'dd/MM/yyyy' }}</span>
                 </div>
                 <div class="anexo-actions">
-                  <a class="anexo-download" [href]="apiUrl + '/Anexos/download/' + a.id" target="_blank" matTooltip="Download">
+                  <a class="anexo-download" [href]="(apiUrl + '/Anexos/download/' + a.id) | authUrl" target="_blank" matTooltip="Download">
                     <mat-icon>download</mat-icon>
                   </a>
                   @if (a.usuarioId === auth.usuario()?.id) {

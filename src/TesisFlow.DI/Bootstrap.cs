@@ -10,6 +10,7 @@ using TesisFlow.Core.Servicos.Usuarios;
 using TesisFlow.Core.Servicos.Notificacoes;
 using TesisFlow.Core.Servicos.Mensagens;
 using TesisFlow.Core.Servicos.Integracoes;
+using TesisFlow.Core.Servicos.ColegioNotas;
 
 namespace TesisFlow.DI
 {
@@ -28,6 +29,7 @@ namespace TesisFlow.DI
             services.AddScoped<IMensagemRepositorio, MensagemRepositorio>();
             services.AddScoped<ICategoriaRepositorio, CategoriaRepositorio>();
             services.AddScoped<ITarefaMeuDiaRepositorio, TarefaMeuDiaRepositorio>();
+            services.AddScoped<IColegioNotaRepositorio, ColegioNotaRepositorio>();
 
             // Servicos - Usuarios
             services.AddScoped<UsuarioConsultar>();
@@ -78,6 +80,12 @@ namespace TesisFlow.DI
 
             // Servicos - Integracoes externas
             services.AddScoped<TesisCcService>();
+
+            // Servicos - ColegioNotas
+            services.AddScoped<ColegioNotaConsultar>();
+            services.AddScoped<ColegioNotaSalvar>();
+            services.AddScoped<ColegioNotaExcluir>();
+            services.AddScoped<ColegioNotaSincronizar>();
         }
     }
 }

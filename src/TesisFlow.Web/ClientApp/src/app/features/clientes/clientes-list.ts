@@ -2,6 +2,7 @@ import { Component, computed, signal, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -17,6 +18,7 @@ import { ClienteApiService } from './cliente-api.service';
     RouterLink,
     FormsModule,
     MatCardModule,
+    MatButtonModule,
     MatIconModule,
     MatDividerModule,
     MatFormFieldModule,

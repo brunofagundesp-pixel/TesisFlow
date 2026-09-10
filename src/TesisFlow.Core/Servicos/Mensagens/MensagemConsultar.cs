@@ -104,5 +104,28 @@ namespace TesisFlow.Core.Servicos.Mensagens
 
             return contatosDict.Values.OrderByDescending(c => c.UltimaData).ToList();
         }
+
+        public async Task<IEnumerable<MensagemBuscaDTO>> BuscarAsync(int usuarioId, string termo, int? contatoId = null, int limite = 50)
+        {
+            var mensagens = await _repositorio.BuscarAsync(usuarioId, termo, contatoId, limite);
+            return mensagens.Select(m =>
+            {
+                var outro = m.RemetenteId == usuarioId ? m.Destinatario : m.Remetente;
+                return new MensagemBuscaDTO
+                {
+                    Id = m.Id,
+                    RemetenteId = m.RemetenteId,
+                    RemetenteNome = m.Remetente?.Nome ?? "",
+                    DestinatarioId = m.DestinatarioId,
+                    Texto = m.Texto,
+                    DataCriacao = ComoUtc(m.DataCriacao),
+                    ImagemNome = m.ImagemNome,
+                    VinculoTitulo = m.VinculoTitulo,
+                    ContatoId = outro?.Id ?? 0,
+                    ContatoNome = outro?.Nome ?? "",
+                    ContatoFoto = outro?.Foto,
+                };
+            });
+        }
     }
 }

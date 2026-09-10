@@ -56,6 +56,33 @@ namespace TesisFlow.Core.Servicos.Mensagens
             return todas;
         }
 
+        public async Task<IEnumerable<Mensagem>> BuscarAsync(int usuarioId, string termo, int? contatoId = null, int limite = 50)
+        {
+            var t = termo.Trim();
+            var query = _context.Mensagens
+                .AsNoTracking()
+                .Where(m => m.Ativo && (m.RemetenteId == usuarioId || m.DestinatarioId == usuarioId));
+
+            if (contatoId.HasValue)
+            {
+                query = query.Where(m =>
+                    (m.RemetenteId == contatoId.Value && m.DestinatarioId == usuarioId) ||
+                    (m.DestinatarioId == contatoId.Value && m.RemetenteId == usuarioId));
+            }
+
+            query = query.Where(m =>
+                m.Texto.Contains(t) ||
+                (m.VinculoTitulo != null && m.VinculoTitulo.Contains(t)) ||
+                (m.ImagemNome != null && m.ImagemNome.Contains(t)));
+
+            return await query
+                .Include(m => m.Remetente)
+                .Include(m => m.Destinatario)
+                .OrderByDescending(m => m.DataCriacao)
+                .Take(limite)
+                .ToListAsync();
+        }
+
         public async Task<Mensagem> AdicionarAsync(Mensagem mensagem)
         {
             _context.Mensagens.Add(mensagem);

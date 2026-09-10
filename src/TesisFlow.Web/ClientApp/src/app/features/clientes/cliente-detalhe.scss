@@ -59,6 +59,227 @@
   flex-shrink: 0;
 }
 
+.cliente-header-notas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 100px;
+  background: var(--tf-primary-light);
+  color: var(--tf-primary);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover { background: var(--tf-primary); color: #fff; }
+
+  mat-icon { font-size: 0.95rem; width: 0.95rem; height: 0.95rem; }
+}
+
+.notas-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 0.75rem;
+}
+
+.notas-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notas-total {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--tf-text-muted);
+}
+
+.notas-nova-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  background: var(--tf-primary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: opacity 0.15s;
+
+  &:hover { opacity: 0.9; }
+
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; }
+}
+
+.notas-grid {
+  columns: 3;
+  column-gap: 1rem;
+}
+
+.nota-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  break-inside: avoid;
+  margin-bottom: 1rem;
+  border: 1px solid var(--tf-border);
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: var(--tf-surface);
+  min-height: 100px;
+}
+
+.nota-card.nota-card--fixa {
+  border-color: var(--tf-primary);
+  box-shadow: 0 0 0 2px var(--tf-primary-light), 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.nota-card--colorida {
+  border-color: transparent;
+
+  .nota-titulo,
+  .nota-conteudo,
+  .nota-input,
+  .nota-textarea { color: rgba(0, 0, 0, 0.8); }
+}
+
+.nota-titulo {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--tf-text-primary);
+  word-break: break-word;
+}
+
+.nota-conteudo {
+  font-size: 0.82rem;
+  color: var(--tf-text-body);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+  flex: 1;
+}
+
+.nota-input,
+.nota-textarea {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  width: 100%;
+}
+
+.nota-input {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--tf-text-primary);
+
+  &::placeholder { color: var(--tf-text-placeholder); font-weight: 400; }
+}
+
+.nota-textarea {
+  font-size: 0.82rem;
+  color: var(--tf-text-body);
+  resize: none;
+  min-height: 80px;
+  line-height: 1.4;
+  flex: 1;
+
+  &::placeholder { color: var(--tf-text-placeholder); }
+}
+
+.nota-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.nota-paleta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.nota-cor-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--tf-border);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: transform 0.1s;
+
+  &:hover { transform: scale(1.15); }
+}
+
+.nota-cor-dot--ativa {
+  border-color: var(--tf-primary);
+  box-shadow: 0 0 0 2px var(--tf-primary-light);
+}
+
+.nota-acoes {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: auto;
+}
+
+.nota-acao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--tf-text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover { background: var(--tf-surface-hover); color: var(--tf-text-body); }
+
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; }
+}
+
+.nota-acao--ativa { color: var(--tf-primary); }
+
+.nota-card--colorida .nota-acao {
+  color: rgba(0, 0, 0, 0.55);
+
+  &:hover { background: rgba(0, 0, 0, 0.08); color: rgba(0, 0, 0, 0.8); }
+}
+
+.nota-card--colorida .nota-acao.nota-acao--ativa {
+  color: var(--tf-primary);
+
+  &:hover { color: var(--tf-primary); }
+}
+
+.nota-confirmar {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--tf-danger);
+}
+
+.nota-card--colorida .nota-confirmar { color: #b00020; }
+
+.filtro-hint {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--tf-text-muted);
+  margin-bottom: 1rem;
+}
+
 .cliente-header-top {
   display: flex;
   align-items: flex-start;
@@ -644,4 +865,12 @@
   height: 44px;
   width: 100%;
   border-radius: 12px;
+}
+
+@media (max-width: 1200px) {
+  .notas-grid { columns: 2; }
+}
+
+@media (max-width: 720px) {
+  .notas-grid { columns: 1; }
 }

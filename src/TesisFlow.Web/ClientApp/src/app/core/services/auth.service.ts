@@ -3,8 +3,7 @@ import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
 import { Usuario, UsuarioLogin, UsuarioRegistro } from '../models';
-
-const STORAGE_KEY = 'tesisflow_user';
+import { USUARIO_STORAGE_KEY, definirToken, removerToken } from '../token-storage';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -19,6 +18,7 @@ export class AuthService {
     return this.api.post<{ token: string; usuario: Usuario }>('Auth/login', dto).pipe(
       tap(res => {
         this.salvarSessao(res.usuario);
+        definirToken(res.token);
         this._usuario.set(res.usuario);
       })
     );
@@ -34,17 +34,18 @@ export class AuthService {
   }
 
   logout(): void {
-    localStorage.removeItem(STORAGE_KEY);
+    removerToken();
+    localStorage.removeItem(USUARIO_STORAGE_KEY);
     this._usuario.set(null);
     this.router.navigate(['/login']);
   }
 
   private salvarSessao(usuario: Usuario): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(usuario));
+    localStorage.setItem(USUARIO_STORAGE_KEY, JSON.stringify(usuario));
   }
 
   private carregarDaStorage(): Usuario | null {
-    const data = localStorage.getItem(STORAGE_KEY);
+    const data = localStorage.getItem(USUARIO_STORAGE_KEY);
     return data ? JSON.parse(data) : null;
   }
 }

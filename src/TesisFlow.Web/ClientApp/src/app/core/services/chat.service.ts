@@ -2,6 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import * as signalR from '@microsoft/signalr';
 import { AuthService } from './auth.service';
+import { obterToken } from '../token-storage';
 
 export interface ContatoChat {
   usuarioId: number;
@@ -49,6 +50,20 @@ export interface MensagemChat {
   imagemNome?: string;
 }
 
+export interface MensagemBuscaChat {
+  id: number;
+  remetenteId: number;
+  remetenteNome: string;
+  destinatarioId: number;
+  texto: string;
+  data: Date;
+  imagemNome?: string;
+  vinculoTitulo?: string;
+  contatoId: number;
+  contatoNome: string;
+  contatoFoto?: string;
+}
+
 export type StatusUsuario = 'online' | 'offline' | 'ausente' | 'ocupado';
 
 function dataDe(msg: any): Date {
@@ -69,6 +84,7 @@ export class ChatService {
 
   readonly conversaAtiva = signal<number | null>(null);
   readonly totalNaoLidas = signal(0);
+  readonly resultadosBusca = signal<MensagemBuscaChat[]>([]);
 
   private typingTimers = new Map<number, ReturnType<typeof setTimeout>>();
   private digitandoAtual = new Set<number>();
@@ -115,7 +131,9 @@ export class ChatService {
     if (this.hubConnection) return;
 
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`/hubs/chat?userId=${userId}`)
+      .withUrl(`/hubs/chat?userId=${userId}`, {
+        accessTokenFactory: () => obterToken() ?? '',
+      })
       .build();
 
     this.hubConnection.on('ReceberMensagem', (msg: any) => {
@@ -266,6 +284,21 @@ export class ChatService {
 
   fecharConversa(): void {
     this.conversaAtiva.set(null);
+  }
+
+  buscarMensagens(termo: string, contatoId?: number): void {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId || !termo || termo.trim().length < 2) {
+      this.resultadosBusca.set([]);
+      return;
+    }
+
+    let url = `/api/Chat/buscar/${meuId}?termo=${encodeURIComponent(termo)}`;
+    if (contatoId) url += `&contatoId=${contatoId}`;
+
+    this.http.get<any[]>(url).subscribe(rs => {
+      this.resultadosBusca.set(rs.map(r => ({ ...r, data: new Date(r.dataCriacao) })));
+    });
   }
 
   enviarMensagem(usuarioId: number, texto: string, mensagemRespondidaId?: number): void {

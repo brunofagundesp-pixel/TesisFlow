@@ -14,6 +14,7 @@ import { ComentarioService } from './comentario.service';
 import { AnexoService } from './anexo.service';
 import { HistoricoTarefaService } from './historico-tarefa.service';
 import { AuthService } from '../../core/services/auth.service';
+import { AuthUrlPipe, tokenizarHtml } from '../../core/auth-url';
 import { MencaoService } from '../../core/services/mencao.service';
 import { NotificacaoService } from '../../core/services/notificacao.service';
 import { ImagemService } from '../../core/services/imagem.service';
@@ -29,7 +30,7 @@ interface EventoHistorico { icon: string; mensagem: string; autor: string; data:
 @Component({
   selector: 'app-tarefa-detalhe',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule, MatIconModule, MatExpansionModule, MatTooltipModule, DatePipe, ColegioSelectComponent],
+  imports: [ReactiveFormsModule, RouterLink, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule, MatIconModule, MatExpansionModule, MatTooltipModule, DatePipe, ColegioSelectComponent, AuthUrlPipe],
   templateUrl: './tarefa-detalhe-page.html',
   styleUrl: './tarefa-detalhe-page.scss',
 })
@@ -103,7 +104,7 @@ export class TarefaDetalheComponent implements OnInit, OnDestroy {
   get descricaoHtml(): string {
     const val = this.form?.get('descricao')?.value || '';
     if (!val || val.trim().length === 0) return '<span class="descricao-placeholder">Adicione uma descricao...</span>';
-    return val;
+    return tokenizarHtml(val);
   }
   comentarioHtml(c: Comentario): string { return (c.texto && c.texto.trim()) ? c.texto : '<span class="descricao-placeholder">Vazio</span>'; }
   toggleEditDescricao() { this.editandoDescricao = !this.editandoDescricao; if (!this.editandoDescricao) { const e = document.querySelector('.descricao-panel .editor-content') as HTMLElement; if (e) this.form.patchValue({descricao: e.innerHTML}); } }

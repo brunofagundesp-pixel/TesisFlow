@@ -250,7 +250,7 @@
         <div class="toolbar-user-avatar-wrapper">
           <div class="toolbar-user-avatar">
             @if (auth.usuario()?.foto) {
-              <img [src]="auth.usuario()?.foto" alt="" />
+              <img [src]="auth.usuario()?.foto | authUrl" alt="" />
             } @else {
               {{ auth.usuario()?.nome?.charAt(0) }}
             }
@@ -263,7 +263,7 @@
         <div class="user-menu-header">
           <span class="user-menu-avatar">
             @if (auth.usuario()?.foto) {
-              <img [src]="auth.usuario()?.foto" alt="" />
+              <img [src]="auth.usuario()?.foto | authUrl" alt="" />
             } @else {
               {{ auth.usuario()?.nome?.charAt(0) }}
             }

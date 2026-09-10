@@ -6,13 +6,14 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AuthService } from '../../core/services/auth.service';
+import { AuthUrlPipe } from '../../core/auth-url';
 import { UsuarioService } from '../../core/services/usuario.service';
 import { FotoCropDialogComponent } from './foto-crop-dialog';
 
 @Component({
   selector: 'app-perfil-configuracoes',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatIconModule, MatButtonModule, MatDialogModule, MatSnackBarModule],
+  imports: [CommonModule, RouterLink, MatIconModule, MatButtonModule, MatDialogModule, MatSnackBarModule, AuthUrlPipe],
   templateUrl: './perfil-configuracoes.html',
   styleUrl: './perfil-configuracoes.scss',
 })

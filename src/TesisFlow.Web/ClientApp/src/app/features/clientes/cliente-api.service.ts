@@ -44,6 +44,32 @@ export interface ClientePage {
   total: number;
 }
 
+export interface ColegioNota {
+  id: number;
+  colegioId: number;
+  titulo: string;
+  conteudo: string;
+  cor: string;
+  fixa: boolean;
+  parceiroId?: number | null;
+  dataCriacao: string;
+  dataAtualizacao?: string | null;
+  dataFixacao?: string | null;
+}
+
+export interface ColegioNotaPage {
+  itens: ColegioNota[];
+  total: number;
+}
+
+export interface ColegioNotaPayload {
+  colegioId?: number;
+  titulo: string;
+  conteudo: string;
+  cor: string;
+  fixa: boolean;
+}
+
 function mapCliente(api: ClienteOData): Cliente {
   return {
     id: api.idColegio,
@@ -175,6 +201,28 @@ export class ClienteApiService {
         senha: p.senha,
       }))),
     );
+  }
+
+  getNotas(idColegio: number, top: number, skip: number): Observable<ColegioNotaPage> {
+    return this.http.get<{ itens: ColegioNota[]; total: number }>(`/api/ColegioNotas/${idColegio}?top=${top}&skip=${skip}`).pipe(
+      map(res => ({ itens: res.itens || [], total: res.total || 0 })),
+    );
+  }
+
+  criarNota(payload: ColegioNotaPayload): Observable<ColegioNota> {
+    return this.http.post<ColegioNota>('/api/ColegioNotas', payload);
+  }
+
+  atualizarNota(id: number, payload: ColegioNotaPayload): Observable<ColegioNota> {
+    return this.http.put<ColegioNota>(`/api/ColegioNotas/${id}`, payload);
+  }
+
+  excluirNota(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/ColegioNotas/${id}`);
+  }
+
+  sincronizarParceiros(idColegio: number): Observable<ColegioNota[]> {
+    return this.http.post<ColegioNota[]>(`/api/ColegioNotas/${idColegio}/sincronizar-parceiros`, {});
   }
 
   getParcelas(idColegio: number): Observable<FinanceiroEntry[]> {

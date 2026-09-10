@@ -2,6 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import * as signalR from '@microsoft/signalr';
 import { AuthService } from './auth.service';
+import { obterToken } from '../token-storage';
 
 export interface Notificacao {
   id: number;
@@ -121,7 +122,9 @@ export class NotificacaoService {
     if (this.hubConnection) return;
 
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`/hubs/notificacoes?userId=${userId}`)
+      .withUrl(`/hubs/notificacoes?userId=${userId}`, {
+        accessTokenFactory: () => obterToken() ?? '',
+      })
       .build();
 
     this.hubConnection.on('ReceberNotificacao', (notificacao: NotificacaoRaw) => {

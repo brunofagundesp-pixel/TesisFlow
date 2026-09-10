@@ -79,7 +79,7 @@
               @for (m of membros; track m.usuarioId) {
                 <div class="participante-item">
                   @if (m.usuarioFoto) {
-                    <img class="participante-avatar" [src]="m.usuarioFoto" alt="" />
+                    <img class="participante-avatar" [src]="m.usuarioFoto | authUrl" alt="" />
                   } @else {
                     <div class="participante-avatar">{{ m.usuarioNome.charAt(0) }}</div>
                   }
@@ -103,7 +103,7 @@
               @for (c of convites; track c.usuarioId) {
                 <div class="participante-item">
                   @if (c.usuarioFoto) {
-                    <img class="participante-avatar" [src]="c.usuarioFoto" alt="" />
+                    <img class="participante-avatar" [src]="c.usuarioFoto | authUrl" alt="" />
                   } @else {
                     <div class="participante-avatar">{{ c.usuarioNome.charAt(0) }}</div>
                   }

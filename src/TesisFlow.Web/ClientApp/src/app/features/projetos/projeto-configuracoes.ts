@@ -9,6 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ProjetoService } from './projeto.service';
+import { AuthUrlPipe } from '../../core/auth-url';
 import { CategoriasComponent } from '../categorias/categorias';
 import { IconPickerComponent } from '../categorias/icon-picker';
 import { ProjetoMembroDialogComponent } from './projeto-membro-dialog';
@@ -27,6 +28,7 @@ import { Projeto, ProjetoMembro } from '../../core/models';
     ReactiveFormsModule,
     CategoriasComponent,
     IconPickerComponent,
+    AuthUrlPipe,
   ],
   templateUrl: './projeto-configuracoes.html',
   styleUrl: './projeto-configuracoes.scss',
