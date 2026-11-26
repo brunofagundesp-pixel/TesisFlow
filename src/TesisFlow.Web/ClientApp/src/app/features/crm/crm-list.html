@@ -259,7 +259,10 @@
                   <div class="crm-kanban-card" draggable="true" (dragstart)="onDragStart($event, e)">
                     <div class="crm-kanban-card-top">
                       <a class="crm-kanban-card-nome" [routerLink]="['/clientes', e.colegioId]">{{ e.colegioNome }}</a>
-                      <button class="crm-kanban-card-encerrar" (click)="encerrar(e)" title="Encerrar oportunidade"><mat-icon>do_not_disturb_on</mat-icon></button>
+                      <div class="crm-kanban-card-acoes-topo">
+                        <button class="crm-kanban-card-encerrar" (click)="encerrar(e)" title="Encerrar oportunidade"><mat-icon>do_not_disturb_on</mat-icon></button>
+                        <button class="crm-kanban-card-excluir" (click)="excluirEscolaCrm(e)" title="Excluir"><mat-icon>delete</mat-icon></button>
+                      </div>
                     </div>
                     @if (e.contatoPrincipalNome) { <div class="crm-kanban-card-linha"><mat-icon>person</mat-icon>{{ e.contatoPrincipalNome }}</div> }
                     @if (e.responsavelNome) { <div class="crm-kanban-card-linha"><mat-icon>badge</mat-icon>{{ e.responsavelNome }}</div> }
@@ -288,6 +291,7 @@
                   @if (e.motivoEncerramento) { <div class="crm-kanban-card-linha">{{ e.motivoEncerramento }}</div> }
                   <div class="crm-kanban-card-acoes">
                     <button class="crm-kanban-card-reabrir" (click)="reabrir(e)"><mat-icon>replay</mat-icon> Reabrir</button>
+                    <button class="crm-kanban-card-excluir" (click)="excluirEscolaCrm(e)" title="Excluir"><mat-icon>delete</mat-icon></button>
                   </div>
                 </div>
               }

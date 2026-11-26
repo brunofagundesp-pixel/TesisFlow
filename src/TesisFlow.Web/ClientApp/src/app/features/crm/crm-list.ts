@@ -19,6 +19,7 @@ import { AtendimentoCrmDialogComponent } from './atendimento-crm-dialog';
 import { EncerrarOportunidadeDialogComponent } from './encerrar-oportunidade-dialog';
 import { AdicionarEscolaPipelineDialogComponent } from './adicionar-escola-pipeline-dialog';
 import { ConfirmarSimplesDialogComponent } from '../../shared/confirmar-simples-dialog';
+import { ConfirmDialogComponent } from '../../shared/confirm-dialog';
 import { AuthService } from '../../core/services/auth.service';
 import { Cliente } from '../clientes/clientes-data';
 
@@ -381,6 +382,27 @@ export class CrmListComponent implements OnInit {
       motivoObservacao: null,
     });
     this.crmService.atualizarEscolaCrm(escola.id, payload).subscribe(() => this.carregarPipeline());
+  }
+
+  excluirEscolaCrm(escola: EscolaCrm): void {
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      maxWidth: '92vw',
+      data: {
+        titulo: 'Excluir oportunidade',
+        mensagem: `Excluir "${escola.colegioNome}" do pipeline? A escola sai da prospecção, mas o histórico de atendimentos é mantido.`,
+        textoConfirmacao: 'excluir',
+      },
+    });
+
+    ref.afterClosed().subscribe((confirmado) => {
+      if (confirmado) {
+        this.crmService.excluirEscolaCrm(escola.id).subscribe({
+          next: () => this.carregarPipeline(),
+          error: () => this.snackbar.open('Não foi possível excluir.', 'OK', { duration: 4000 }),
+        });
+      }
+    });
   }
 
   onDragStart(event: DragEvent, escola: EscolaCrm): void {

@@ -71,5 +71,10 @@ namespace TesisFlow.Core.Servicos.Atendimentos
 
             return await _repositorio.AdicionarAsync(escolaCrm);
         }
+
+        public async Task ExcluirAsync(int id)
+        {
+            await _repositorio.ExcluirAsync(id);
+        }
     }
 }

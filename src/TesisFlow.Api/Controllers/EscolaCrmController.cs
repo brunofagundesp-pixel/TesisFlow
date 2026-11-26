@@ -63,6 +63,20 @@ namespace TesisFlow.Api.Controllers
             }
         }
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                await _salvar.ExcluirAsync(id);
+                return Ok();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
         private (int Id, string Nome) UsuarioAtual()
         {
             var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);

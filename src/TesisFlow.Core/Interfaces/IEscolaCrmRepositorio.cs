@@ -10,5 +10,6 @@ namespace TesisFlow.Core.Interfaces
         Task<EscolaCrm> AdicionarAsync(EscolaCrm escolaCrm);
         Task<EscolaCrm> AtualizarAsync(EscolaCrm escolaCrm, int usuarioId, string usuarioNome);
         Task AdicionarHistoricoAsync(EscolaCrmHistorico historico);
+        Task ExcluirAsync(int id);
     }
 }

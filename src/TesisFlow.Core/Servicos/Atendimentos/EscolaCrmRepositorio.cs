@@ -84,5 +84,15 @@ namespace TesisFlow.Core.Servicos.Atendimentos
             _context.EscolasCrmHistorico.Add(historico);
             await _context.SaveChangesAsync();
         }
+
+        public async Task ExcluirAsync(int id)
+        {
+            var existente = await _context.EscolasCrm.FindAsync(id);
+            if (existente == null || !existente.Ativo)
+                throw new KeyNotFoundException();
+
+            existente.Ativo = false;
+            await _context.SaveChangesAsync();
+        }
     }
 }

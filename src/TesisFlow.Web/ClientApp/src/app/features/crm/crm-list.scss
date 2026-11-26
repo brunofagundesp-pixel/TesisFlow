@@ -652,6 +652,31 @@
   mat-icon { font-size: 1.05rem; width: 1.05rem; height: 1.05rem; }
 }
 
+.crm-kanban-card-acoes-topo {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.crm-kanban-card-excluir {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  color: var(--tf-text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  flex-shrink: 0;
+
+  &:hover { color: var(--tf-danger); background: var(--tf-danger-bg-hover, rgba(229, 57, 53, 0.12)); }
+
+  mat-icon { font-size: 1.05rem; width: 1.05rem; height: 1.05rem; }
+}
+
 .crm-kanban-card-linha {
   display: flex;
   align-items: center;

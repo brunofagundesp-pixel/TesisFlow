@@ -66,6 +66,10 @@ export class CrmService {
     return this.http.put<EscolaCrm>(`/api/EscolaCrm/${id}`, payload);
   }
 
+  excluirEscolaCrm(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/EscolaCrm/${id}`);
+  }
+
   criar(payload: AtendimentoCrmPayload): Observable<AtendimentoCrm> {
     return this.http.post<AtendimentoCrm>('/api/Crm', payload);
   }
