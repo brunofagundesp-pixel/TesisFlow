@@ -11,6 +11,7 @@ using TesisFlow.Core.Servicos.Notificacoes;
 using TesisFlow.Core.Servicos.Mensagens;
 using TesisFlow.Core.Servicos.Integracoes;
 using TesisFlow.Core.Servicos.ColegioNotas;
+using TesisFlow.Core.Servicos.Atendimentos;
 
 namespace TesisFlow.DI
 {
@@ -30,6 +31,9 @@ namespace TesisFlow.DI
             services.AddScoped<ICategoriaRepositorio, CategoriaRepositorio>();
             services.AddScoped<ITarefaMeuDiaRepositorio, TarefaMeuDiaRepositorio>();
             services.AddScoped<IColegioNotaRepositorio, ColegioNotaRepositorio>();
+            services.AddScoped<IAtendimentoRepositorio, AtendimentoRepositorio>();
+            services.AddScoped<IContatoRepositorio, ContatoRepositorio>();
+            services.AddScoped<IEscolaCrmRepositorio, EscolaCrmRepositorio>();
 
             // Servicos - Usuarios
             services.AddScoped<UsuarioConsultar>();
@@ -86,6 +90,21 @@ namespace TesisFlow.DI
             services.AddScoped<ColegioNotaSalvar>();
             services.AddScoped<ColegioNotaExcluir>();
             services.AddScoped<ColegioNotaSincronizar>();
+
+            // Servicos - Atendimentos (CRM)
+            services.AddScoped<AtendimentoConsultar>();
+            services.AddScoped<AtendimentoSalvar>();
+            services.AddScoped<AtendimentoExcluir>();
+            services.AddScoped<RetornoLembreteServico>();
+
+            // Servicos - Contatos (CRM)
+            services.AddScoped<ContatoConsultar>();
+            services.AddScoped<ContatoSalvar>();
+            services.AddScoped<ContatoExcluir>();
+
+            // Servicos - EscolaCrm (pipeline)
+            services.AddScoped<EscolaCrmConsultar>();
+            services.AddScoped<EscolaCrmSalvar>();
         }
     }
 }

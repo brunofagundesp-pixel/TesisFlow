@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { Cliente, Atendimento, DiarioEntry, FinanceiroEntry, PortalAlunoEntry } from './clientes-data';
 
@@ -76,6 +76,7 @@ function mapCliente(api: ClienteOData): Cliente {
     nome: api.nome,
     apelido: api.apelido || '',
     status: api.situacao.toUpperCase().includes('ATIVO') ? 'Ativo' : 'Inativo',
+    situacao: api.situacao,
     estado: api.uf,
     cidade: api.municipio,
     contato: api.contato || '',
@@ -117,10 +118,34 @@ export class ClienteApiService {
     return this.http.get<Cliente[]>('/api/Colegios');
   }
 
-  listarAtivosPaginado(top: number, skip: number): Observable<ClientePage> {
-    return this.http.get<{ itens: Cliente[]; total: number }>(`/api/Colegios?top=${top}&skip=${skip}`).pipe(
-      map(res => ({ items: res.itens, total: res.total })),
+  listarSituacoes(): Observable<string[]> {
+    return this.http.get<string[]>('/api/integracao/situacoes');
+  }
+
+  listarPaginado(filtros: { situacao?: string; busca?: string; uf?: string; municipio?: string }, top: number, skip: number): Observable<ClientePage> {
+    let params = new HttpParams().set('top', top.toString()).set('skip', skip.toString());
+    if (filtros.situacao) params = params.set('situacao', filtros.situacao);
+    if (filtros.busca) params = params.set('busca', filtros.busca);
+    if (filtros.uf) params = params.set('uf', filtros.uf);
+    if (filtros.municipio) params = params.set('municipio', filtros.municipio);
+
+    return this.http.get<{ itens: Cliente[]; total: number }>('/api/Colegios', { params }).pipe(
+      map(res => ({ items: res.itens || [], total: res.total || 0 })),
     );
+  }
+
+  listarFiltros(): Observable<{ estados: string[]; cidadesPorEstado: Record<string, string[]> }> {
+    return this.http.get<{ estados: string[]; cidadesPorEstado: Record<string, string[]> }>('/api/Colegios/filtros');
+  }
+
+  exportar(filtros: { situacao?: string; busca?: string; uf?: string; municipio?: string }): Observable<Blob> {
+    let params = new HttpParams();
+    if (filtros.situacao) params = params.set('situacao', filtros.situacao);
+    if (filtros.busca) params = params.set('busca', filtros.busca);
+    if (filtros.uf) params = params.set('uf', filtros.uf);
+    if (filtros.municipio) params = params.set('municipio', filtros.municipio);
+
+    return this.http.get('/api/Colegios/export', { params, responseType: 'blob' });
   }
 
   obterPorId(id: number): Observable<Cliente | undefined> {

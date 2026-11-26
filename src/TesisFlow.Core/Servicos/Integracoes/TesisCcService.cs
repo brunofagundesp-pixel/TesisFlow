@@ -84,17 +84,43 @@ namespace TesisFlow.Core.Servicos.Integracoes
         /// <summary>
         /// Lista os colegios (clientes ativos) na API externa, usando o token do sistema.
         /// </summary>
-        public async Task<(List<ColegioDTO> Itens, int Total)> ListarColegiosAsync(int? top = null, int? skip = null)
+        public async Task<(List<ColegioDTO> Itens, int Total)> ListarColegiosAsync(
+            int? top = null,
+            int? skip = null,
+            string? situacao = null,
+            string? busca = null,
+            string? uf = null,
+            string? municipio = null)
         {
             var vazio = (new List<ColegioDTO>(), 0);
 
             try
             {
-                var filtro = Uri.EscapeDataString("situacao eq 'CLIENTE ATIVO'");
-                var url = $"odata/cc_cliente?$filter={filtro}";
-                if (top.HasValue) url += $"&$top={top.Value}";
-                if (skip.HasValue) url += $"&$skip={skip.Value}";
-                url += "&$count=true";
+                var filtros = new List<string>();
+
+                if (string.IsNullOrWhiteSpace(situacao))
+                    filtros.Add("situacao eq 'CLIENTE ATIVO'");
+                else if (!string.Equals(situacao, "Todos", StringComparison.OrdinalIgnoreCase))
+                    filtros.Add($"situacao eq '{situacao.Trim().Replace("'", "''")}'");
+
+                if (!string.IsNullOrWhiteSpace(busca))
+                {
+                    var termo = busca.Trim().ToLowerInvariant().Replace("'", "''");
+                    filtros.Add($"(contains(tolower(nome), '{termo}') or contains(tolower(apelido), '{termo}'))");
+                }
+
+                if (!string.IsNullOrWhiteSpace(uf))
+                    filtros.Add($"uf eq '{uf.Trim().Replace("'", "''")}'");
+
+                if (!string.IsNullOrWhiteSpace(municipio))
+                    filtros.Add($"municipio eq '{municipio.Trim().Replace("'", "''")}'");
+
+                var url = "odata/cc_cliente?";
+                if (filtros.Count > 0)
+                    url += $"$filter={Uri.EscapeDataString(string.Join(" and ", filtros))}&";
+                if (top.HasValue) url += $"$top={top.Value}&";
+                if (skip.HasValue) url += $"$skip={skip.Value}&";
+                url += "$count=true&$orderby=idColegio";
 
                 var client = _httpClientFactory.CreateClient("TesisCc");
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GerarSystemToken());
@@ -121,12 +147,113 @@ namespace TesisFlow.Core.Servicos.Integracoes
             }
         }
 
+        /// <summary>
+        /// Lista todos os colegios que atendem aos filtros, paginando internamente
+        /// na API externa (usado para exportacao).
+        /// </summary>
+        public async Task<List<ColegioDTO>> ListarTodosFiltradosAsync(
+            string? situacao = null,
+            string? busca = null,
+            string? uf = null,
+            string? municipio = null)
+        {
+            var resultado = new List<ColegioDTO>();
+            const int tamanhoPagina = 500;
+
+            try
+            {
+                var skip = 0;
+                var total = 0;
+
+                do
+                {
+                    var (itens, totalPagina) = await ListarColegiosAsync(tamanhoPagina, skip, situacao, busca, uf, municipio);
+                    if (itens.Count == 0) break;
+
+                    total = totalPagina;
+                    resultado.AddRange(itens);
+                    skip += itens.Count;
+
+                    if (resultado.Count >= total) break;
+                }
+                while (true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao listar todos os colegios na TesisCc");
+            }
+
+            return resultado;
+        }
+
+        /// <summary>
+        /// Lista os estados (UF) e municipios distintos disponiveis na API externa TesisCc.
+        /// </summary>
+        public async Task<(List<string> Estados, Dictionary<string, List<string>> CidadesPorEstado)> ListarFiltrosAsync()
+        {
+            var estados = new List<string>();
+            var cidadesPorEstado = new Dictionary<string, List<string>>();
+
+            try
+            {
+                var client = _httpClientFactory.CreateClient("TesisCc");
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GerarSystemToken());
+
+                var response = await client.GetAsync("odata/cc_cliente?$apply=groupby((uf,municipio))");
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("TesisCc ListarFiltros retornou {Status}", (int)response.StatusCode);
+                    return (estados, cidadesPorEstado);
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+
+                if (!doc.RootElement.TryGetProperty("value", out var value) || value.ValueKind != JsonValueKind.Array)
+                    return (estados, cidadesPorEstado);
+
+                var vistos = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var item in value.EnumerateArray())
+                {
+                    var uf = item.TryGetProperty("uf", out var u) && u.ValueKind == JsonValueKind.String ? (u.GetString() ?? "").Trim() : "";
+                    var municipio = item.TryGetProperty("municipio", out var m) && m.ValueKind == JsonValueKind.String ? (m.GetString() ?? "").Trim() : "";
+
+                    if (string.IsNullOrWhiteSpace(uf) || string.IsNullOrWhiteSpace(municipio))
+                        continue;
+
+                    if (!vistos.Add($"{uf}\u0001{municipio}"))
+                        continue;
+
+                    if (!cidadesPorEstado.TryGetValue(uf, out var lista))
+                    {
+                        lista = new List<string>();
+                        cidadesPorEstado[uf] = lista;
+                    }
+                    lista.Add(municipio);
+                }
+
+                estados = cidadesPorEstado.Keys.OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
+                foreach (var chave in cidadesPorEstado.Keys.ToList())
+                {
+                    cidadesPorEstado[chave] = cidadesPorEstado[chave].OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao listar filtros de colegios na TesisCc");
+            }
+
+            return (estados, cidadesPorEstado);
+        }
+
         private static ColegioDTO MapColegio(ColegioODataDTO api) => new()
         {
             Id = api.IdColegio,
             Nome = api.Nome ?? string.Empty,
             Apelido = api.Apelido ?? string.Empty,
             Status = (api.Situacao ?? string.Empty).ToUpperInvariant().Contains("ATIVO") ? "Ativo" : "Inativo",
+            Situacao = api.Situacao ?? string.Empty,
             Estado = api.Uf ?? string.Empty,
             Cidade = api.Municipio ?? string.Empty,
             Contato = api.Contato ?? string.Empty,
@@ -145,6 +272,41 @@ namespace TesisFlow.Core.Servicos.Integracoes
             IdTesis = api.IdTesis ?? string.Empty,
             IdDiarioRaw = api.IdDiario,
         };
+
+        /// <summary>
+        /// Lista as situacoes de cliente disponiveis na API externa TesisCc.
+        /// </summary>
+        public async Task<List<string>> ListarSituacoesAsync()
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient("TesisCc");
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GerarSystemToken());
+
+                var response = await client.GetAsync("api/tesiscc/GetSituacaoCliente");
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("TesisCc GetSituacaoCliente retornou {Status}", (int)response.StatusCode);
+                    return new List<string>();
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                var itens = JsonSerializer.Deserialize<List<SituacaoClienteDTO>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                return itens?
+                    .Select(s => s.Nome?.Trim())
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .Select(n => n!)
+                    .Distinct()
+                    .OrderBy(n => n)
+                    .ToList() ?? new List<string>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao listar situacoes na TesisCc");
+                return new List<string>();
+            }
+        }
 
         /// <summary>
         /// Salva/atualiza um contato (atendimento) na API externa TesisCc.

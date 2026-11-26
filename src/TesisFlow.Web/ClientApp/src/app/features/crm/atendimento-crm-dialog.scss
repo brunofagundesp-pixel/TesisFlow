@@ -1,0 +1,302 @@
+.crm-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 400px;
+}
+
+.crm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.crm-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--tf-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.crm-input {
+  width: 100%;
+  border: 1.5px solid var(--tf-border-input);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--tf-text-primary);
+  background: var(--tf-surface);
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+
+  &::placeholder { color: var(--tf-text-placeholder); }
+  &:focus { border-color: var(--tf-primary); }
+}
+
+.crm-textarea {
+  resize: none;
+}
+
+.crm-select {
+  width: 100%;
+
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper { display: none; }
+  ::ng-deep .mat-mdc-form-field-infix { min-height: 44px; }
+}
+
+.crm-escola-fixa {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid var(--tf-border-input);
+  border-radius: 10px;
+  background: var(--tf-surface-soft);
+  color: var(--tf-text-body);
+  font-size: 0.9rem;
+
+  mat-icon { font-size: 1.1rem; width: 1.1rem; height: 1.1rem; color: var(--tf-primary); }
+}
+
+.escola-selector {
+  position: relative;
+}
+
+.crm-escola-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1.5px solid var(--tf-border-input);
+  border-radius: 10px;
+  padding: 0 0.75rem;
+  background: var(--tf-surface);
+  transition: border-color 0.15s;
+
+  &:focus-within { border-color: var(--tf-primary); }
+
+  mat-icon { color: var(--tf-text-placeholder); font-size: 1.1rem; width: 1.1rem; height: 1.1rem; }
+
+  input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: none;
+    padding: 0.55rem 0;
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: var(--tf-text-primary);
+
+    &::placeholder { color: var(--tf-text-placeholder); }
+  }
+}
+
+.crm-escola-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem 0.4rem 0.4rem;
+  border: 1.5px solid var(--tf-primary);
+  border-radius: 10px;
+  background: var(--tf-primary-light);
+}
+
+.crm-escola-chip-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--tf-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.crm-escola-chip-nome {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--tf-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-escola-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--tf-text-muted);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+
+  &:hover { color: var(--tf-danger); }
+
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; }
+}
+
+.crm-escola-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--tf-surface);
+  border: 1px solid var(--tf-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.crm-escola-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.1s;
+
+  &:hover { background: var(--tf-surface-soft); }
+}
+
+.crm-escola-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--tf-primary-light);
+  color: var(--tf-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.crm-escola-nome {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--tf-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crm-escola-cidade {
+  font-size: 0.72rem;
+  color: var(--tf-text-muted);
+  flex-shrink: 0;
+}
+
+.crm-escola-vazio {
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--tf-text-muted);
+}
+
+.crm-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.crm-contato {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+
+  .crm-select { flex: 1; }
+}
+
+.crm-contato-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1.5px solid var(--tf-border-input);
+  background: none;
+  color: var(--tf-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover:not(:disabled) { background: var(--tf-primary-light); color: var(--tf-primary); }
+  &:disabled { opacity: 0.4; cursor: default; }
+
+  mat-icon { font-size: 1.2rem; width: 1.2rem; height: 1.2rem; }
+}
+
+.crm-contato-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border: 1px solid var(--tf-border);
+  border-radius: 10px;
+  background: var(--tf-surface-soft);
+  margin-top: 0.4rem;
+}
+
+.crm-contato-form-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.crm-link-btn {
+  border: none;
+  background: none;
+  color: var(--tf-text-muted);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-family: inherit;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+
+  &:hover { background: var(--tf-surface-hover); color: var(--tf-text-body); }
+}
+
+.crm-primary-btn {
+  border: none;
+  background: var(--tf-primary);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.crm-proximo {
+  border: 1px dashed var(--tf-border);
+  border-radius: 10px;
+  padding: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.crm-proximo-titulo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--tf-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

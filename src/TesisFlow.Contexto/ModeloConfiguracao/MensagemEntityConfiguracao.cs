@@ -34,6 +34,11 @@ namespace TesisFlow.Contexto.ModeloConfiguracao
                 .HasForeignKey(m => m.DestinatarioId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(m => m.Grupo)
+                .WithMany(g => g.Mensagens)
+                .HasForeignKey(m => m.GrupoId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             builder.HasOne(m => m.MensagemRespondida)
                 .WithMany()
                 .HasForeignKey(m => m.MensagemRespondidaId)
@@ -41,6 +46,8 @@ namespace TesisFlow.Contexto.ModeloConfiguracao
 
             builder.HasIndex(m => m.DestinatarioId);
             builder.HasIndex(m => new { m.DestinatarioId, m.DataCriacao });
+            builder.HasIndex(m => m.GrupoId);
+            builder.HasIndex(m => new { m.GrupoId, m.DataCriacao });
             builder.HasIndex(m => m.MensagemRespondidaId);
         }
     }

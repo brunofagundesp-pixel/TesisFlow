@@ -26,7 +26,14 @@ namespace TesisFlow.Contexto.Contextos
         public DbSet<QuadroConfiguracao> QuadroConfiguracoes { get; set; } = null!;
         public DbSet<Notificacao> Notificacoes { get; set; } = null!;
         public DbSet<Mensagem> Mensagens { get; set; } = null!;
+        public DbSet<GrupoChat> GrupoChats { get; set; } = null!;
+        public DbSet<GrupoChatParticipante> GrupoChatParticipantes { get; set; } = null!;
+        public DbSet<MensagemLeitura> MensagemLeituras { get; set; } = null!;
         public DbSet<ColegioNota> ColegioNotas { get; set; } = null!;
+        public DbSet<Atendimento> Atendimentos { get; set; } = null!;
+        public DbSet<Contato> Contatos { get; set; } = null!;
+        public DbSet<EscolaCrm> EscolasCrm { get; set; } = null!;
+        public DbSet<EscolaCrmHistorico> EscolasCrmHistorico { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -44,7 +51,14 @@ namespace TesisFlow.Contexto.Contextos
             modelBuilder.ApplyConfiguration(new QuadroConfiguracaoEntityConfiguracao());
             modelBuilder.ApplyConfiguration(new NotificacaoEntityConfiguracao());
             modelBuilder.ApplyConfiguration(new MensagemEntityConfiguracao());
+            modelBuilder.ApplyConfiguration(new GrupoChatEntityConfiguracao());
+            modelBuilder.ApplyConfiguration(new GrupoChatParticipanteEntityConfiguracao());
+            modelBuilder.ApplyConfiguration(new MensagemLeituraEntityConfiguracao());
             modelBuilder.ApplyConfiguration(new ColegioNotaEntityConfiguracao());
+            modelBuilder.ApplyConfiguration(new AtendimentoEntityConfiguracao());
+            modelBuilder.ApplyConfiguration(new ContatoEntityConfiguracao());
+            modelBuilder.ApplyConfiguration(new EscolaCrmEntityConfiguracao());
+            modelBuilder.ApplyConfiguration(new EscolaCrmHistoricoEntityConfiguracao());
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

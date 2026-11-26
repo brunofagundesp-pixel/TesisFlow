@@ -10,7 +10,7 @@ export interface Notificacao {
   descricao: string;
   data: Date;
   lida: boolean;
-  tipo: 'atendimento' | 'financeiro' | 'diario' | 'sistema' | 'tarefa' | 'mencao' | 'atribuicao' | 'prazo' | 'convite';
+  tipo: 'atendimento' | 'financeiro' | 'diario' | 'sistema' | 'tarefa' | 'mencao' | 'atribuicao' | 'prazo' | 'convite' | 'retorno';
   link?: string;
   targetUserId?: number;
   tarefaId?: number;

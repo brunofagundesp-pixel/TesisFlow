@@ -4,9 +4,14 @@
       <h1>Escolas</h1>
       <span>Gerencie suas escolas</span>
     </div>
-    <button mat-flat-button color="primary" class="page-header-btn">
-      <mat-icon>add</mat-icon> Nova Escola
-    </button>
+    <div class="page-header-actions">
+      <button mat-stroked-button class="export-btn" (click)="exportar()" [disabled]="exportando() || carregando()">
+        <mat-icon>download</mat-icon> {{ exportando() ? 'Exportando...' : 'Exportar' }}
+      </button>
+      <button mat-flat-button color="primary" class="page-header-btn" disabled>
+        <mat-icon>add</mat-icon> Nova Escola
+      </button>
+    </div>
   </div>
 
   <div class="clientes-layout">
@@ -32,9 +37,9 @@
               </div>
             }
           </div>
-        } @else if (clientesPaginados().length > 0) {
+        } @else if (clientes().length > 0) {
           <div class="clientes-grid">
-            @for (c of clientesPaginados(); track c.id) {
+            @for (c of clientes(); track c.id) {
               <mat-card class="cliente-card" [routerLink]="['/clientes', c.id]">
                 <div class="cliente-card-header">
                   <div class="cliente-card-icone">{{ c.nome.charAt(0) }}</div>
@@ -42,7 +47,7 @@
                     <h3>{{ c.nome }}</h3>
                     <p>{{ c.apelido }}</p>
                   </div>
-                  <span class="cliente-status-badge" [class.status-inativo]="c.status === 'Inativo'">{{ c.status }}</span>
+                  <span class="cliente-status-badge" [class.status-inativo]="c.status === 'Inativo'">{{ c.situacao || c.status }}</span>
                 </div>
                 <mat-divider></mat-divider>
                 <div class="cliente-card-footer">
@@ -65,10 +70,10 @@
           </div>
         }
       </div>
-      @if (!carregando() && clientesPaginados().length > 0) {
+      @if (!carregando() && clientes().length > 0) {
         <mat-paginator
           class="clientes-paginator"
-          [length]="totalFiltrados()"
+          [length]="total()"
           [pageIndex]="pageIndex()"
           [pageSize]="pageSize()"
           [pageSizeOptions]="pageSizeOptions"
@@ -93,10 +98,10 @@
         />
       </div>
 
-      <label class="filtro-label">Status</label>
+      <label class="filtro-label">Situação</label>
       <mat-form-field appearance="fill" class="filtro-field">
-        <mat-select [(ngModel)]="filtroStatus" (selectionChange)="onFiltroChange()">
-          @for (opt of statusOptions; track opt) {
+        <mat-select [(ngModel)]="filtroSituacao" (selectionChange)="onFiltroChange()">
+          @for (opt of situacaoOptions(); track opt) {
             <mat-option [value]="opt">{{ opt === 'Todos' ? 'Todos' : opt }}</mat-option>
           }
         </mat-select>

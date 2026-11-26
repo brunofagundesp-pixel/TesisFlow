@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TesisFlow.Api.Services;
 using TesisFlow.Contexto.Contextos;
 using TesisFlow.Modelo.DTOs;
 using TesisFlow.Modelo.Entidades;
@@ -11,12 +12,12 @@ namespace TesisFlow.Api.Controllers
     public class AnexosController : ControllerBase
     {
         private readonly ApplicationDbContextTesisFlow _context;
-        private readonly IWebHostEnvironment _env;
+        private readonly CaminhosService _caminhos;
 
-        public AnexosController(ApplicationDbContextTesisFlow context, IWebHostEnvironment env)
+        public AnexosController(ApplicationDbContextTesisFlow context, CaminhosService caminhos)
         {
             _context = context;
-            _env = env;
+            _caminhos = caminhos;
         }
 
         [HttpGet("tarefa/{tarefaId}")]
@@ -47,7 +48,7 @@ namespace TesisFlow.Api.Controllers
             if (arquivo == null || arquivo.Length == 0)
                 return BadRequest("Arquivo invalido.");
 
-            var uploadsDir = Path.Combine(_env.ContentRootPath, "uploads", tarefaId.ToString());
+            var uploadsDir = Path.Combine(_caminhos.UploadsBasePath, tarefaId.ToString());
             Directory.CreateDirectory(uploadsDir);
 
             var nomeUnico = $"{Guid.NewGuid()}_{arquivo.FileName}";
@@ -88,7 +89,7 @@ namespace TesisFlow.Api.Controllers
             var anexo = await _context.Anexos.FindAsync(id);
             if (anexo == null) return NotFound();
 
-            var uploadsDir = Path.Combine(_env.ContentRootPath, "uploads", anexo.TarefaId.ToString());
+            var uploadsDir = Path.Combine(_caminhos.UploadsBasePath, anexo.TarefaId.ToString());
             var caminho = Path.Combine(uploadsDir, anexo.Caminho);
 
             if (!System.IO.File.Exists(caminho)) return NotFound();

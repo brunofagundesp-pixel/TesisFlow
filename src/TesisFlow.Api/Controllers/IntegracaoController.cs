@@ -63,6 +63,10 @@ namespace TesisFlow.Api.Controllers
         public async Task<IActionResult> Parcelas(int idColegio)
             => Json(await _tesisCcService.GetRawAsync($"api/TesisCc/GetParcelasClientes/{idColegio}"));
 
+        [HttpGet("situacoes")]
+        public async Task<IActionResult> Situacoes()
+            => Ok(await _tesisCcService.ListarSituacoesAsync());
+
         private IActionResult Json(string? raw)
         {
             if (raw == null)

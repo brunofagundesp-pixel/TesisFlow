@@ -1,4 +1,4 @@
-import { Component, computed, signal, OnInit, inject } from '@angular/core';
+import { Component, signal, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -8,7 +8,8 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { Cliente, STATUS_OPTIONS, CLIENTES_MOCK } from './clientes-data';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Cliente } from './clientes-data';
 import { ClienteApiService } from './cliente-api.service';
 
 @Component({
@@ -24,73 +25,100 @@ import { ClienteApiService } from './cliente-api.service';
     MatFormFieldModule,
     MatSelectModule,
     MatPaginatorModule,
+    MatSnackBarModule,
   ],
   templateUrl: './clientes-list.html',
   styleUrl: './clientes-list.scss',
 })
 export class ClientesListComponent implements OnInit {
   private clienteApiService = inject(ClienteApiService);
+  private snackbar = inject(MatSnackBar);
 
-  private todosClientes: Cliente[] = CLIENTES_MOCK;
-
+  clientes = signal<Cliente[]>([]);
+  total = signal(0);
   carregando = signal(true);
+  exportando = signal(false);
 
   filtroNome = signal('');
-  filtroStatus = signal('Todos');
+  filtroSituacao = signal('CLIENTE ATIVO');
   filtroEstado = signal('Todos');
   filtroCidade = signal('Todos');
 
   pageIndex = signal(0);
-  pageSize = signal(12);
+  pageSize = signal(48);
   pageSizeOptions = [12, 24, 48];
 
-  readonly statusOptions = STATUS_OPTIONS;
+  readonly situacaoOptions = signal<string[]>(['Todos', 'CLIENTE ATIVO']);
+  readonly estadoOptions = signal<string[]>(['Todos']);
+  readonly cidadeOptions = signal<string[]>(['Todos']);
 
-  readonly estadoOptions = computed(() => {
-    const estados = [...new Set(this.todosClientes.map(c => c.estado))].sort();
-    return ['Todos', ...estados];
-  });
-
-  readonly cidadeOptions = computed(() => {
-    const estadoSelecionado = this.filtroEstado();
-    const cidades = estadoSelecionado !== 'Todos'
-      ? [...new Set(this.todosClientes.filter(c => c.estado === estadoSelecionado).map(c => c.cidade))].sort()
-      : [...new Set(this.todosClientes.map(c => c.cidade))].sort();
-    return ['Todos', ...cidades];
-  });
-
-  readonly clientesFiltrados = computed(() => {
-    const nome = this.filtroNome().toLowerCase().trim();
-    const status = this.filtroStatus();
-    const estado = this.filtroEstado();
-    const cidade = this.filtroCidade();
-
-    return this.todosClientes.filter(c => {
-      if (nome && !c.nome.toLowerCase().includes(nome) && !c.apelido.toLowerCase().includes(nome)) return false;
-      if (status !== 'Todos' && c.status !== status) return false;
-      if (estado !== 'Todos' && c.estado !== estado) return false;
-      if (cidade !== 'Todos' && c.cidade !== cidade) return false;
-      return true;
-    });
-  });
-
-  readonly clientesPaginados = computed(() => {
-    const filtrados = this.clientesFiltrados();
-    const start = this.pageIndex() * this.pageSize();
-    return filtrados.slice(start, start + this.pageSize());
-  });
-
-  readonly totalFiltrados = computed(() => this.clientesFiltrados().length);
+  private cidadesPorEstado: Record<string, string[]> = {};
+  private buscaTimer: any;
 
   ngOnInit(): void {
-    this.clienteApiService.listarAtivos().subscribe({
-      next: (clientes) => {
-        this.todosClientes = clientes;
+    this.clienteApiService.listarSituacoes().subscribe({
+      next: (situacoes) => {
+        const demais = situacoes.filter(s => s !== 'CLIENTE ATIVO');
+        this.situacaoOptions.set(['Todos', 'CLIENTE ATIVO', ...demais]);
+      },
+    });
+
+    this.clienteApiService.listarFiltros().subscribe({
+      next: (filtros) => {
+        this.cidadesPorEstado = filtros.cidadesPorEstado ?? {};
+        this.estadoOptions.set(['Todos', ...(filtros.estados ?? [])]);
+      },
+    });
+
+    this.carregar();
+  }
+
+  private montarFiltros() {
+    return {
+      situacao: this.filtroSituacao(),
+      busca: this.filtroNome().trim() || undefined,
+      uf: this.filtroEstado() !== 'Todos' ? this.filtroEstado() : undefined,
+      municipio: this.filtroCidade() !== 'Todos' ? this.filtroCidade() : undefined,
+    };
+  }
+
+  private carregar(): void {
+    this.carregando.set(true);
+
+    this.clienteApiService.listarPaginado(this.montarFiltros(), this.pageSize(), this.pageIndex() * this.pageSize()).subscribe({
+      next: (res) => {
+        this.clientes.set(res.items);
+        this.total.set(res.total);
         this.carregando.set(false);
       },
       error: () => {
-        this.todosClientes = CLIENTES_MOCK;
+        this.clientes.set([]);
+        this.total.set(0);
         this.carregando.set(false);
+      },
+    });
+  }
+
+  exportar(): void {
+    if (this.exportando()) return;
+
+    this.exportando.set(true);
+    this.clienteApiService.exportar(this.montarFiltros()).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'escolas.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.exportando.set(false);
+        this.snackbar.open('Exportação concluída.', 'OK', { duration: 3000 });
+      },
+      error: () => {
+        this.exportando.set(false);
+        this.snackbar.open('Não foi possível exportar.', 'OK', { duration: 3000 });
       },
     });
   }
@@ -98,19 +126,26 @@ export class ClientesListComponent implements OnInit {
   onNomeInput(event: Event): void {
     this.filtroNome.set((event.target as HTMLInputElement).value);
     this.pageIndex.set(0);
+    clearTimeout(this.buscaTimer);
+    this.buscaTimer = setTimeout(() => this.carregar(), 400);
   }
 
   onEstadoChange(): void {
+    const estado = this.filtroEstado();
     this.filtroCidade.set('Todos');
+    this.cidadeOptions.set(['Todos', ...(this.cidadesPorEstado[estado] ?? [])]);
     this.pageIndex.set(0);
+    this.carregar();
   }
 
   onFiltroChange(): void {
     this.pageIndex.set(0);
+    this.carregar();
   }
 
   onPageChange(event: PageEvent): void {
     this.pageIndex.set(event.pageIndex);
     this.pageSize.set(event.pageSize);
+    this.carregar();
   }
 }

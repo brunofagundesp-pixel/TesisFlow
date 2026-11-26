@@ -1,0 +1,300 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>CRM</h1>
+      <span>Prospecção e atendimento das escolas</span>
+    </div>
+    <div class="page-header-actions">
+      <button mat-flat-button color="primary" class="page-header-btn" (click)="novo()">
+        <mat-icon>add</mat-icon> Novo atendimento
+      </button>
+    </div>
+  </div>
+
+  @if (resumo()) {
+    <div class="crm-resumo">
+      <div class="crm-resumo-item" (click)="selecionarAba('pipeline')">
+        <span class="crm-resumo-num">{{ resumo()!.totalProspeccao }}</span>
+        <span class="crm-resumo-label">Em prospecção</span>
+      </div>
+      <div class="crm-resumo-item" (click)="selecionarAba('pipeline')">
+        <span class="crm-resumo-num">{{ resumo()!.naoContatadas }}</span>
+        <span class="crm-resumo-label">Não contatadas</span>
+      </div>
+      <div class="crm-resumo-item" (click)="selecionarAba('pipeline')">
+        <span class="crm-resumo-num">{{ resumo()!.emAcompanhamento }}</span>
+        <span class="crm-resumo-label">Em acompanhamento</span>
+      </div>
+      <div class="crm-resumo-item" (click)="selecionarAba('pipeline')">
+        <span class="crm-resumo-num">{{ resumo()!.interessadas }}</span>
+        <span class="crm-resumo-label">Interessadas</span>
+      </div>
+      <div class="crm-resumo-item" (click)="selecionarAba('pipeline')">
+        <span class="crm-resumo-num">{{ resumo()!.emNegociacao }}</span>
+        <span class="crm-resumo-label">Em negociação</span>
+      </div>
+      <div class="crm-resumo-item" (click)="selecionarAba('retornos')">
+        <span class="crm-resumo-num crm-resumo-num--danger">{{ resumo()!.retornosAtrasados }}</span>
+        <span class="crm-resumo-label">Retornos atrasados</span>
+      </div>
+      <div class="crm-resumo-item" (click)="selecionarAba('pipeline')">
+        <span class="crm-resumo-num crm-resumo-num--success">{{ resumo()!.clientesConquistados }}</span>
+        <span class="crm-resumo-label">Clientes conquistados</span>
+      </div>
+    </div>
+  }
+
+  <div class="crm-tabs">
+    <button class="crm-tab" [class.crm-tab--active]="aba() === 'atendimentos'" (click)="selecionarAba('atendimentos')">
+      Atendimentos
+    </button>
+    <button class="crm-tab" [class.crm-tab--active]="aba() === 'retornos'" (click)="selecionarAba('retornos')">
+      Meus retornos
+      @if (retornos().length > 0) {
+        <span class="crm-tab-badge">{{ retornos().length }}</span>
+      }
+    </button>
+    <button class="crm-tab" [class.crm-tab--active]="aba() === 'pipeline'" (click)="selecionarAba('pipeline')">
+      Pipeline
+    </button>
+  </div>
+
+  @if (aba() === 'atendimentos') {
+    <div class="crm-layout">
+      <div class="crm-main">
+        <div class="crm-scroll">
+          @if (carregando()) {
+            <div class="crm-table">
+              @for (i of [1,2,3,4,5,6]; track i) {
+                <div class="crm-row crm-row--skeleton">
+                  <div class="skeleton" style="width: 40%"></div>
+                  <div class="skeleton" style="width: 22%"></div>
+                  <div class="skeleton" style="width: 14%"></div>
+                  <div class="skeleton" style="width: 14%"></div>
+                </div>
+              }
+            </div>
+          } @else if (atendimentos().length > 0) {
+            <div class="crm-table">
+              <div class="crm-table-header">
+                <span class="col-titulo">Titulo / Descricao</span>
+                <span class="col-escola">Escola</span>
+                <span class="col-resultado">Resultado</span>
+                <span class="col-usuario">Usuario</span>
+                <span class="col-data">Data</span>
+                <span class="col-acoes"></span>
+              </div>
+              @for (a of atendimentos(); track a.id) {
+                <div class="crm-row">
+                  <div class="col-titulo">
+                    <span class="row-titulo" (click)="editar(a)">{{ a.titulo }}</span>
+                    <span class="row-desc">{{ tipoLabel(a.tipoInteracao) }}@if (a.descricao) { · {{ a.descricao }} }</span>
+                  </div>
+                  <span class="col-escola">
+                    <a class="escola-link" [routerLink]="['/clientes', a.colegioId]">{{ a.colegioNome }}</a>
+                  </span>
+                  <span class="col-resultado">{{ resultadoLabel(a.resultado) }}</span>
+                  <span class="col-usuario">{{ a.usuarioNome || '-' }}</span>
+                  <span class="col-data">{{ a.dataCriacao | date:'dd/MM/yyyy HH:mm' }}</span>
+                  <span class="col-acoes">
+                    <button class="crm-row-btn" (click)="editar(a)" title="Editar"><mat-icon>edit</mat-icon></button>
+                    <button class="crm-row-btn crm-row-btn--danger" (click)="excluir(a)" title="Excluir"><mat-icon>delete</mat-icon></button>
+                  </span>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="empty">
+              <mat-icon>support_agent</mat-icon>
+              <h3>Nenhum atendimento</h3>
+              <p>Clique em "Novo atendimento" para registrar um contato com uma escola.</p>
+            </div>
+          }
+        </div>
+
+        @if (!carregando() && atendimentos().length > 0) {
+          <mat-paginator
+            class="crm-paginator"
+            [length]="total()"
+            [pageIndex]="pageIndex()"
+            [pageSize]="pageSize()"
+            [pageSizeOptions]="pageSizeOptions"
+            (page)="onPageChange($event)"
+            showFirstLastButtons
+          ></mat-paginator>
+        }
+      </div>
+
+      <div class="crm-filtros">
+        <div class="filtro-titulo">Filtros</div>
+
+        <label class="filtro-label">Buscar</label>
+        <div class="filtro-input">
+          <mat-icon class="filtro-input-icon">search</mat-icon>
+          <input
+            type="text"
+            class="filtro-input-field"
+            placeholder="Titulo, escola, contato..."
+            [value]="filtroBusca()"
+            (input)="onBusca($event)"
+          />
+        </div>
+
+        <label class="filtro-label">Status</label>
+        <mat-form-field appearance="fill" class="filtro-field">
+          <mat-select [(ngModel)]="filtroStatus" (selectionChange)="onStatusChange()">
+            <mat-option [value]="null">Todos</mat-option>
+            @for (opt of statusOptions; track opt.value) {
+              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+  } @else if (aba() === 'retornos') {
+    <div class="crm-retornos">
+      @if (retornosCarregando()) {
+        <div class="crm-retornos-empty">Carregando retornos...</div>
+      } @else if (retornos().length === 0) {
+        <div class="empty">
+          <mat-icon>event_available</mat-icon>
+          <h3>Nenhum retorno agendado</h3>
+          <p>Quando agendar um próximo contato em um atendimento, ele aparece aqui.</p>
+        </div>
+      } @else {
+        <div class="crm-retornos-grupo">
+          <div class="crm-retornos-titulo crm-retornos-titulo--atrasado">
+            <mat-icon>error</mat-icon> Atrasados ({{ retornosAtrasados().length }})
+          </div>
+          @for (a of retornosAtrasados(); track a.id) {
+            <div class="crm-retorno-card" [class.crm-retorno-card--atrasado]="true">
+              <div class="crm-retorno-main">
+                <a class="crm-retorno-escola" [routerLink]="['/clientes', a.colegioId]">{{ a.colegioNome }}</a>
+                <span class="crm-retorno-linha">
+                  @if (a.nomeContato) { <span>{{ a.nomeContato }}</span> }
+                  <span class="crm-retorno-data">{{ a.proximoContatoData | date:'dd/MM/yyyy' }}@if (a.proximoContatoHora) { às {{ a.proximoContatoHora }} }</span>
+                </span>
+                @if (a.proximoContatoMotivo) {
+                  <span class="crm-retorno-motivo">{{ a.proximoContatoMotivo }}</span>
+                }
+              </div>
+              <div class="crm-retorno-acoes">
+                <button class="crm-retorno-btn" (click)="registrarRetorno(a)" title="Registrar retorno"><mat-icon>add_comment</mat-icon></button>
+                <button class="crm-retorno-btn crm-retorno-btn--ok" (click)="concluirRetorno(a)" title="Concluir"><mat-icon>check</mat-icon></button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="crm-retornos-grupo">
+          <div class="crm-retornos-titulo crm-retornos-titulo--hoje">
+            <mat-icon>today</mat-icon> Para hoje ({{ retornosHoje().length }})
+          </div>
+          @for (a of retornosHoje(); track a.id) {
+            <div class="crm-retorno-card">
+              <div class="crm-retorno-main">
+                <a class="crm-retorno-escola" [routerLink]="['/clientes', a.colegioId]">{{ a.colegioNome }}</a>
+                <span class="crm-retorno-linha">
+                  @if (a.nomeContato) { <span>{{ a.nomeContato }}</span> }
+                  <span class="crm-retorno-data">{{ a.proximoContatoData | date:'dd/MM/yyyy' }}@if (a.proximoContatoHora) { às {{ a.proximoContatoHora }} }</span>
+                </span>
+                @if (a.proximoContatoMotivo) {
+                  <span class="crm-retorno-motivo">{{ a.proximoContatoMotivo }}</span>
+                }
+              </div>
+              <div class="crm-retorno-acoes">
+                <button class="crm-retorno-btn" (click)="registrarRetorno(a)" title="Registrar retorno"><mat-icon>add_comment</mat-icon></button>
+                <button class="crm-retorno-btn crm-retorno-btn--ok" (click)="concluirRetorno(a)" title="Concluir"><mat-icon>check</mat-icon></button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="crm-retornos-grupo">
+          <div class="crm-retornos-titulo crm-retornos-titulo--proximos">
+            <mat-icon>schedule</mat-icon> Próximos dias ({{ retornosProximos().length }})
+          </div>
+          @for (a of retornosProximos(); track a.id) {
+            <div class="crm-retorno-card">
+              <div class="crm-retorno-main">
+                <a class="crm-retorno-escola" [routerLink]="['/clientes', a.colegioId]">{{ a.colegioNome }}</a>
+                <span class="crm-retorno-linha">
+                  @if (a.nomeContato) { <span>{{ a.nomeContato }}</span> }
+                  <span class="crm-retorno-data">{{ a.proximoContatoData | date:'dd/MM/yyyy' }}@if (a.proximoContatoHora) { às {{ a.proximoContatoHora }} }</span>
+                </span>
+                @if (a.proximoContatoMotivo) {
+                  <span class="crm-retorno-motivo">{{ a.proximoContatoMotivo }}</span>
+                }
+              </div>
+              <div class="crm-retorno-acoes">
+                <button class="crm-retorno-btn" (click)="registrarRetorno(a)" title="Registrar retorno"><mat-icon>add_comment</mat-icon></button>
+                <button class="crm-retorno-btn crm-retorno-btn--ok" (click)="concluirRetorno(a)" title="Concluir"><mat-icon>check</mat-icon></button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="crm-kanban">
+      <div class="crm-kanban-toolbar">
+        <button mat-stroked-button class="crm-kanban-add" (click)="adicionarEscolaPipeline()">
+          <mat-icon>add</mat-icon> Adicionar escola
+        </button>
+        <span class="crm-kanban-hint">Arraste os cartões para mudar a etapa.</span>
+      </div>
+
+      @if (pipelineCarregando() && escolasCrm().length === 0) {
+        <div class="crm-retornos-empty">Carregando pipeline...</div>
+      } @else {
+        <div class="crm-kanban-colunas">
+          @for (etapa of kanbanEtapas; track etapa) {
+            <div class="crm-kanban-coluna" (dragover)="onDragOver($event)" (drop)="onDrop($event, etapa)">
+              <div class="crm-kanban-coluna-header">
+                <span class="crm-kanban-coluna-titulo">{{ etapaLabel(etapa) }}</span>
+                <span class="crm-kanban-coluna-count">{{ escolasPorEtapa(etapa).length }}</span>
+              </div>
+              <div class="crm-kanban-cards">
+                @for (e of escolasPorEtapa(etapa); track e.id) {
+                  <div class="crm-kanban-card" draggable="true" (dragstart)="onDragStart($event, e)">
+                    <div class="crm-kanban-card-top">
+                      <a class="crm-kanban-card-nome" [routerLink]="['/clientes', e.colegioId]">{{ e.colegioNome }}</a>
+                      <button class="crm-kanban-card-encerrar" (click)="encerrar(e)" title="Encerrar oportunidade"><mat-icon>do_not_disturb_on</mat-icon></button>
+                    </div>
+                    @if (e.contatoPrincipalNome) { <div class="crm-kanban-card-linha"><mat-icon>person</mat-icon>{{ e.contatoPrincipalNome }}</div> }
+                    @if (e.responsavelNome) { <div class="crm-kanban-card-linha"><mat-icon>badge</mat-icon>{{ e.responsavelNome }}</div> }
+                    @if (e.ultimoContato) { <div class="crm-kanban-card-linha"><mat-icon>history</mat-icon>{{ e.ultimoContato | date:'dd/MM' }}</div> }
+                    @if (e.proximoContato) { <div class="crm-kanban-card-linha crm-kanban-card-linha--proximo"><mat-icon>event</mat-icon>{{ e.proximoContato | date:'dd/MM' }}</div> }
+                  </div>
+                }
+                @if (escolasPorEtapa(etapa).length === 0) {
+                  <div class="crm-kanban-coluna-vazio">Arraste um cartão aqui</div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        @if (encerradas.length > 0) {
+          <div class="crm-kanban-encerradas">
+            <div class="crm-kanban-encerradas-titulo">Encerradas</div>
+            <div class="crm-kanban-encerradas-lista">
+              @for (e of encerradas; track e.id) {
+                <div class="crm-kanban-card crm-kanban-card--encerrada">
+                  <div class="crm-kanban-card-top">
+                    <a class="crm-kanban-card-nome" [routerLink]="['/clientes', e.colegioId]">{{ e.colegioNome }}</a>
+                    <span class="crm-kanban-badge" [class]="etapaClasse(e.etapaComercial)">{{ etapaLabel(e.etapaComercial) }}</span>
+                  </div>
+                  @if (e.motivoEncerramento) { <div class="crm-kanban-card-linha">{{ e.motivoEncerramento }}</div> }
+                  <div class="crm-kanban-card-acoes">
+                    <button class="crm-kanban-card-reabrir" (click)="reabrir(e)"><mat-icon>replay</mat-icon> Reabrir</button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+  }
+</div>

@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using TesisFlow.Api.Services;
 using TesisFlow.Core.Servicos.Usuarios;
 
 namespace TesisFlow.Api.Controllers
@@ -18,18 +18,18 @@ namespace TesisFlow.Api.Controllers
         private readonly UsuarioConsultar _consultar;
         private readonly UsuarioSalvar _salvar;
         private readonly UsuarioExcluir _excluir;
-        private readonly IWebHostEnvironment _env;
+        private readonly CaminhosService _caminhos;
 
         public UsuariosController(
             UsuarioConsultar consultar,
             UsuarioSalvar salvar,
             UsuarioExcluir excluir,
-            IWebHostEnvironment env)
+            CaminhosService caminhos)
         {
             _consultar = consultar;
             _salvar = salvar;
             _excluir = excluir;
-            _env = env;
+            _caminhos = caminhos;
         }
 
         [HttpGet]
@@ -78,7 +78,7 @@ namespace TesisFlow.Api.Controllers
             var usuario = await _consultar.ObterEntidadePorIdAsync(id);
             if (usuario == null) return NotFound();
 
-            var diretorio = Path.Combine(_env.ContentRootPath, "uploads", "avatares");
+            var diretorio = Path.Combine(_caminhos.UploadsBasePath, "avatares");
             Directory.CreateDirectory(diretorio);
 
             var nomeArquivo = $"{id}_{Guid.NewGuid():N}{extensao}";
@@ -89,9 +89,22 @@ namespace TesisFlow.Api.Controllers
                 await arquivo.CopyToAsync(stream);
             }
 
-            ExcluirArquivoAnterior(usuario.Foto, "avatares");
+            var fotoAnterior = usuario.Foto;
 
-            await _salvar.DefinirFotoAsync(id, $"/api/Usuarios/{id}/foto?f={nomeArquivo}");
+            try
+            {
+                await _salvar.DefinirFotoAsync(id, $"/api/Usuarios/{id}/foto?f={nomeArquivo}");
+            }
+            catch
+            {
+                if (System.IO.File.Exists(caminho))
+                {
+                    try { System.IO.File.Delete(caminho); } catch { /* ignora */ }
+                }
+                throw;
+            }
+
+            ExcluirArquivoAnterior(fotoAnterior, "avatares");
 
             var dto = await _consultar.ObterPorIdAsync(id);
             return Ok(dto);
@@ -104,7 +117,7 @@ namespace TesisFlow.Api.Controllers
                 return NotFound();
 
             var nomeArquivo = Path.GetFileName(f);
-            var caminho = Path.Combine(_env.ContentRootPath, "uploads", "avatares", nomeArquivo);
+            var caminho = Path.Combine(_caminhos.UploadsBasePath, "avatares", nomeArquivo);
 
             if (!System.IO.File.Exists(caminho)) return NotFound();
             return PhysicalFile(caminho, "image/jpeg");
@@ -141,7 +154,7 @@ namespace TesisFlow.Api.Controllers
             var usuario = await _consultar.ObterEntidadePorIdAsync(id);
             if (usuario == null) return NotFound();
 
-            var diretorio = Path.Combine(_env.ContentRootPath, "uploads", "banners");
+            var diretorio = Path.Combine(_caminhos.UploadsBasePath, "banners");
             Directory.CreateDirectory(diretorio);
 
             var nomeArquivo = $"{id}_{Guid.NewGuid():N}{extensao}";
@@ -152,9 +165,22 @@ namespace TesisFlow.Api.Controllers
                 await arquivo.CopyToAsync(stream);
             }
 
-            ExcluirArquivoAnterior(usuario.Banner, "banners");
+            var bannerAnterior = usuario.Banner;
 
-            await _salvar.DefinirBannerAsync(id, $"/api/Usuarios/{id}/banner?f={nomeArquivo}");
+            try
+            {
+                await _salvar.DefinirBannerAsync(id, $"/api/Usuarios/{id}/banner?f={nomeArquivo}");
+            }
+            catch
+            {
+                if (System.IO.File.Exists(caminho))
+                {
+                    try { System.IO.File.Delete(caminho); } catch { /* ignora */ }
+                }
+                throw;
+            }
+
+            ExcluirArquivoAnterior(bannerAnterior, "banners");
 
             var dto = await _consultar.ObterPorIdAsync(id);
             return Ok(dto);
@@ -167,7 +193,7 @@ namespace TesisFlow.Api.Controllers
                 return NotFound();
 
             var nomeArquivo = Path.GetFileName(f);
-            var caminho = Path.Combine(_env.ContentRootPath, "uploads", "banners", nomeArquivo);
+            var caminho = Path.Combine(_caminhos.UploadsBasePath, "banners", nomeArquivo);
 
             if (!System.IO.File.Exists(caminho)) return NotFound();
             return PhysicalFile(caminho, "image/jpeg");
@@ -211,7 +237,7 @@ namespace TesisFlow.Api.Controllers
             var nomeArquivo = Path.GetFileName(valor.Substring(indice + 3));
             if (string.IsNullOrWhiteSpace(nomeArquivo)) return;
 
-            var caminho = Path.Combine(_env.ContentRootPath, "uploads", subpasta, nomeArquivo);
+            var caminho = Path.Combine(_caminhos.UploadsBasePath, subpasta, nomeArquivo);
             if (System.IO.File.Exists(caminho))
             {
                 try { System.IO.File.Delete(caminho); } catch { /* ignora falha ao remover arquivo anterior */ }

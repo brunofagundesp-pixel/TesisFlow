@@ -6,13 +6,21 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatDialog } from '@angular/material/dialog';
-import { SlicePipe } from '@angular/common';
+import { SlicePipe, DatePipe } from '@angular/common';
 import {
   Cliente, Atendimento, DiarioEntry, PortalAlunoEntry, FinanceiroEntry,
   CLIENTES_MOCK,
 } from './clientes-data';
 import { ClienteApiService, ColegioNota } from './cliente-api.service';
 import { AtendimentoDialogComponent } from './atendimento-dialog';
+import { CrmService } from '../crm/crm.service';
+import {
+  AtendimentoCrm, EscolaCrm,
+  statusAtendimentoLabel, statusAtendimentoClasse,
+  tipoInteracaoLabel, canalLabel, resultadoLabel, etapaLabel, etapaClasse,
+} from '../crm/crm-data';
+import { AtendimentoCrmDialogComponent } from '../crm/atendimento-crm-dialog';
+import { ConfirmarSimplesDialogComponent } from '../../shared/confirmar-simples-dialog';
 
 interface TabDef {
   label: string;
@@ -46,6 +54,7 @@ const MESES = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho
     MatInputModule,
     MatSelectModule,
     SlicePipe,
+    DatePipe,
   ],
   templateUrl: './cliente-detalhe.html',
   styleUrl: './cliente-detalhe.scss',
@@ -87,6 +96,7 @@ export class ClienteDetalheComponent implements OnInit {
     { label: 'Portal do Aluno', icon: 'school' },
     { label: 'Portal Admin', icon: 'admin_panel_settings' },
     { label: 'Financeiro', icon: 'payments' },
+    { label: 'CRM', icon: 'support_agent' },
   ];
 
   filtroAtendimentoDescricao = signal('');
@@ -113,6 +123,11 @@ export class ClienteDetalheComponent implements OnInit {
   portalAlunoAdminMock: PortalAlunoEntry[] = [];
   financeiroMock: FinanceiroEntry[] = [];
 
+  atendimentosCrm = signal<AtendimentoCrm[]>([]);
+  totalAtendimentosCrm = signal(0);
+  atendimentosCrmCarregando = signal(false);
+  escolaCrm = signal<EscolaCrm | null>(null);
+
   readonly tipoUsuarioOptions = ['Todos', 'Aluno', 'Responsavel', 'Professor'];
   readonly statusFinanceiroOptions = ['Todos', 'Pago', 'Pendente', 'Atrasado', 'Cancelado'];
   readonly mesOptions = ['Todos', ...MESES];
@@ -129,11 +144,13 @@ export class ClienteDetalheComponent implements OnInit {
     this.portalAlunoMock.length,
     this.portalAlunoAdminMock.length,
     this.financeiroMock.length,
+    this.totalAtendimentosCrm(),
   ]);
 
   constructor(private route: ActivatedRoute) {}
 
   private clienteApiService = inject(ClienteApiService);
+  private crmService = inject(CrmService);
   private dialog = inject(MatDialog);
 
   private colegioId = 0;
@@ -228,6 +245,8 @@ export class ClienteDetalheComponent implements OnInit {
       next: (data) => { this.financeiroMock = data; verificarConclusao(); },
       error: () => verificarConclusao(),
     });
+
+    this.carregarAtendimentosCrm();
   }
 
   selecionarTab(index: number): void {
@@ -436,6 +455,120 @@ export class ClienteDetalheComponent implements OnInit {
     });
   }
 
+  private carregarAtendimentosCrm(): void {
+    if (this.atendimentosCrmCarregando()) return;
+
+    this.atendimentosCrmCarregando.set(true);
+    this.crmService.listarPorColegio(this.colegioId, 50, 0).subscribe({
+      next: (res) => {
+        this.atendimentosCrm.set(res.itens);
+        this.totalAtendimentosCrm.set(res.total);
+        this.atendimentosCrmCarregando.set(false);
+      },
+      error: () => this.atendimentosCrmCarregando.set(false),
+    });
+
+    this.carregarEscolaCrm();
+  }
+
+  private carregarEscolaCrm(): void {
+    this.crmService.obterEscolaCrmPorColegio(this.colegioId).subscribe({
+      next: (escola) => this.escolaCrm.set(escola),
+      error: () => this.escolaCrm.set(null),
+    });
+  }
+
+  carregarMaisAtendimentosCrm(): void {
+    if (!this.temMaisCrm || this.atendimentosCrmCarregando()) return;
+
+    this.atendimentosCrmCarregando.set(true);
+    this.crmService.listarPorColegio(this.colegioId, 50, this.atendimentosCrm().length).subscribe({
+      next: (res) => {
+        this.atendimentosCrm.update(lista => [...lista, ...res.itens]);
+        this.totalAtendimentosCrm.set(res.total);
+        this.atendimentosCrmCarregando.set(false);
+      },
+      error: () => this.atendimentosCrmCarregando.set(false),
+    });
+  }
+
+  get temMaisCrm(): boolean {
+    return this.atendimentosCrm().length < this.totalAtendimentosCrm();
+  }
+
+  novoAtendimentoCrm(): void {
+    const ref = this.dialog.open(AtendimentoCrmDialogComponent, {
+      width: '560px',
+      maxWidth: '95vw',
+      data: { colegioId: this.colegioId, colegioNome: this.cliente.nome },
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res) this.carregarAtendimentosCrm();
+    });
+  }
+
+  editarAtendimentoCrm(a: AtendimentoCrm): void {
+    const ref = this.dialog.open(AtendimentoCrmDialogComponent, {
+      width: '560px',
+      maxWidth: '95vw',
+      data: { atendimento: a },
+    });
+
+    ref.afterClosed().subscribe((res) => {
+      if (res) this.carregarAtendimentosCrm();
+    });
+  }
+
+  excluirAtendimentoCrm(a: AtendimentoCrm): void {
+    const ref = this.dialog.open(ConfirmarSimplesDialogComponent, {
+      width: '400px',
+      maxWidth: '92vw',
+      data: {
+        titulo: 'Excluir atendimento',
+        mensagem: `Excluir "${a.titulo}"?`,
+        textoBotao: 'Excluir',
+      },
+    });
+
+    ref.afterClosed().subscribe((confirmado) => {
+      if (confirmado) {
+        this.crmService.excluir(a.id).subscribe({
+          next: () => this.carregarAtendimentosCrm(),
+          error: () => console.error('Erro ao excluir atendimento'),
+        });
+      }
+    });
+  }
+
+  statusLabelCrm(status: number): string {
+    return statusAtendimentoLabel(status);
+  }
+
+  statusClasseCrm(status: number): string {
+    return statusAtendimentoClasse(status);
+  }
+
+  etapaLabelCrm(etapa: number): string {
+    return etapaLabel(etapa);
+  }
+
+  etapaClasseCrm(etapa: number): string {
+    return etapaClasse(etapa);
+  }
+
+  tipoLabelCrm(t: number | null): string {
+    return tipoInteracaoLabel(t);
+  }
+
+  canalLabelCrm(c: number | null): string {
+    return canalLabel(c);
+  }
+
+  resultadoLabelCrm(r: number | null): string {
+    return resultadoLabel(r);
+  }
+
   private carregarDadosMockFallback(): void {
     this.portalAlunoMock = [
       { id: 1, nomeUsuario: 'Lucas Oliveira', login: '123.456.789-00', tipoUsuario: 'Aluno', ativo: true },
@@ -560,5 +693,6 @@ export class ClienteDetalheComponent implements OnInit {
     else if (tab === 1 && this.temMaisNotas) this.carregarMaisNotas();
     else if (tab === 2 && this.temMaisDiario()) this.carregarMaisDiario();
     else if (tab === 5 && this.temMaisFinanceiro()) this.carregarMaisFinanceiro();
+    else if (tab === 6 && this.temMaisCrm) this.carregarMaisAtendimentosCrm();
   }
 }

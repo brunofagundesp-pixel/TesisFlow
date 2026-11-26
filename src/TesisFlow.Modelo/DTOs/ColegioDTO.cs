@@ -8,6 +8,7 @@ namespace TesisFlow.Modelo.DTOs
         public string Nome { get; set; } = string.Empty;
         public string Apelido { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
+        public string Situacao { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
         public string Cidade { get; set; } = string.Empty;
         public string Contato { get; set; } = string.Empty;
@@ -85,5 +86,11 @@ namespace TesisFlow.Modelo.DTOs
 
         [JsonPropertyName("@odata.count")]
         public int? Count { get; set; }
+    }
+
+    public class SituacaoClienteDTO
+    {
+        [JsonPropertyName("nome")]
+        public string? Nome { get; set; }
     }
 }

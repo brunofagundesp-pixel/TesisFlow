@@ -721,6 +721,205 @@
 .col-ano { width: 70px; flex-shrink: 0; }
 .col-mes { width: 110px; flex-shrink: 0; }
 .col-valor { width: 120px; flex-shrink: 0; }
+.col-status { width: 120px; flex-shrink: 0; }
+.col-acoes { width: 72px; flex-shrink: 0; display: flex; justify-content: flex-end; gap: 0.25rem; }
+
+.crm-status-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+.status-novo { background: var(--tf-blue-bg, rgba(13, 110, 253, 0.12)); color: var(--tf-blue, #0d6efd); }
+.status-andamento { background: var(--tf-primary-light); color: var(--tf-primary); }
+.status-aguardando { background: rgba(255, 193, 7, 0.16); color: #b8860b; }
+.status-resolvido { background: var(--tf-success-bg); color: var(--tf-success); }
+.status-cancelado { background: var(--tf-danger-bg-hover, rgba(229, 57, 53, 0.12)); color: var(--tf-danger); }
+
+.crm-row-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--tf-text-muted);
+  transition: background 0.12s, color 0.12s;
+
+  &:hover { background: var(--tf-surface-hover); color: var(--tf-primary); }
+
+  &--danger:hover { color: var(--tf-danger); background: var(--tf-danger-bg-hover, rgba(229, 57, 53, 0.12)); }
+
+  mat-icon { font-size: 1.1rem; width: 1.1rem; height: 1.1rem; }
+}
+
+.crm-kanban-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+.etapa-nao-contatada { background: var(--tf-border-strong); color: var(--tf-text-muted); }
+.etapa-primeiro { background: var(--tf-blue-bg, rgba(13, 110, 253, 0.12)); color: var(--tf-blue, #0d6efd); }
+.etapa-acompanhamento { background: var(--tf-warning-bg); color: var(--tf-warning); }
+.etapa-interessada { background: var(--tf-primary-light); color: var(--tf-primary); }
+.etapa-negociacao { background: var(--tf-purple-bg); color: var(--tf-purple); }
+.etapa-conquistado { background: var(--tf-success-bg); color: var(--tf-success); }
+.etapa-nao-interessado { background: var(--tf-danger-bg); color: var(--tf-danger); }
+.etapa-perdida { background: var(--tf-surface-hover); color: var(--tf-text-muted); }
+
+.crm-resumo-escola {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem;
+  border: 1px solid var(--tf-border);
+  border-radius: 12px;
+  background: var(--tf-surface-soft);
+  margin-bottom: 0.75rem;
+}
+
+.crm-resumo-escola-topo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.crm-resumo-responsavel {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--tf-text-body);
+  margin-left: auto;
+
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; color: var(--tf-text-muted); }
+}
+
+.crm-resumo-escola-linhas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.78rem;
+    color: var(--tf-text-muted);
+
+    mat-icon { font-size: 1rem; width: 1rem; height: 1rem; }
+  }
+}
+
+.crm-historico-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.crm-historico-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--tf-border-light);
+  border-radius: 10px;
+  background: var(--tf-surface);
+}
+
+.crm-historico-cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.crm-historico-data {
+  font-size: 0.72rem;
+  color: var(--tf-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-historico-retorno {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--tf-primary);
+  background: var(--tf-primary-light);
+  padding: 1px 8px;
+  border-radius: 999px;
+
+  mat-icon { font-size: 0.85rem; width: 0.85rem; height: 0.85rem; }
+}
+
+.crm-historico-tipo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--tf-primary);
+}
+
+.crm-historico-canal {
+  font-size: 0.72rem;
+  color: var(--tf-text-body);
+  background: var(--tf-surface-soft);
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+.crm-historico-resultado {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--tf-text-body);
+}
+
+.crm-historico-usuario {
+  font-size: 0.72rem;
+  color: var(--tf-text-muted);
+  margin-left: auto;
+}
+
+.crm-historico-acoes {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.crm-historico-titulo {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--tf-text-primary);
+}
+
+.crm-historico-pessoa {
+  font-size: 0.8rem;
+  color: var(--tf-text-body);
+}
+
+.crm-historico-desc {
+  font-size: 0.8rem;
+  color: var(--tf-text-muted);
+  white-space: pre-wrap;
+}
+
+.crm-historico-proximo {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--tf-primary);
+
+  mat-icon { font-size: 1rem; width: 1rem; height: 1rem; }
+}
 
 .professor-link {
   color: var(--tf-text-primary);

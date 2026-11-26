@@ -98,7 +98,7 @@
                 }
                 <span class="cliente-header-status" [class.status-inativo]="cliente.status === 'Inativo'">
                   <span class="status-dot-header" [class.dot-inativo]="cliente.status === 'Inativo'"></span>
-                  {{ cliente.status }}
+                  {{ cliente.situacao || cliente.status }}
                 </span>
                 <button class="header-toggle-btn" (click)="toggleHeader()">
                   <mat-icon>{{ headerExpandido() ? 'expand_less' : 'expand_more' }}</mat-icon>
@@ -380,6 +380,66 @@
                 <div class="tab-empty">Nenhum registro financeiro encontrado</div>
               }
             }
+
+            @if (tabIndex() === 6) {
+              <div class="notas-container">
+                @if (escolaCrm()) {
+                  <div class="crm-resumo-escola">
+                    <div class="crm-resumo-escola-topo">
+                      <span class="crm-kanban-badge" [class]="etapaClasseCrm(escolaCrm()!.etapaComercial)">{{ etapaLabelCrm(escolaCrm()!.etapaComercial) }}</span>
+                      <span class="crm-resumo-responsavel" title="Responsável"><mat-icon>badge</mat-icon>{{ escolaCrm()!.responsavelNome || 'Sem responsável' }}</span>
+                    </div>
+                    <div class="crm-resumo-escola-linhas">
+                      @if (escolaCrm()!.contatoPrincipalNome) { <span><mat-icon>person</mat-icon>{{ escolaCrm()!.contatoPrincipalNome }}</span> }
+                      @if (escolaCrm()!.ultimoContato) { <span><mat-icon>history</mat-icon>Último contato: {{ escolaCrm()!.ultimoContato | date:'dd/MM/yyyy' }}</span> }
+                      @if (escolaCrm()!.proximoContato) { <span><mat-icon>event</mat-icon>Próximo: {{ escolaCrm()!.proximoContato | date:'dd/MM/yyyy' }}</span> }
+                      @if (escolaCrm()!.dataConversao) { <span><mat-icon>emoji_events</mat-icon>Cliente desde {{ escolaCrm()!.dataConversao | date:'dd/MM/yyyy' }}</span> }
+                    </div>
+                  </div>
+                }
+
+                <div class="notas-toolbar">
+                  <span class="notas-total">{{ totalAtendimentosCrm() }} interação(ões)</span>
+                  <button class="notas-nova-btn" (click)="novoAtendimentoCrm()">
+                    <mat-icon>add</mat-icon> Novo atendimento
+                  </button>
+                </div>
+
+                @if (atendimentosCrm().length > 0) {
+                  <div class="crm-historico-lista">
+                    @for (a of atendimentosCrm(); track a.id) {
+                      <div class="crm-historico-item">
+                        <div class="crm-historico-cabecalho">
+                          <span class="crm-historico-data">{{ a.dataCriacao | date:'dd/MM/yyyy HH:mm' }}</span>
+                          @if (a.atendimentoOrigemId != null) {
+                            <span class="crm-historico-retorno" title="Originado de um retorno"><mat-icon>reply</mat-icon> Retorno</span>
+                          }
+                          <span class="crm-historico-tipo">{{ tipoLabelCrm(a.tipoInteracao) }}</span>
+                          @if (a.canal != null) { <span class="crm-historico-canal">{{ canalLabelCrm(a.canal) }}</span> }
+                          @if (a.resultado != null) { <span class="crm-historico-resultado">{{ resultadoLabelCrm(a.resultado) }}</span> }
+                          <span class="crm-historico-usuario">{{ a.usuarioNome }}</span>
+                          <span class="crm-historico-acoes">
+                            <button class="crm-row-btn" (click)="editarAtendimentoCrm(a)" title="Editar"><mat-icon>edit</mat-icon></button>
+                            <button class="crm-row-btn crm-row-btn--danger" (click)="excluirAtendimentoCrm(a)" title="Excluir"><mat-icon>delete</mat-icon></button>
+                          </span>
+                        </div>
+                        <div class="crm-historico-titulo">{{ a.titulo }}</div>
+                        @if (a.nomeContato) { <div class="crm-historico-pessoa">Com: {{ a.nomeContato }}</div> }
+                        @if (a.descricao) { <div class="crm-historico-desc">{{ a.descricao }}</div> }
+                        @if (a.proximoContatoData) {
+                          <div class="crm-historico-proximo"><mat-icon>event</mat-icon>Próximo contato: {{ a.proximoContatoData | date:'dd/MM/yyyy' }}@if (a.proximoContatoHora) { às {{ a.proximoContatoHora }} }</div>
+                        }
+                      </div>
+                    }
+                  </div>
+                  @if (temMaisCrm) {
+                    <div class="scroll-sentinel">Rolando para carregar mais...</div>
+                  }
+                } @else if (!atendimentosCrmCarregando()) {
+                  <div class="tab-empty">Nenhuma interação registrada. Clique em "Novo atendimento" para começar.</div>
+                }
+              </div>
+            }
           </div>
         </div>
 
@@ -488,6 +548,10 @@
                 }
               </mat-select>
             </mat-form-field>
+          }
+
+          @if (tabIndex() === 6) {
+            <span class="filtro-hint">Atendimentos registrados no CRM desta escola.</span>
           }
         </div>
       </div>

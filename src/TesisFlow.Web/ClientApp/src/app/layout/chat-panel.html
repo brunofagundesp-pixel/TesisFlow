@@ -4,32 +4,52 @@
       <button class="chat-voltar" (click)="voltar()">
         <mat-icon>arrow_back</mat-icon>
       </button>
-      <div class="chat-contato-info">
-        <div class="chat-foto-wrapper">
-          <span class="chat-contato-foto">
-            @if (contatoAtivo?.foto) { <img [src]="contatoAtivo?.foto | authUrl" alt="" /> }
-            @else { {{ contatoAtivo?.avatar }} }
+      @if (ehGrupo) {
+        <div class="chat-contato-info chat-contato-info--grupo" (click)="abrirDetalhesGrupo()" title="Ver detalhes do grupo">
+          <span class="chat-contato-foto chat-contato-foto--grupo">
+            <mat-icon>groups</mat-icon>
           </span>
-          <span class="chat-status-dot" [class.s-online]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'online'" [class.s-ausente]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'ausente'" [class.s-ocupado]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'ocupado'"></span>
+          <div class="chat-contato-info-texto">
+            <span class="chat-contato-nome">{{ grupoAtivo?.nome }}</span>
+            @if (nomesParticipantes) {
+              <span class="chat-grupo-sub">{{ nomesParticipantes }}</span>
+            }
+          </div>
+          <mat-icon class="chat-contato-chevron">chevron_right</mat-icon>
         </div>
-        <span class="chat-contato-nome">{{ contatoAtivo?.nome }}</span>
-      </div>
+      } @else {
+        <div class="chat-contato-info">
+          <div class="chat-foto-wrapper">
+            <span class="chat-contato-foto">
+              @if (contatoAtivo?.foto) { <img [src]="contatoAtivo?.foto | authUrl" alt="" /> }
+              @else { {{ contatoAtivo?.avatar }} }
+            </span>
+            <span class="chat-status-dot" [class.s-online]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'online'" [class.s-ausente]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'ausente'" [class.s-ocupado]="chatService.getStatus(contatoAtivo?.usuarioId || 0) === 'ocupado'"></span>
+          </div>
+          <span class="chat-contato-nome">{{ contatoAtivo?.nome }}</span>
+        </div>
+      }
       <button class="chat-call-btn" (click)="alternarBusca()" title="Buscar na conversa">
         <mat-icon>search</mat-icon>
       </button>
-      <button class="chat-call-btn" (click)="ligar()" title="Ligar">
-        <mat-icon>call</mat-icon>
-      </button>
+      @if (!ehGrupo) {
+        <button class="chat-call-btn" (click)="ligar()" title="Ligar">
+          <mat-icon>call</mat-icon>
+        </button>
+      }
     } @else {
       <span class="chat-panel-titulo">Mensagens</span>
       <button class="chat-call-btn" (click)="alternarBusca()" title="Buscar mensagens">
         <mat-icon>search</mat-icon>
       </button>
-      <button class="chat-call-btn" (click)="mostrarLigacaoGrupo = !mostrarLigacaoGrupo" title="Ligar">
+      <button class="chat-call-btn" (click)="mostrarLigacaoGrupo = !mostrarLigacaoGrupo; mostrarNovoGrupo = false" title="Ligar">
         <mat-icon>call</mat-icon>
       </button>
+      <button class="chat-call-btn" (click)="toggleNovoGrupo()" title="Novo grupo">
+        <mat-icon>group_add</mat-icon>
+      </button>
     }
-    <button class="chat-fechar" (click)="fechar.emit()">
+    <button class="chat-fechar" (click)="fecharPainel()">
       <mat-icon>close</mat-icon>
     </button>
   </div>
@@ -66,7 +86,57 @@
   }
 
   @if (!chatService.conversaAtiva()) {
-    @if (mostrarLigacaoGrupo) {
+    @if (mostrarNovoGrupo) {
+      <div class="chat-grupo-ligacao">
+        <span class="chat-grupo-titulo">Novo grupo</span>
+        <input
+          class="chat-grupo-search"
+          placeholder="Nome do grupo (opcional)"
+          [(ngModel)]="nomeNovoGrupo"
+        />
+        <textarea
+          class="chat-input chat-grupo-mensagem"
+          placeholder="Mensagem (opcional)"
+          [(ngModel)]="novaMensagemGrupo"
+          cdkTextareaAutosize
+          cdkAutosizeMinRows="1"
+          cdkAutosizeMaxRows="4"
+        ></textarea>
+        <span class="chat-grupo-titulo">Participantes</span>
+        @if (participantesNovoGrupo.size > 0) {
+          <div class="chat-grupo-chips">
+            @for (p of participantesNovoGrupoLista(); track p.usuarioId) {
+              <span class="chat-grupo-chip" (click)="toggleParticipanteNovoGrupo(p)">
+                <span class="chat-grupo-chip-avatar">{{ p.nome.charAt(0) }}</span>
+                <span>{{ p.nome }}</span>
+                <mat-icon class="chat-grupo-chip-close">close</mat-icon>
+              </span>
+            }
+          </div>
+        }
+        <div class="chat-grupo-search-wrapper">
+          <mat-icon class="chat-busca-icon">search</mat-icon>
+          <input class="chat-grupo-search" placeholder="Buscar usuario..." [(ngModel)]="termoBuscaNovoGrupo" (input)="onBuscaNovoGrupo()" />
+          @if (chatService.sugestoesBusca().length > 0) {
+            <div class="chat-busca-dropdown" style="position: relative; top: 0; left: 0; right: 0; margin-top: 0.25rem;">
+              @for (u of chatService.sugestoesBusca(); track u.usuarioId) {
+                <div class="chat-busca-item" (click)="toggleParticipanteNovoGrupo(u); termoBuscaNovoGrupo = ''">
+                  <span class="chat-contato-foto">
+                    @if (u.foto) { <img [src]="u.foto | authUrl" alt="" /> }
+                    @else { {{ u.avatar }} }
+                  </span>
+                  <span>{{ u.nome }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <button class="chat-grupo-ligar" (click)="criarNovoGrupo()" [disabled]="participantesNovoGrupo.size === 0">
+          <mat-icon>group_add</mat-icon> Criar grupo ({{ participantesNovoGrupo.size }})
+        </button>
+        <button class="chat-grupo-cancelar" (click)="mostrarNovoGrupo = false; participantesNovoGrupo.clear()">Cancelar</button>
+      </div>
+    } @else if (mostrarLigacaoGrupo) {
       <div class="chat-grupo-ligacao">
         <span class="chat-grupo-titulo">Selecionar participantes (até 6)</span>
         @if (participantesGrupo.size > 0) {
@@ -126,6 +196,29 @@
       }
     </div>
     <div class="chat-contatos">
+      @if (chatService.grupos().length > 0) {
+        @for (g of chatService.grupos(); track g.grupoId) {
+          <div class="chat-contato-card" (click)="abrirGrupo(g.grupoId)">
+            <div class="chat-foto-wrapper">
+              <span class="chat-contato-foto chat-contato-foto--grupo">
+                <mat-icon>groups</mat-icon>
+              </span>
+            </div>
+            <div class="chat-contato-content">
+              <div class="chat-contato-top">
+                <span class="chat-contato-nome">{{ g.nome }}</span>
+                <span class="chat-contato-data">{{ g.ultimaData | date:'HH:mm' }}</span>
+              </div>
+              <div class="chat-contato-bottom">
+                <span class="chat-contato-msg">{{ g.ultimaMensagem }}</span>
+                @if (g.naoLidas > 0) {
+                  <span class="chat-badge">{{ g.naoLidas }}</span>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      }
       @for (c of chatService.contatos(); track c.usuarioId) {
         <div class="chat-contato-card" (click)="abrirConversa(c.usuarioId)">
           <div class="chat-foto-wrapper">
@@ -151,6 +244,61 @@
       }
     </div>
     }
+  } @else if (ehGrupo && mostrarDetalhesGrupo) {
+    <div class="chat-grupo-detalhes">
+      <div class="chat-grupo-detalhes-cabecalho">
+        <span class="chat-contato-foto chat-contato-foto--grupo"><mat-icon>groups</mat-icon></span>
+        <div class="chat-contato-info-texto">
+          <span class="chat-contato-nome">{{ grupoAtivo?.nome }}</span>
+          <span class="chat-grupo-sub">{{ (grupoAtivo?.participantes?.length || 0) }} participantes</span>
+        </div>
+      </div>
+
+      @if (ehCriador) {
+        <div class="chat-detalhes-adicionar">
+          <div class="chat-grupo-search-wrapper">
+            <mat-icon class="chat-busca-icon">search</mat-icon>
+            <input class="chat-grupo-search" placeholder="Adicionar participante..." [(ngModel)]="termoBuscaAdicionar" (input)="onBuscaAdicionar()" />
+            @if (chatService.sugestoesBusca().length > 0) {
+              <div class="chat-busca-dropdown" style="position: relative; top: 0; left: 0; right: 0; margin-top: 0.25rem;">
+                @for (u of chatService.sugestoesBusca(); track u.usuarioId) {
+                  <div class="chat-busca-item" (click)="adicionarParticipante(u)">
+                    <span class="chat-contato-foto">
+                      @if (u.foto) { <img [src]="u.foto | authUrl" alt="" /> }
+                      @else { {{ u.avatar }} }
+                    </span>
+                    <span>{{ u.nome }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="chat-grupo-detalhes-titulo">Participantes</div>
+      <div class="chat-grupo-detalhes-lista">
+        @for (p of grupoAtivo?.participantes ?? []; track p.usuarioId) {
+          <div class="chat-participante-item">
+            <span class="chat-contato-foto">
+              @if (p.foto) { <img [src]="p.foto | authUrl" alt="" /> }
+              @else { {{ p.nome.charAt(0) }} }
+            </span>
+            <div class="chat-participante-info">
+              <span class="chat-participante-nome">{{ p.nome }}</span>
+              @if (p.usuarioId === grupoAtivo?.criadorId) {
+                <span class="chat-participante-tag">Criador</span>
+              }
+            </div>
+            @if (ehCriador && p.usuarioId !== meuId) {
+              <button class="chat-participante-remover" (click)="removerParticipante(p)" title="Remover">
+                <mat-icon>person_remove</mat-icon>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
   } @else {
     <div class="chat-conversa">
     <div class="chat-mensagens" #mensagensContainer (scroll)="onScrollMensagens()">
@@ -161,6 +309,9 @@
         }
         <div class="chat-msg" id="msg-{{ m.id }}" [class.chat-msg--meu]="m.remetenteId === meuId">
           <div class="chat-msg-bubble" [class.chat-msg-bubble--meu]="m.remetenteId === meuId">
+            @if (ehGrupo && m.remetenteId !== meuId) {
+              <span class="chat-msg-nome">{{ m.remetenteNome }}</span>
+            }
             @if (m.mensagemRespondida) {
               <div class="chat-resposta-preview" (click)="rolarParaMensagem(m.mensagemRespondida.id)">
                 <span class="chat-resposta-nome">{{ m.mensagemRespondida.remetenteNome }}</span>
@@ -209,7 +360,10 @@
             }
             <div class="chat-msg-rodape">
               <span class="chat-msg-data">{{ m.data | date:'HH:mm' }}</span>
-              @if (m.remetenteId === meuId) {
+              @if (ehGrupo && m.remetenteId === meuId) {
+                <mat-icon class="chat-msg-check check-lida" [matTooltip]="statusGrupo(m)" matTooltipPosition="above">done_all</mat-icon>
+                <span class="chat-msg-lida-por">Lida por {{ m.lidaPor ?? 0 }}</span>
+              } @else if (m.remetenteId === meuId) {
                 <mat-icon
                   class="chat-msg-check"
                   [class.check-entregue]="m.entregue && !m.lida"
@@ -220,9 +374,11 @@
               }
             </div>
           </div>
-          <button class="chat-responder-btn" (click)="responder(m)" title="Responder">
-            <mat-icon>reply</mat-icon>
-          </button>
+          @if (!ehGrupo) {
+            <button class="chat-responder-btn" (click)="responder(m)" title="Responder">
+              <mat-icon>reply</mat-icon>
+            </button>
+          }
         </div>
       }
       @if (digitandoAtivo) {

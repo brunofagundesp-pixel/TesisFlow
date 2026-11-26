@@ -1,0 +1,153 @@
+<h2 mat-dialog-title>{{ tituloDialog }}</h2>
+<mat-dialog-content class="crm-dialog-content">
+  <div class="crm-field">
+    <label class="crm-label">Escola</label>
+    @if (escolaFixa) {
+      <div class="crm-escola-fixa">
+        <mat-icon>business</mat-icon>
+        <span>{{ colegioNome || 'Escola' }}</span>
+      </div>
+    } @else {
+      <div class="escola-selector">
+        @if (colegioId) {
+          <div class="crm-escola-chip">
+            <span class="crm-escola-chip-avatar">{{ colegioNome.charAt(0) }}</span>
+            <span class="crm-escola-chip-nome">{{ colegioNome }}</span>
+            <button type="button" class="crm-escola-clear" (click)="colegioId = 0; colegioNome = ''; escolaBusca = ''">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        } @else {
+          <div class="crm-escola-input">
+            <mat-icon>search</mat-icon>
+            <input
+              type="text"
+              placeholder="Buscar escola..."
+              [(ngModel)]="escolaBusca"
+              (focus)="mostrarEscolas = true"
+              (input)="mostrarEscolas = true"
+            />
+          </div>
+        }
+        @if (mostrarEscolas) {
+          <div class="crm-escola-dropdown">
+            @for (c of escolasFiltradas; track c.id) {
+              <div class="crm-escola-item" (click)="selecionarEscola(c)">
+                <span class="crm-escola-avatar">{{ c.nome.charAt(0) }}</span>
+                <span class="crm-escola-nome">{{ c.nome }}</span>
+                <span class="crm-escola-cidade">{{ c.cidade }}/{{ c.estado }}</span>
+              </div>
+            }
+            @if (escolasFiltradas.length === 0) {
+              <div class="crm-escola-vazio">Nenhuma escola encontrada</div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="crm-field">
+    <label class="crm-label">Título</label>
+    <input class="crm-input" type="text" placeholder="Resumo do contato" [(ngModel)]="titulo" />
+  </div>
+
+  <div class="crm-row">
+    <div class="crm-field">
+      <label class="crm-label">Tipo de interação</label>
+      <mat-form-field appearance="outline" class="crm-select">
+        <mat-select [(ngModel)]="tipoInteracao">
+          @for (opt of tipoOptions; track opt.value) {
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div class="crm-field">
+      <label class="crm-label">Canal</label>
+      <mat-form-field appearance="outline" class="crm-select">
+        <mat-select [(ngModel)]="canal">
+          @for (opt of canalOptions; track opt.value) {
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="crm-field">
+    <label class="crm-label">Pessoa de contato</label>
+    <div class="crm-contato">
+      <mat-form-field appearance="outline" class="crm-select">
+        <mat-select [(ngModel)]="contatoId" (selectionChange)="onContatoChange()" placeholder="Selecionar contato...">
+          @for (c of contatos; track c.id) {
+            <mat-option [value]="c.id">{{ c.nome }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <button type="button" class="crm-contato-add" (click)="abrirNovoContato()" [disabled]="!colegioId" title="Novo contato">
+        <mat-icon>person_add</mat-icon>
+      </button>
+    </div>
+    @if (novoContatoAberto) {
+      <div class="crm-contato-form">
+        <input class="crm-input" type="text" placeholder="Nome" [(ngModel)]="novoContatoNome" />
+        <input class="crm-input" type="text" placeholder="Telefone" [(ngModel)]="novoContatoTelefone" />
+        <input class="crm-input" type="text" placeholder="E-mail" [(ngModel)]="novoContatoEmail" />
+        <input class="crm-input" type="text" placeholder="Cargo (opcional)" [(ngModel)]="novoContatoCargo" />
+        <div class="crm-contato-form-acoes">
+          <button type="button" class="crm-link-btn" (click)="cancelarNovoContato()">Cancelar</button>
+          <button type="button" class="crm-primary-btn" (click)="salvarNovoContato()" [disabled]="!novoContatoNome.trim()">Salvar contato</button>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="crm-field">
+    <label class="crm-label">Resultado do contato</label>
+    <mat-form-field appearance="outline" class="crm-select">
+      <mat-select [(ngModel)]="resultado">
+        @for (opt of resultadoOptions; track opt.value) {
+          <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="crm-field">
+    <label class="crm-label">Observações</label>
+    <textarea
+      class="crm-input crm-textarea"
+      rows="4"
+      placeholder="O que foi conversado, informações importantes..."
+      [(ngModel)]="descricao"
+      cdkTextareaAutosize
+      cdkAutosizeMinRows="3"
+      cdkAutosizeMaxRows="10"
+    ></textarea>
+  </div>
+
+  <div class="crm-proximo">
+    <div class="crm-proximo-titulo">Próximo contato</div>
+    <div class="crm-row">
+      <div class="crm-field">
+        <label class="crm-label">Data</label>
+        <input class="crm-input" type="date" [(ngModel)]="proximoContatoData" />
+      </div>
+      <div class="crm-field">
+        <label class="crm-label">Horário</label>
+        <input class="crm-input" type="time" [(ngModel)]="proximoContatoHora" />
+      </div>
+    </div>
+    <div class="crm-field">
+      <label class="crm-label">Motivo do retorno</label>
+      <input class="crm-input" type="text" placeholder="Ex.: apresentar os módulos do sistema" [(ngModel)]="proximoContatoMotivo" />
+    </div>
+  </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="fechar()">Cancelar</button>
+  <button mat-flat-button color="primary" (click)="salvar()" [disabled]="salvando">
+    {{ salvando ? 'Salvando...' : 'Salvar' }}
+  </button>
+</mat-dialog-actions>

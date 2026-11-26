@@ -8,10 +8,11 @@ import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from '../core/services/auth.service';
 import { AuthUrlPipe, comToken } from '../core/auth-url';
-import { ChatService, ContatoChat, MensagemChat, MensagemVinculo, MensagemBuscaChat } from '../core/services/chat.service';
+import { ChatService, ContatoChat, GrupoChatContato, GrupoParticipante, MensagemChat, MensagemVinculo, MensagemBuscaChat } from '../core/services/chat.service';
 import { CallService } from '../core/services/call.service';
 import { ChatAnexarTarefaDialogComponent } from '../shared/chat-anexar-tarefa-dialog';
 import { ChatLightboxDialogComponent } from '../shared/chat-lightbox-dialog';
+import { ConfirmarSimplesDialogComponent } from '../shared/confirmar-simples-dialog';
 
 @Component({
   selector: 'app-chat-panel',
@@ -29,6 +30,15 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   termoBuscaGrupo = '';
   mostrarLigacaoGrupo = false;
   participantesGrupo = new Set<number>();
+
+  mostrarNovoGrupo = false;
+  nomeNovoGrupo = '';
+  novaMensagemGrupo = '';
+  termoBuscaNovoGrupo = '';
+  participantesNovoGrupo = new Map<number, { nome: string; foto?: string }>();
+
+  mostrarDetalhesGrupo = false;
+  termoBuscaAdicionar = '';
 
   respondendoA: MensagemChat | null = null;
   carregandoAntigas = false;
@@ -66,28 +76,55 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
     return this.auth.usuario()?.id ?? 0;
   }
 
+  get ehGrupo(): boolean {
+    return this.chatService.conversaAtiva()?.tipo === 'grupo';
+  }
+
   get contatoAtivo(): ContatoChat | undefined {
-    const id = this.chatService.conversaAtiva();
-    if (!id) return undefined;
-    return this.chatService.contatos().find(c => c.usuarioId === id);
+    const a = this.chatService.conversaAtiva();
+    if (!a || a.tipo !== 'direta') return undefined;
+    return this.chatService.contatos().find(c => c.usuarioId === a.id);
+  }
+
+  get grupoAtivo(): GrupoChatContato | undefined {
+    const a = this.chatService.conversaAtiva();
+    if (!a || a.tipo !== 'grupo') return undefined;
+    return this.chatService.grupos().find(g => g.grupoId === a.id);
   }
 
   get mensagensAtivas(): MensagemChat[] {
-    const id = this.chatService.conversaAtiva();
-    if (!id) return [];
-    return this.chatService.getMensagens(id);
+    const a = this.chatService.conversaAtiva();
+    if (!a) return [];
+    return a.tipo === 'grupo' ? this.chatService.getMensagensGrupo(a.id) : this.chatService.getMensagens(a.id);
   }
 
   get digitandoAtivo(): boolean {
-    const id = this.chatService.conversaAtiva();
-    if (!id) return false;
-    return this.chatService.digitandoMap()[id] || false;
+    const a = this.chatService.conversaAtiva();
+    if (!a || a.tipo !== 'direta') return false;
+    return this.chatService.digitandoMap()[a.id] || false;
+  }
+
+  get nomesParticipantes(): string {
+    const g = this.grupoAtivo;
+    if (!g) return '';
+    return g.participantes.map(p => p.nome).join(', ');
+  }
+
+  get ehCriador(): boolean {
+    return this.grupoAtivo?.criadorId === this.meuId;
   }
 
   statusMensagem(mensagem: MensagemChat): string {
     if (mensagem.lida) return 'Lida';
     if (mensagem.entregue) return 'Entregue';
     return 'Enviada';
+  }
+
+  statusGrupo(mensagem: MensagemChat): string {
+    if (mensagem.totalParticipantes != null && mensagem.lidaPor != null) {
+      return `Lida por ${mensagem.lidaPor} de ${mensagem.totalParticipantes}`;
+    }
+    return 'Entregue';
   }
 
   dataSeparador(index: number): string | null {
@@ -118,21 +155,65 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
 
   abrirConversa(id: number): void {
     this.mostrarRolarAbaixo = false;
+    this.mostrarDetalhesGrupo = false;
     this.fecharBusca();
     this.chatService.abrirConversa(id);
   }
 
+  abrirGrupo(id: number): void {
+    this.mostrarRolarAbaixo = false;
+    this.mostrarDetalhesGrupo = false;
+    this.fecharBusca();
+    this.chatService.abrirGrupo(id);
+  }
+
+  abrirDetalhesGrupo(): void {
+    this.fecharBusca();
+    this.mostrarDetalhesGrupo = true;
+    this.termoBuscaAdicionar = '';
+    this.chatService.sugestoesBusca.set([]);
+  }
+
   voltar(): void {
+    if (this.mostrarDetalhesGrupo) {
+      this.mostrarDetalhesGrupo = false;
+      this.termoBuscaAdicionar = '';
+      this.chatService.sugestoesBusca.set([]);
+      return;
+    }
     this.mostrarRolarAbaixo = false;
     this.fecharBusca();
     this.chatService.fecharConversa();
   }
 
+  fecharPainel(): void {
+    this.mostrarRolarAbaixo = false;
+    this.fecharBusca();
+    this.cancelarResposta();
+    this.mostrarLigacaoGrupo = false;
+    this.participantesGrupo.clear();
+    this.mostrarNovoGrupo = false;
+    this.nomeNovoGrupo = '';
+    this.novaMensagemGrupo = '';
+    this.participantesNovoGrupo.clear();
+    this.mostrarDetalhesGrupo = false;
+    this.termoBuscaAdicionar = '';
+    this.termoBusca = '';
+    this.termoBuscaGrupo = '';
+    this.termoBuscaNovoGrupo = '';
+    this.chatService.fecharConversa();
+    this.fechar.emit();
+  }
+
   enviar(): void {
     const texto = this.novaMensagem.trim();
-    const id = this.chatService.conversaAtiva();
-    if (!texto || !id) return;
-    this.chatService.enviarMensagem(id, texto, this.respondendoA?.id);
+    const a = this.chatService.conversaAtiva();
+    if (!texto || !a) return;
+    if (a.tipo === 'grupo') {
+      this.chatService.enviarMensagemGrupo(a.id, texto);
+    } else {
+      this.chatService.enviarMensagem(a.id, texto, this.respondendoA?.id);
+    }
     this.novaMensagem = '';
     this.cancelarResposta();
   }
@@ -146,8 +227,8 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   }
 
   anexarTarefa(): void {
-    const id = this.chatService.conversaAtiva();
-    if (!id) return;
+    const a = this.chatService.conversaAtiva();
+    if (!a) return;
 
     const dialogRef = this.dialog.open(ChatAnexarTarefaDialogComponent, {
       width: '400px',
@@ -156,7 +237,12 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
     });
 
     dialogRef.afterClosed().subscribe((vinculo: MensagemVinculo | undefined) => {
-      if (vinculo) this.chatService.enviarVinculo(id, vinculo);
+      if (!vinculo) return;
+      if (this.ehGrupo) {
+        this.chatService.enviarVinculoGrupo(a.id, vinculo);
+      } else {
+        this.chatService.enviarVinculo(a.id, vinculo);
+      }
     });
   }
 
@@ -191,11 +277,16 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
 
     if (!imagem) return;
 
-    const id = this.chatService.conversaAtiva();
-    if (!id) return;
+    const a = this.chatService.conversaAtiva();
+    if (!a) return;
 
     event.preventDefault();
-    this.chatService.enviarImagem(id, imagem, imagem.name || `imagem-${Date.now()}.png`, this.respondendoA?.id);
+    const nome = imagem.name || `imagem-${Date.now()}.png`;
+    if (a.tipo === 'grupo') {
+      this.chatService.enviarImagemGrupo(a.id, imagem, nome);
+    } else {
+      this.chatService.enviarImagem(a.id, imagem, nome, this.respondendoA?.id);
+    }
     this.cancelarResposta();
   }
 
@@ -222,7 +313,11 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
     const ativo = this.chatService.conversaAtiva();
     if (!ativo || tentativa >= 6) return;
 
-    this.chatService.carregarMensagensAntigas(ativo).then(temMais => {
+    const carregar = ativo.tipo === 'grupo'
+      ? this.chatService.carregarMensagensAntigasGrupo(ativo.id)
+      : this.chatService.carregarMensagensAntigas(ativo.id);
+
+    carregar.then(temMais => {
       if (temMais) setTimeout(() => this.rolarEHighlight(id, tentativa + 1), 350);
     });
   }
@@ -261,14 +356,15 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
       return;
     }
     this.buscaMensagemTimer = setTimeout(() => {
-      const contatoId = this.chatService.conversaAtiva() ?? undefined;
+      const a = this.chatService.conversaAtiva();
+      const contatoId = a && a.tipo === 'direta' ? a.id : undefined;
       this.chatService.buscarMensagens(termo, contatoId);
     }, 150);
   }
 
   irParaResultado(r: MensagemBuscaChat): void {
     const ativa = this.chatService.conversaAtiva();
-    if (ativa === r.contatoId) {
+    if (ativa && ativa.tipo === 'direta' && ativa.id === r.contatoId) {
       this.rolarParaMensagem(r.id);
     } else {
       this.abrirConversa(r.contatoId);
@@ -277,15 +373,17 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   }
 
   private async carregarAntigas(): Promise<void> {
-    const id = this.chatService.conversaAtiva();
+    const a = this.chatService.conversaAtiva();
     const el = this.mensagensContainer?.nativeElement;
-    if (!id || !el || this.carregandoAntigas) return;
+    if (!a || !el || this.carregandoAntigas) return;
 
     this.carregandoAntigas = true;
     const alturaAntes = el.scrollHeight;
 
     try {
-      const temMais = await this.chatService.carregarMensagensAntigas(id);
+      const temMais = a.tipo === 'grupo'
+        ? await this.chatService.carregarMensagensAntigasGrupo(a.id)
+        : await this.chatService.carregarMensagensAntigas(a.id);
       if (temMais) {
         requestAnimationFrame(() => {
           el.scrollTop = el.scrollHeight - alturaAntes;
@@ -343,15 +441,19 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
     this.tempoGravacao = 0;
     this.pararStream();
 
-    const id = this.chatService.conversaAtiva();
-    if (!id || this.audioChunks.length === 0 || duracao < 1) {
+    const a = this.chatService.conversaAtiva();
+    if (!a || this.audioChunks.length === 0 || duracao < 1) {
       this.audioChunks = [];
       return;
     }
 
     const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
     this.audioChunks = [];
-    this.chatService.enviarAudio(id, blob, duracao, this.respondendoA?.id);
+    if (a.tipo === 'grupo') {
+      this.chatService.enviarAudioGrupo(a.id, blob, duracao);
+    } else {
+      this.chatService.enviarAudio(a.id, blob, duracao, this.respondendoA?.id);
+    }
     this.cancelarResposta();
   }
 
@@ -475,8 +577,8 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   }
 
   onInput(): void {
-    const id = this.chatService.conversaAtiva();
-    if (id) this.chatService.onInputDigitando(id);
+    const a = this.chatService.conversaAtiva();
+    if (a && a.tipo === 'direta') this.chatService.onInputDigitando(a.id);
   }
 
   private buscaTimer: any;
@@ -521,10 +623,103 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
     this.participantesGrupo.clear();
   }
 
+  toggleNovoGrupo(): void {
+    this.mostrarNovoGrupo = !this.mostrarNovoGrupo;
+    if (this.mostrarNovoGrupo) this.mostrarLigacaoGrupo = false;
+    this.termoBuscaNovoGrupo = '';
+    this.chatService.sugestoesBusca.set([]);
+  }
+
+  onBuscaNovoGrupo(): void {
+    if (!this.termoBuscaNovoGrupo || this.termoBuscaNovoGrupo.trim().length < 1) {
+      this.chatService.sugestoesBusca.set([]);
+      return;
+    }
+    clearTimeout(this.buscaTimer);
+    this.buscaTimer = setTimeout(() => {
+      const excluir = new Set(this.participantesNovoGrupo.keys());
+      this.chatService.buscarUsuarios(this.termoBuscaNovoGrupo, excluir);
+    }, 150);
+  }
+
+  toggleParticipanteNovoGrupo(u: { usuarioId: number; nome: string; foto?: string }): void {
+    if (this.participantesNovoGrupo.has(u.usuarioId)) {
+      this.participantesNovoGrupo.delete(u.usuarioId);
+    } else if (this.participantesNovoGrupo.size < 20) {
+      this.participantesNovoGrupo.set(u.usuarioId, { nome: u.nome, foto: u.foto });
+    }
+  }
+
+  participantesNovoGrupoLista(): { usuarioId: number; nome: string; foto?: string }[] {
+    return Array.from(this.participantesNovoGrupo.entries())
+      .map(([usuarioId, v]) => ({ usuarioId, nome: v.nome, foto: v.foto }));
+  }
+
+  criarNovoGrupo(): void {
+    if (this.participantesNovoGrupo.size === 0) return;
+    const ids = Array.from(this.participantesNovoGrupo.keys());
+    const nomes = Array.from(this.participantesNovoGrupo.values()).map(v => v.nome);
+    const nome = this.nomeNovoGrupo.trim() || (nomes.slice(0, 3).join(', ') + (nomes.length > 3 ? '...' : ''));
+    const texto = this.novaMensagemGrupo.trim();
+
+    this.chatService.criarGrupo(nome, ids, texto).then(grupoId => {
+      this.mostrarNovoGrupo = false;
+      this.nomeNovoGrupo = '';
+      this.novaMensagemGrupo = '';
+      this.termoBuscaNovoGrupo = '';
+      this.participantesNovoGrupo.clear();
+      if (grupoId) this.abrirGrupo(grupoId);
+    });
+  }
+
+  onBuscaAdicionar(): void {
+    if (!this.termoBuscaAdicionar || this.termoBuscaAdicionar.trim().length < 1) {
+      this.chatService.sugestoesBusca.set([]);
+      return;
+    }
+    clearTimeout(this.buscaTimer);
+    this.buscaTimer = setTimeout(() => {
+      const excluir = new Set((this.grupoAtivo?.participantes ?? []).map(p => p.usuarioId));
+      this.chatService.buscarUsuarios(this.termoBuscaAdicionar, excluir);
+    }, 150);
+  }
+
+  adicionarParticipante(u: { usuarioId: number; nome: string; foto?: string }): void {
+    const grupo = this.grupoAtivo;
+    if (!grupo) return;
+    this.chatService.adicionarParticipante(grupo.grupoId, u.usuarioId).then(ok => {
+      if (ok) {
+        this.termoBuscaAdicionar = '';
+        this.chatService.sugestoesBusca.set([]);
+      }
+    });
+  }
+
+  removerParticipante(p: GrupoParticipante): void {
+    const grupo = this.grupoAtivo;
+    if (!grupo) return;
+
+    const dialogRef = this.dialog.open(ConfirmarSimplesDialogComponent, {
+      width: '400px',
+      maxWidth: '92vw',
+      data: {
+        titulo: 'Remover participante',
+        mensagem: `Remover ${p.nome} do grupo?`,
+        textoBotao: 'Remover',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmado) => {
+      if (confirmado) {
+        this.chatService.removerParticipante(grupo.grupoId, p.usuarioId);
+      }
+    });
+  }
+
   @HostListener('document:click', ['$event'])
   fecharDropdowns(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    if (target.closest('.chat-busca') || target.closest('.chat-grupo-search-wrapper') || target.closest('.call-busca')) return;
+    if (target.closest('.chat-busca') || target.closest('.chat-grupo-search-wrapper') || target.closest('.chat-detalhes-adicionar') || target.closest('.call-busca')) return;
     this.chatService.sugestoesBusca.set([]);
   }
 }

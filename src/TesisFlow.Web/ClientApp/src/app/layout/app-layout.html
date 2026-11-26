@@ -208,8 +208,8 @@
               @if (notificacoesFiltradas.length > 0) {
                 @for (n of notificacoesFiltradas; track n.id) {
                   <div class="notificacao-card" [class.notificacao-card--lida]="n.lida" [class.notificacao-card--link]="!!n.link" (click)="navegarNotificacao(n)">
-                    <div class="notificacao-card-icon" [class.icon-atendimento]="n.tipo === 'atendimento'" [class.icon-financeiro]="n.tipo === 'financeiro'" [class.icon-diario]="n.tipo === 'diario'" [class.icon-sistema]="n.tipo === 'sistema'" [class.icon-tarefa]="n.tipo === 'tarefa'" [class.icon-mencao]="n.tipo === 'mencao'" [class.icon-atribuicao]="n.tipo === 'atribuicao'" [class.icon-prazo]="n.tipo === 'prazo'" [class.icon-convite]="n.tipo === 'convite'">
-                      <mat-icon>{{ n.tipo === 'atendimento' ? 'headset_mic' : n.tipo === 'financeiro' ? 'payments' : n.tipo === 'diario' ? 'menu_book' : n.tipo === 'tarefa' ? 'task_alt' : n.tipo === 'mencao' ? 'chat' : n.tipo === 'atribuicao' ? 'person_add' : n.tipo === 'prazo' ? 'event' : n.tipo === 'convite' ? 'group_add' : 'settings' }}</mat-icon>
+                    <div class="notificacao-card-icon" [class.icon-atendimento]="n.tipo === 'atendimento'" [class.icon-financeiro]="n.tipo === 'financeiro'" [class.icon-diario]="n.tipo === 'diario'" [class.icon-sistema]="n.tipo === 'sistema'" [class.icon-tarefa]="n.tipo === 'tarefa'" [class.icon-mencao]="n.tipo === 'mencao'" [class.icon-atribuicao]="n.tipo === 'atribuicao'" [class.icon-prazo]="n.tipo === 'prazo'" [class.icon-convite]="n.tipo === 'convite'" [class.icon-retorno]="n.tipo === 'retorno'">
+                      <mat-icon>{{ n.tipo === 'atendimento' ? 'headset_mic' : n.tipo === 'financeiro' ? 'payments' : n.tipo === 'diario' ? 'menu_book' : n.tipo === 'tarefa' ? 'task_alt' : n.tipo === 'mencao' ? 'chat' : n.tipo === 'atribuicao' ? 'person_add' : n.tipo === 'prazo' ? 'event' : n.tipo === 'convite' ? 'group_add' : n.tipo === 'retorno' ? 'event_repeat' : 'settings' }}</mat-icon>
                     </div>
                     <div class="notificacao-card-content">
                       <span class="notificacao-card-titulo">{{ n.titulo }}</span>
@@ -346,6 +346,12 @@
              [matTooltip]="!sidebarOpen() ? 'Escolas' : null" matTooltipPosition="right">
             <mat-icon>business</mat-icon>
             <span class="sidebar-text">Escolas</span>
+          </a>
+
+          <a mat-list-item routerLink="/crm" routerLinkActive="active" class="sidebar-link"
+             [matTooltip]="!sidebarOpen() ? 'CRM' : null" matTooltipPosition="right">
+            <mat-icon>support_agent</mat-icon>
+            <span class="sidebar-text">CRM</span>
           </a>
 
           <div class="sidebar-section">

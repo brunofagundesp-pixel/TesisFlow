@@ -14,6 +14,25 @@ export interface ContatoChat {
   naoLidas: number;
 }
 
+export interface GrupoParticipante {
+  usuarioId: number;
+  nome: string;
+  foto?: string;
+}
+
+export interface GrupoChatContato {
+  grupoId: number;
+  criadorId: number;
+  nome: string;
+  avatar: string;
+  ultimaMensagem: string;
+  ultimaData: Date;
+  naoLidas: number;
+  participantes: GrupoParticipante[];
+}
+
+export type ConversaAlvo = { tipo: 'direta'; id: number } | { tipo: 'grupo'; id: number };
+
 export interface MensagemResposta {
   id: number;
   texto: string;
@@ -36,10 +55,16 @@ export interface MensagemChat {
   remetenteId: number;
   remetenteNome: string;
   remetenteFoto?: string;
-  destinatarioId: number;
+  destinatarioId?: number | null;
+  destinatarioNome?: string;
+  destinatarioFoto?: string;
+  grupoId?: number;
+  grupoNome?: string;
   texto: string;
   lida: boolean;
   entregue: boolean;
+  lidaPor?: number;
+  totalParticipantes?: number;
   data: Date;
   audio?: string;
   audioDuracao?: number;
@@ -77,20 +102,28 @@ export class ChatService {
   private hubConnection: signalR.HubConnection | null = null;
 
   readonly contatos = signal<ContatoChat[]>([]);
+  readonly grupos = signal<GrupoChatContato[]>([]);
   private _mensagensMap = signal<Record<number, MensagemChat[]>>({});
+  private _mensagensGrupoMap = signal<Record<number, MensagemChat[]>>({});
   readonly digitandoMap = signal<Record<number, boolean>>({});
   readonly statusMap = signal<Record<number, StatusUsuario>>({});
   readonly meuStatus = signal<StatusUsuario>('online');
 
-  readonly conversaAtiva = signal<number | null>(null);
+  readonly conversaAtiva = signal<ConversaAlvo | null>(null);
   readonly totalNaoLidas = signal(0);
   readonly resultadosBusca = signal<MensagemBuscaChat[]>([]);
+  readonly sugestoesBusca = signal<{ usuarioId: number; nome: string; avatar: string; foto?: string }[]>([]);
 
   private typingTimers = new Map<number, ReturnType<typeof setTimeout>>();
   private digitandoAtual = new Set<number>();
+  private cacheUsuarios: { id: number; nome: string; foto?: string }[] | null = null;
 
   getMensagens(usuarioId: number): MensagemChat[] {
     return this._mensagensMap()[usuarioId] || [];
+  }
+
+  getMensagensGrupo(grupoId: number): MensagemChat[] {
+    return this._mensagensGrupoMap()[grupoId] || [];
   }
 
   getStatus(usuarioId: number): StatusUsuario {
@@ -105,6 +138,30 @@ export class ChatService {
     });
   }
 
+  private inserirMensagemGrupoSeNova(grupoId: number, msg: MensagemChat): void {
+    this._mensagensGrupoMap.update(map => {
+      const msgs = map[grupoId] || [];
+      if (msgs.some(m => m.id === msg.id)) return map;
+      return { ...map, [grupoId]: [...msgs, msg] };
+    });
+  }
+
+  private upsertContato(contato: ContatoChat): void {
+    this.contatos.update(lista => {
+      const i = lista.findIndex(c => c.usuarioId === contato.usuarioId);
+      if (i === -1) return [contato, ...lista];
+      const nova = [...lista];
+      nova[i] = contato;
+      return nova;
+    });
+  }
+
+  private recalcularNaoLidas(): void {
+    const diretas = this.contatos().reduce((s, c) => s + c.naoLidas, 0);
+    const grupos = this.grupos().reduce((s, g) => s + g.naoLidas, 0);
+    this.totalNaoLidas.set(diretas + grupos);
+  }
+
   inicializar(): void {
     const userId = this.auth.usuario()?.id;
     if (!userId) return;
@@ -115,13 +172,27 @@ export class ChatService {
         avatar: c.nome.charAt(0).toUpperCase(),
         ultimaData: c.ultimaData ? new Date(c.ultimaData) : new Date(),
       })));
-      this.totalNaoLidas.set(contatos.reduce((s, c) => s + c.naoLidas, 0));
 
       for (const c of contatos) {
         if (c.naoLidas > 0 || c.ultimaMensagem) {
           this.carregarMensagens(c.usuarioId);
         }
       }
+      this.recalcularNaoLidas();
+    });
+
+    this.http.get<any[]>(`/api/Chat/grupos/${userId}`).subscribe(grupos => {
+      this.grupos.set(grupos.map(g => ({
+        grupoId: g.grupoId,
+        criadorId: g.criadorId ?? 0,
+        nome: g.nome,
+        avatar: (g.nome || 'G').charAt(0).toUpperCase(),
+        ultimaMensagem: g.ultimaMensagem,
+        ultimaData: g.ultimaData ? new Date(g.ultimaData) : new Date(),
+        naoLidas: g.naoLidas,
+        participantes: g.participantes || [],
+      })));
+      this.recalcularNaoLidas();
     });
 
     this.conectarSignalR(userId);
@@ -138,6 +209,11 @@ export class ChatService {
 
     this.hubConnection.on('ReceberMensagem', (msg: any) => {
       msg.data = dataDe(msg);
+      if (msg.grupoId) {
+        this.onMensagemGrupoRecebida(msg, userId);
+        return;
+      }
+
       const ehMinha = msg.remetenteId === userId;
       const outroId = ehMinha ? msg.destinatarioId : msg.remetenteId;
       const resumo = msg.audio ? '[Áudio]' : msg.imagem ? '[Imagem]' : msg.vinculo ? `[${msg.vinculo.tipo === 'colegio' ? 'Escola' : 'Tarefa'}]` : msg.texto;
@@ -149,12 +225,19 @@ export class ChatService {
       } as MensagemChat);
 
       if (ehMinha) {
-        this.contatos.update(lista => lista.map(c =>
-          c.usuarioId === outroId ? { ...c, ultimaMensagem: resumo, ultimaData: msg.data } : c));
+        this.upsertContato({
+          usuarioId: outroId,
+          nome: msg.destinatarioNome || `Usuário ${outroId}`,
+          avatar: (msg.destinatarioNome || '?').charAt(0).toUpperCase(),
+          foto: msg.destinatarioFoto,
+          ultimaMensagem: resumo,
+          ultimaData: msg.data,
+          naoLidas: 0,
+        });
         return;
       }
 
-      const conversaAberta = this.conversaAtiva() === outroId;
+      const conversaAberta = this.conversaAtiva()?.tipo === 'direta' && this.conversaAtiva()?.id === outroId;
 
       const audio = new Audio('/sounds/notification.mp3');
       audio.volume = 0.5;
@@ -180,7 +263,59 @@ export class ChatService {
           ultimaMensagem: resumo, ultimaData: msg.data, naoLidas: conversaAberta ? 0 : 1,
         }];
       });
-      if (!conversaAberta) this.totalNaoLidas.update(v => v + 1);
+      if (!conversaAberta) this.recalcularNaoLidas();
+    });
+
+    this.hubConnection.on('ReceberGrupo', (g: any) => {
+      this.grupos.update(lista => {
+        const i = lista.findIndex(x => x.grupoId === g.grupoId);
+        const contato: GrupoChatContato = {
+          grupoId: g.grupoId,
+          criadorId: g.criadorId ?? 0,
+          nome: g.nome || 'Grupo',
+          avatar: (g.nome || 'G').charAt(0).toUpperCase(),
+          ultimaMensagem: g.ultimaMensagem || '',
+          ultimaData: g.ultimaData ? new Date(g.ultimaData) : new Date(),
+          naoLidas: g.naoLidas ?? 0,
+          participantes: g.participantes || [],
+        };
+        if (i === -1) return [contato, ...lista];
+        const nova = [...lista];
+        nova[i] = {
+          ...nova[i],
+          criadorId: contato.criadorId,
+          nome: contato.nome,
+          avatar: contato.avatar,
+          participantes: contato.participantes.length ? contato.participantes : nova[i].participantes,
+        };
+        return nova;
+      });
+    });
+
+    this.hubConnection.on('ParticipanteRemovido', (grupoId: number, usuarioId: number) => {
+      if (usuarioId === userId) {
+        this.grupos.update(lista => lista.filter(g => g.grupoId !== grupoId));
+        const alvo = this.conversaAtiva();
+        if (alvo?.tipo === 'grupo' && alvo.id === grupoId) {
+          this.conversaAtiva.set(null);
+        }
+        this.recalcularNaoLidas();
+      } else {
+        this.grupos.update(lista => lista.map(g =>
+          g.grupoId === grupoId
+            ? { ...g, participantes: g.participantes.filter(p => p.usuarioId !== usuarioId) }
+            : g));
+        this.carregarMensagensGrupo(grupoId);
+      }
+    });
+
+    this.hubConnection.on('ParticipanteAdicionado', (grupoId: number, participante: { usuarioId: number; nome: string; foto?: string }) => {
+      this.grupos.update(lista => lista.map(g => {
+        if (g.grupoId !== grupoId) return g;
+        if (g.participantes.some(p => p.usuarioId === participante.usuarioId)) return g;
+        return { ...g, participantes: [...g.participantes, participante] };
+      }));
+      this.carregarMensagensGrupo(grupoId);
     });
 
     this.hubConnection.on('MensagemEntregue', (mensagemId: number) => {
@@ -205,6 +340,12 @@ export class ChatService {
       });
     });
 
+    this.hubConnection.on('MensagensGrupoLidas', (grupoId: number, usuarioId: number) => {
+      if (usuarioId !== userId) {
+        this.carregarMensagensGrupo(grupoId);
+      }
+    });
+
     this.hubConnection.on('UsuarioDigitando', (uid: number, digitando: boolean) => {
       this.digitandoMap.update(map => ({ ...map, [uid]: digitando }));
     });
@@ -223,6 +364,47 @@ export class ChatService {
     this.hubConnection.start().catch(err => console.warn('Chat SignalR erro:', err));
   }
 
+  private onMensagemGrupoRecebida(msg: any, userId: number): void {
+    const grupoId = msg.grupoId as number;
+    const resumo = msg.audio ? '[Áudio]' : msg.imagem ? '[Imagem]' : msg.vinculo ? `[${msg.vinculo.tipo === 'colegio' ? 'Escola' : 'Tarefa'}]` : msg.texto;
+    const ehMinha = msg.remetenteId === userId;
+    const alvo = this.conversaAtiva();
+    const grupoAberto = alvo?.tipo === 'grupo' && alvo.id === grupoId;
+
+    this.inserirMensagemGrupoSeNova(grupoId, {
+      ...msg,
+      entregue: msg.entregue ?? false,
+      lida: msg.lida ?? false,
+    } as MensagemChat);
+
+    this.grupos.update(lista => {
+      const existe = lista.find(g => g.grupoId === grupoId);
+      if (existe) {
+        return lista.map(g => g.grupoId === grupoId
+          ? { ...g, ultimaMensagem: resumo, ultimaData: msg.data, naoLidas: ehMinha ? g.naoLidas : (grupoAberto ? 0 : g.naoLidas + 1) }
+          : g);
+      }
+      return [...lista, {
+        grupoId,
+        criadorId: msg.criadorId ?? 0,
+        nome: msg.grupoNome || 'Grupo',
+        avatar: (msg.grupoNome || 'G').charAt(0).toUpperCase(),
+        ultimaMensagem: resumo,
+        ultimaData: msg.data,
+        naoLidas: ehMinha ? 0 : (grupoAberto ? 0 : 1),
+        participantes: [],
+      }];
+    });
+
+    if (!ehMinha) {
+      const audio = new Audio('/sounds/notification.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(() => {});
+      if (grupoAberto) this.marcarGrupoLidas(grupoId);
+      this.recalcularNaoLidas();
+    }
+  }
+
   carregarMensagens(usuarioId: number): void {
     const meuId = this.auth.usuario()?.id;
     if (!meuId) return;
@@ -230,6 +412,16 @@ export class ChatService {
     this.http.get<any[]>(`/api/Chat/conversas/${meuId}/${usuarioId}?limite=50`).subscribe(msgs => {
       const normalizadas: MensagemChat[] = msgs.map(m => ({ ...m, data: dataDe(m) }));
       this._mensagensMap.update(map => ({ ...map, [usuarioId]: normalizadas }));
+    });
+  }
+
+  carregarMensagensGrupo(grupoId: number): void {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId) return;
+
+    this.http.get<any[]>(`/api/Chat/grupo/${meuId}/${grupoId}?limite=50`).subscribe(msgs => {
+      const normalizadas: MensagemChat[] = msgs.map(m => ({ ...m, data: dataDe(m) }));
+      this._mensagensGrupoMap.update(map => ({ ...map, [grupoId]: normalizadas }));
     });
   }
 
@@ -258,16 +450,41 @@ export class ChatService {
     });
   }
 
+  carregarMensagensAntigasGrupo(grupoId: number): Promise<boolean> {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId) return Promise.resolve(false);
+
+    const atuais = this._mensagensGrupoMap()[grupoId] || [];
+    if (atuais.length === 0) return Promise.resolve(false);
+
+    const antesId = atuais[0].id;
+    return new Promise(resolve => {
+      this.http.get<any[]>(`/api/Chat/grupo/${meuId}/${grupoId}?antesId=${antesId}&limite=30`).subscribe(msgs => {
+        const antigas: MensagemChat[] = msgs.map(m => ({ ...m, data: dataDe(m) }));
+
+        const idsAtuais = new Set(atuais.map(m => m.id));
+        const novas = antigas.filter(m => !idsAtuais.has(m.id));
+
+        this._mensagensGrupoMap.update(map => ({
+          ...map,
+          [grupoId]: [...novas, ...(map[grupoId] || [])],
+        }));
+
+        resolve(antigas.length >= 30);
+      });
+    });
+  }
+
   abrirConversa(usuarioId: number): void {
     const userId = this.auth.usuario()?.id;
     if (!userId) return;
 
-    this.conversaAtiva.set(usuarioId);
+    this.conversaAtiva.set({ tipo: 'direta', id: usuarioId });
 
     this.contatos.update(lista => lista.map(c =>
       c.usuarioId === usuarioId ? { ...c, naoLidas: 0 } : c
     ));
-    this.totalNaoLidas.set(this.contatos().reduce((s, c) => s + c.naoLidas, 0));
+    this.recalcularNaoLidas();
 
     this.marcarLidas(usuarioId);
 
@@ -276,10 +493,34 @@ export class ChatService {
     }
   }
 
+  abrirGrupo(grupoId: number): void {
+    const userId = this.auth.usuario()?.id;
+    if (!userId) return;
+
+    this.conversaAtiva.set({ tipo: 'grupo', id: grupoId });
+
+    this.grupos.update(lista => lista.map(g =>
+      g.grupoId === grupoId ? { ...g, naoLidas: 0 } : g
+    ));
+    this.recalcularNaoLidas();
+
+    this.marcarGrupoLidas(grupoId);
+
+    if (!this._mensagensGrupoMap()[grupoId] || this._mensagensGrupoMap()[grupoId].length === 0) {
+      this.carregarMensagensGrupo(grupoId);
+    }
+  }
+
   private marcarLidas(contatoId: number): void {
     const userId = this.auth.usuario()?.id;
     if (!userId) return;
     this.http.put(`/api/Chat/lidas/${contatoId}/${userId}`, {}).subscribe();
+  }
+
+  private marcarGrupoLidas(grupoId: number): void {
+    const userId = this.auth.usuario()?.id;
+    if (!userId) return;
+    this.http.put(`/api/Chat/grupo/lidas/${grupoId}/${userId}`, {}).subscribe();
   }
 
   fecharConversa(): void {
@@ -315,8 +556,30 @@ export class ChatService {
       msg.entregue = msg.entregue ?? false;
       msg.lida = msg.lida ?? false;
       this.inserirMensagemSeNova(usuarioId, msg as MensagemChat);
-      this.contatos.update(lista => lista.map(c =>
-        c.usuarioId === usuarioId ? { ...c, ultimaMensagem: texto, ultimaData: msg.data } : c));
+      this.upsertContato({
+        usuarioId,
+        nome: msg.destinatarioNome || `Usuário ${usuarioId}`,
+        avatar: (msg.destinatarioNome || '?').charAt(0).toUpperCase(),
+        foto: msg.destinatarioFoto,
+        ultimaMensagem: texto,
+        ultimaData: msg.data,
+        naoLidas: 0,
+      });
+    });
+  }
+
+  enviarMensagemGrupo(grupoId: number, texto: string): void {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId) return;
+
+    const dto = { remetenteId: meuId, texto };
+    this.http.post<any>(`/api/Chat/grupo/${grupoId}/mensagem`, dto).subscribe(msg => {
+      msg.data = dataDe(msg);
+      msg.entregue = msg.entregue ?? false;
+      msg.lida = msg.lida ?? false;
+      this.inserirMensagemGrupoSeNova(grupoId, msg as MensagemChat);
+      this.grupos.update(lista => lista.map(g =>
+        g.grupoId === grupoId ? { ...g, ultimaMensagem: texto, ultimaData: msg.data } : g));
     });
   }
 
@@ -336,8 +599,15 @@ export class ChatService {
       msg.entregue = msg.entregue ?? false;
       msg.lida = msg.lida ?? false;
       this.inserirMensagemSeNova(usuarioId, msg as MensagemChat);
-      this.contatos.update(lista => lista.map(c =>
-        c.usuarioId === usuarioId ? { ...c, ultimaMensagem: '[Áudio]', ultimaData: msg.data } : c));
+      this.upsertContato({
+        usuarioId,
+        nome: msg.destinatarioNome || `Usuário ${usuarioId}`,
+        avatar: (msg.destinatarioNome || '?').charAt(0).toUpperCase(),
+        foto: msg.destinatarioFoto,
+        ultimaMensagem: '[Áudio]',
+        ultimaData: msg.data,
+        naoLidas: 0,
+      });
     });
   }
 
@@ -353,8 +623,132 @@ export class ChatService {
       msg.entregue = msg.entregue ?? false;
       msg.lida = msg.lida ?? false;
       this.inserirMensagemSeNova(usuarioId, msg as MensagemChat);
-      this.contatos.update(lista => lista.map(c =>
-        c.usuarioId === usuarioId ? { ...c, ultimaMensagem: resumo, ultimaData: msg.data } : c));
+      this.upsertContato({
+        usuarioId,
+        nome: msg.destinatarioNome || `Usuário ${usuarioId}`,
+        avatar: (msg.destinatarioNome || '?').charAt(0).toUpperCase(),
+        foto: msg.destinatarioFoto,
+        ultimaMensagem: resumo,
+        ultimaData: msg.data,
+        naoLidas: 0,
+      });
+    });
+  }
+
+  enviarVinculoGrupo(grupoId: number, vinculo: MensagemVinculo): void {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId) return;
+
+    const resumo = vinculo.tipo === 'colegio' ? '[Escola]' : '[Tarefa]';
+    const dto = { remetenteId: meuId, texto: '', vinculo };
+
+    this.http.post<any>(`/api/Chat/grupo/${grupoId}/mensagem`, dto).subscribe(msg => {
+      msg.data = dataDe(msg);
+      msg.entregue = msg.entregue ?? false;
+      msg.lida = msg.lida ?? false;
+      this.inserirMensagemGrupoSeNova(grupoId, msg as MensagemChat);
+      this.grupos.update(lista => lista.map(g =>
+        g.grupoId === grupoId ? { ...g, ultimaMensagem: resumo, ultimaData: msg.data } : g));
+    });
+  }
+
+  enviarAudioGrupo(grupoId: number, blob: Blob, duracao: number): void {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId) return;
+
+    const form = new FormData();
+    form.append('audio', blob, 'audio.webm');
+    form.append('remetenteId', String(meuId));
+    form.append('duracao', String(duracao));
+
+    this.http.post<any>(`/api/Chat/grupo/${grupoId}/audio`, form).subscribe(msg => {
+      msg.data = dataDe(msg);
+      msg.entregue = msg.entregue ?? false;
+      msg.lida = msg.lida ?? false;
+      this.inserirMensagemGrupoSeNova(grupoId, msg as MensagemChat);
+      this.grupos.update(lista => lista.map(g =>
+        g.grupoId === grupoId ? { ...g, ultimaMensagem: '[Áudio]', ultimaData: msg.data } : g));
+    });
+  }
+
+  enviarImagemGrupo(grupoId: number, blob: Blob, nomeArquivo: string): void {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId) return;
+
+    const form = new FormData();
+    form.append('arquivo', blob, nomeArquivo || 'imagem.png');
+    form.append('remetenteId', String(meuId));
+
+    this.http.post<any>(`/api/Chat/grupo/${grupoId}/imagem`, form).subscribe(msg => {
+      msg.data = dataDe(msg);
+      msg.entregue = msg.entregue ?? false;
+      msg.lida = msg.lida ?? false;
+      this.inserirMensagemGrupoSeNova(grupoId, msg as MensagemChat);
+      this.grupos.update(lista => lista.map(g =>
+        g.grupoId === grupoId ? { ...g, ultimaMensagem: '[Imagem]', ultimaData: msg.data } : g));
+    });
+  }
+
+  criarGrupo(nome: string, participanteIds: number[], texto: string): Promise<number | null> {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId) return Promise.resolve(null);
+
+    const dto = { remetenteId: meuId, nome, participanteIds, texto };
+    return new Promise(resolve => {
+      this.http.post<any>('/api/Chat/grupo', dto).subscribe(res => {
+        const g = res.grupo;
+        if (g) {
+          this.grupos.update(lista => {
+            const i = lista.findIndex(x => x.grupoId === g.grupoId);
+            const contato: GrupoChatContato = {
+              grupoId: g.grupoId,
+              criadorId: g.criadorId ?? 0,
+              nome: g.nome,
+              avatar: (g.nome || 'G').charAt(0).toUpperCase(),
+              ultimaMensagem: g.ultimaMensagem || '',
+              ultimaData: g.ultimaData ? new Date(g.ultimaData) : new Date(),
+              naoLidas: 0,
+              participantes: g.participantes || [],
+            };
+            if (i === -1) return [contato, ...lista];
+            const nova = [...lista];
+            nova[i] = contato;
+            return nova;
+          });
+        }
+        resolve(g?.grupoId ?? null);
+      });
+    });
+  }
+
+  removerParticipante(grupoId: number, usuarioId: number): Promise<boolean> {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId) return Promise.resolve(false);
+
+    return new Promise(resolve => {
+      this.http.delete(`/api/Chat/grupo/${grupoId}/participante/${usuarioId}?solicitanteId=${meuId}`).subscribe({
+        next: () => {
+          this.grupos.update(lista => lista.map(g =>
+            g.grupoId === grupoId
+              ? { ...g, participantes: g.participantes.filter(p => p.usuarioId !== usuarioId) }
+              : g));
+          this.carregarMensagensGrupo(grupoId);
+          resolve(true);
+        },
+        error: () => resolve(false),
+      });
+    });
+  }
+
+  adicionarParticipante(grupoId: number, usuarioId: number): Promise<boolean> {
+    const meuId = this.auth.usuario()?.id;
+    if (!meuId) return Promise.resolve(false);
+
+    return new Promise(resolve => {
+      this.http.post(`/api/Chat/grupo/${grupoId}/participante`, { solicitanteId: meuId, usuarioId }).subscribe({
+        next: () => resolve(true),
+        error: () => resolve(false),
+      });
     });
   }
 
@@ -373,8 +767,15 @@ export class ChatService {
       msg.entregue = msg.entregue ?? false;
       msg.lida = msg.lida ?? false;
       this.inserirMensagemSeNova(usuarioId, msg as MensagemChat);
-      this.contatos.update(lista => lista.map(c =>
-        c.usuarioId === usuarioId ? { ...c, ultimaMensagem: '[Imagem]', ultimaData: msg.data } : c));
+      this.upsertContato({
+        usuarioId,
+        nome: msg.destinatarioNome || `Usuário ${usuarioId}`,
+        avatar: (msg.destinatarioNome || '?').charAt(0).toUpperCase(),
+        foto: msg.destinatarioFoto,
+        ultimaMensagem: '[Imagem]',
+        ultimaData: msg.data,
+        naoLidas: 0,
+      });
     });
   }
 
@@ -404,8 +805,6 @@ export class ChatService {
     this.hubConnection?.invoke('AlterarStatus', status).catch(() => {});
   }
 
-  private cacheUsuarios: { id: number; nome: string; foto?: string }[] | null = null;
-
   buscarUsuarios(termo: string, excluir?: Set<number>): void {
     const userId = this.auth.usuario()?.id;
     const excl = excluir || new Set();
@@ -434,6 +833,4 @@ export class ChatService {
       filtrar(this.cacheUsuarios);
     });
   }
-
-  readonly sugestoesBusca = signal<{ usuarioId: number; nome: string; avatar: string; foto?: string }[]>([]);
 }

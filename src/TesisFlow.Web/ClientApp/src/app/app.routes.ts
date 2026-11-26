@@ -6,6 +6,7 @@ import { DashboardComponent } from './features/dashboard/dashboard';
 import { MeuDiaComponent } from './features/meu-dia/meu-dia';
 import { ClientesListComponent } from './features/clientes/clientes-list';
 import { ClienteDetalheComponent } from './features/clientes/cliente-detalhe';
+import { CrmListComponent } from './features/crm/crm-list';
 import { ProjetosListComponent } from './features/projetos/projetos-list';
 import { KanbanComponent } from './features/tarefas/kanban';
 import { TarefaDetalheComponent } from './features/tarefas/tarefa-detalhe-page';
@@ -27,6 +28,7 @@ export const routes: Routes = [
       { path: 'meu-dia', component: MeuDiaComponent },
       { path: 'clientes', component: ClientesListComponent },
       { path: 'clientes/:id', component: ClienteDetalheComponent },
+      { path: 'crm', component: CrmListComponent },
       { path: 'projetos', component: ProjetosListComponent },
       { path: 'projetos/:id/kanban', component: KanbanComponent },
       { path: 'projetos/:id/configuracoes', component: ProjetoConfiguracoesComponent },

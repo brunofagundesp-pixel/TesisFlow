@@ -4,7 +4,8 @@ namespace TesisFlow.Modelo.Entidades
     {
         public int RemetenteId { get; set; }
         public required string Texto { get; set; }
-        public int DestinatarioId { get; set; }
+        public int? DestinatarioId { get; set; }
+        public int? GrupoId { get; set; }
         public bool Lida { get; set; }
         public bool Entregue { get; set; }
         public string? Audio { get; set; }
@@ -20,7 +21,8 @@ namespace TesisFlow.Modelo.Entidades
         public string? ImagemNome { get; set; }
 
         public Usuario Remetente { get; set; } = null!;
-        public Usuario Destinatario { get; set; } = null!;
+        public Usuario? Destinatario { get; set; }
+        public GrupoChat? Grupo { get; set; }
         public Mensagem? MensagemRespondida { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using TesisFlow.Api.Services;
 
 namespace TesisFlow.Api.Controllers
 {
@@ -6,11 +7,11 @@ namespace TesisFlow.Api.Controllers
     [Route("api/[controller]")]
     public class ImagensController : ControllerBase
     {
-        private readonly IWebHostEnvironment _env;
+        private readonly CaminhosService _caminhos;
 
-        public ImagensController(IWebHostEnvironment env)
+        public ImagensController(CaminhosService caminhos)
         {
-            _env = env;
+            _caminhos = caminhos;
         }
 
         [HttpPost("upload")]
@@ -24,7 +25,7 @@ namespace TesisFlow.Api.Controllers
                 extensao = ".png";
 
             var nome = $"{Guid.NewGuid()}{extensao}";
-            var dir = Path.Combine(_env.ContentRootPath, "uploads", "descricao");
+            var dir = Path.Combine(_caminhos.UploadsBasePath, "descricao");
             Directory.CreateDirectory(dir);
 
             var caminho = Path.Combine(dir, nome);
@@ -38,7 +39,7 @@ namespace TesisFlow.Api.Controllers
         public IActionResult Obter(string nome)
         {
             var nomeArquivo = Path.GetFileName(nome);
-            var dir = Path.Combine(_env.ContentRootPath, "uploads", "descricao");
+            var dir = Path.Combine(_caminhos.UploadsBasePath, "descricao");
             var caminho = Path.Combine(dir, nomeArquivo);
 
             if (!System.IO.File.Exists(caminho))
