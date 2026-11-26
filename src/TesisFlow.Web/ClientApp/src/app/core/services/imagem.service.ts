@@ -6,9 +6,10 @@ import { ApiService } from './api.service';
 export class ImagemService {
   constructor(private api: ApiService) {}
 
-  upload(imagem: File): Observable<{ url: string }> {
+  upload(imagem: File, usuarioId?: number): Observable<{ url: string }> {
     const form = new FormData();
     form.append('imagem', imagem);
+    if (usuarioId != null) form.append('usuarioId', String(usuarioId));
     return this.api.postFormData<{ url: string }>('Imagens/upload', form);
   }
 }

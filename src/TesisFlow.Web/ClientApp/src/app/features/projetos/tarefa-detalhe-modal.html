@@ -152,11 +152,13 @@
                 <button type="button" class="toolbar-btn" (mousedown)="$event.preventDefault(); inserirCodigo()" title="Codigo">&lt;/&gt;</button>
                 <button type="button" class="toolbar-btn toolbar-btn-save" (click)="enviarComentario()" [disabled]="enviandoComentario">Enviar</button>
               </div>
-              <div class="editor-content" contenteditable="true" [innerHTML]="novoComentarioHtml" placeholder="Adicionar um comentario..." (input)="onComentarioInput($event)"></div>
+              <div class="editor-content" contenteditable="true" [innerHTML]="novoComentarioHtml" placeholder="Adicionar um comentario..." (input)="onComentarioInput($event)" (paste)="onComentarioPaste($event)"></div>
               <app-mencao-dropdown
                 [membros]="membros"
                 [termo]="mencaoTermo"
                 [visivel]="mostrarMencaoDropdown"
+                [top]="mencaoTop"
+                [left]="mencaoLeft"
                 (selecionado)="inserirMencao($event)"
               ></app-mencao-dropdown>
             </div>
@@ -184,7 +186,7 @@
                           <button type="button" class="toolbar-btn toolbar-btn-save" (click)="salvarEdicaoComentario(c)">Salvar</button>
                           <button type="button" class="toolbar-btn" (click)="cancelarEdicaoComentario()">Cancelar</button>
                         </div>
-                        <div class="editor-content" contenteditable="true" [innerHTML]="comentarioEditHtml"></div>
+                        <div class="editor-content" contenteditable="true" [innerHTML]="comentarioEditHtml" (paste)="onComentarioPaste($event)"></div>
                       </div>
                     } @else {
                       @if (isOwner(c)) {
@@ -264,7 +266,7 @@
                           <button type="button" class="toolbar-btn toolbar-btn-save" (click)="enviarResposta(c)">Responder</button>
                           <button type="button" class="toolbar-btn" (click)="cancelarResposta()">Cancelar</button>
                         </div>
-                        <div class="editor-content" contenteditable="true" [innerHTML]="respostaHtml"></div>
+                        <div class="editor-content" contenteditable="true" [innerHTML]="respostaHtml" (paste)="onComentarioPaste($event)"></div>
                       </div>
                     }
                   </div>

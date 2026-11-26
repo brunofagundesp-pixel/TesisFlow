@@ -154,14 +154,14 @@ namespace TesisFlow.Api.Controllers
         [HttpPost("grupo/{grupoId}/mensagem")]
         public async Task<IActionResult> PostMensagemGrupo(int grupoId, [FromBody] GrupoEnviarDTO dto)
         {
-            if (!await _consultar.UsuarioEhParticipanteAsync(grupoId, dto.RemetenteId))
+            var grupo = await _salvar.ObterGrupoAsync(grupoId);
+            if (grupo == null || !grupo.Participantes.Any(p => p.Ativo && p.UsuarioId == dto.RemetenteId))
                 return Forbid();
 
             var mensagem = await _salvar.EnviarGrupoAsync(dto.RemetenteId, grupoId, dto.Texto, dto.MensagemRespondidaId, dto.Vinculo);
-            var mensagemDto = await _consultar.ObterDtoAsync(mensagem.Id);
+            var mensagemDto = await _consultar.ObterDtoParaGrupoAsync(mensagem.Id, grupo);
 
-            var grupo = await _salvar.ObterGrupoAsync(grupoId);
-            var ids = grupo?.Participantes.Select(p => p.UsuarioId).ToList() ?? new List<int>();
+            var ids = grupo.Participantes.Where(p => p.Ativo).Select(p => p.UsuarioId).ToList();
 
             foreach (var id in ids)
                 await _hubContext.Clients.Group($"user_{id}").SendAsync("ReceberMensagem", mensagemDto);
@@ -366,10 +366,14 @@ namespace TesisFlow.Api.Controllers
 
         private async Task<MensagemDTO> MontarDtoAsync(Mensagem mensagem)
         {
-            var remetente = await _usuarioConsultar.ObterPorIdAsync(mensagem.RemetenteId);
-            var destinatario = mensagem.DestinatarioId.HasValue
-                ? await _usuarioConsultar.ObterPorIdAsync(mensagem.DestinatarioId.Value)
-                : null;
+            var ids = new List<int> { mensagem.RemetenteId };
+            if (mensagem.DestinatarioId.HasValue) ids.Add(mensagem.DestinatarioId.Value);
+
+            var usuarios = await _usuarioConsultar.ObterVariosAsync(ids);
+            usuarios.TryGetValue(mensagem.RemetenteId, out var remetente);
+            UsuarioDTO? destinatario = null;
+            if (mensagem.DestinatarioId.HasValue)
+                usuarios.TryGetValue(mensagem.DestinatarioId.Value, out destinatario);
 
             MensagemRespostaDTO? resposta = null;
             if (mensagem.MensagemRespondidaId.HasValue)

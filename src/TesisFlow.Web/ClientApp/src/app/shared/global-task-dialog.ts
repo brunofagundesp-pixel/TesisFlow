@@ -13,6 +13,8 @@ import { QuadroConfiguracaoService } from '../features/projetos/quadro-configura
 import { ColegioSelectComponent } from './colegio-select/colegio-select';
 import { CategoriaSelectComponent } from '../features/categorias/categoria-select';
 import { toDateTimeLocal, toUtcIso } from '../core/utils/date.util';
+import { AuthService } from '../core/services/auth.service';
+import { membrosEfetivos } from '../core/utils/projeto.util';
 
 const PRIORIDADE_ICONES: Record<number, string> = {
   [PrioridadeTarefa.Baixa]: 'arrow_downward',
@@ -54,6 +56,7 @@ export class GlobalTaskDialogComponent {
     private dialogRef: MatDialogRef<GlobalTaskDialogComponent>,
     private projetoService: ProjetoService,
     private quadroService: QuadroConfiguracaoService,
+    public auth: AuthService,
     @Inject(MAT_DIALOG_DATA) public data: { criadorId: number; projetoId?: number; status?: StatusTarefa; projeto?: Projeto; colunas?: QuadroConfiguracao[] },
   ) {
     this.form = this.fb.group({
@@ -62,7 +65,7 @@ export class GlobalTaskDialogComponent {
       descricao: ['', Validators.maxLength(5000)],
       prioridade: [PrioridadeTarefa.Media, Validators.required],
       tipo: [1, Validators.required],
-      responsavelIds: [[]],
+      responsavelIds: [[this.data.criadorId]],
       colegio: [null],
       contatoNome: [''],
       dataEntrega: [this.dataEntregaPadrao()],
@@ -92,7 +95,7 @@ export class GlobalTaskDialogComponent {
     this.colunas = [];
     this.membros = [];
     this.statusSelecionado = null;
-    this.form.patchValue({ responsavelIds: [] });
+    this.form.patchValue({ responsavelIds: [this.data.criadorId] });
 
     this.projetoService.obter(projetoId).subscribe(projeto => {
       this.membros = this.montarMembros(projeto);
@@ -128,18 +131,7 @@ export class GlobalTaskDialogComponent {
   }
 
   private montarMembros(projeto: Projeto): ProjetoMembro[] {
-    const membros = [...(projeto.membros || [])];
-    if (projeto.liderId && !membros.some(m => m.usuarioId === projeto.liderId)) {
-      membros.unshift({
-        id: 0,
-        projetoId: projeto.id,
-        usuarioId: projeto.liderId,
-        usuarioNome: projeto.liderNome || 'Líder',
-        papel: 'Lider',
-        status: 'Aceito',
-      });
-    }
-    return membros;
+    return membrosEfetivos(projeto, this.auth.usuario());
   }
 
   private dataEntregaPadrao(): string {

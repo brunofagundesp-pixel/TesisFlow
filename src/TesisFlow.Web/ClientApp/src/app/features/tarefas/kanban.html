@@ -107,8 +107,8 @@
               }
             }
             @if (filtroCategoriaAtiva === 'responsavel') {
-              @if (projeto?.membros?.length) {
-                @for (m of projeto!.membros!; track m.usuarioId) {
+              @if (membrosEfetivosProjeto.length) {
+                @for (m of membrosEfetivosProjeto; track m.usuarioId) {
                   <div class="filtro-item" (click)="$event.stopPropagation(); toggleFiltro('responsavel', m.usuarioId)">
                     <mat-icon>{{ filtroResponsavel.has(m.usuarioId) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
                     <span>{{ m.usuarioNome }}</span>

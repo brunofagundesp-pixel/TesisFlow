@@ -24,6 +24,16 @@ namespace TesisFlow.Core.Servicos.Usuarios
             return await _context.Usuarios.FirstOrDefaultAsync(u => u.Id == id && u.Ativo);
         }
 
+        public async Task<IEnumerable<Usuario>> ObterPorIdsAsync(IEnumerable<int> ids)
+        {
+            var lista = ids.Distinct().ToList();
+            if (lista.Count == 0) return new List<Usuario>();
+
+            return await _context.Usuarios
+                .Where(u => EF.Constant(lista).Contains(u.Id) && u.Ativo)
+                .ToListAsync();
+        }
+
         public async Task<Usuario?> ObterPorEmailAsync(string email)
         {
             return await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == email && u.Ativo);

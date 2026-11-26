@@ -9,7 +9,10 @@ namespace TesisFlow.Api.Services
             var configurado = configuration["Paths:Uploads"];
 
             if (string.IsNullOrWhiteSpace(configurado))
-                configurado = Path.Combine("%LOCALAPPDATA%", "TesisFlow", "uploads");
+            {
+                var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                configurado = Path.Combine(localAppData, "TesisFlow", "uploads");
+            }
 
             _uploadsBasePath = Environment.ExpandEnvironmentVariables(configurado);
         }

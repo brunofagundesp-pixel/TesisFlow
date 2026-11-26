@@ -27,6 +27,7 @@ import { CategoriaService } from '../categorias/categoria.service';
 import { toDateTimeLocal, toUtcIso } from '../../core/utils/date.util';
 import { ImagemService } from '../../core/services/imagem.service';
 import { baixarEventoIcs, gerarUrlGoogle, gerarUrlOutlook } from '../../core/utils/calendar.util';
+import { membrosEfetivos } from '../../core/utils/projeto.util';
 
 interface EventoHistorico {
   icon: string;
@@ -75,6 +76,8 @@ export class TarefaDetalheModalComponent {
 
   mencaoTermo = '';
   mostrarMencaoDropdown = false;
+  mencaoTop: number | null = null;
+  mencaoLeft: number | null = null;
 
   readonly emojis = ['👍', '❤️', '😄', '🎉', '😮', '😢'];
   readonly emojiToCode: Record<string, string> = { '👍': ':like:', '❤️': ':heart:', '😄': ':laugh:', '🎉': ':party:', '😮': ':wow:', '😢': ':sad:' };
@@ -122,9 +125,7 @@ export class TarefaDetalheModalComponent {
 
     this.categoriaService.listarPorProjeto(this.tarefa.projetoId).subscribe(c => this.categorias = c);
 
-    if (this.membros.length === 0) {
-      this.projetoService.obter(this.tarefa.projetoId).subscribe(p => this.membros = p.membros || []);
-    }
+    this.projetoService.obter(this.tarefa.projetoId).subscribe(p => this.membros = membrosEfetivos(p, this.auth.usuario()));
 
     this.form = this.fb.group({
       titulo: [this.tarefa.titulo, [Validators.required, Validators.maxLength(300)]],
@@ -206,6 +207,17 @@ export class TarefaDetalheModalComponent {
 
     this.mencaoTermo = termo;
     this.mostrarMencaoDropdown = true;
+    this.posicionarMencao(el);
+  }
+
+  private posicionarMencao(el: HTMLElement): void {
+    const container = el.closest('.novo-comentario-editor') as HTMLElement;
+    const selection = window.getSelection();
+    if (!container || !selection || !selection.rangeCount) return;
+    const caret = selection.getRangeAt(0).getBoundingClientRect();
+    const box = container.getBoundingClientRect();
+    this.mencaoTop = caret.bottom - box.top + 4;
+    this.mencaoLeft = Math.max(0, caret.left - box.left);
   }
 
   inserirMencao(membro: MembroMencao): void {
@@ -386,8 +398,28 @@ export class TarefaDetalheModalComponent {
         event.preventDefault();
         const file = item.getAsFile();
         if (file) {
-          this.imagemService.upload(file).subscribe({
+          this.imagemService.upload(file, this.auth.usuario()?.id).subscribe({
             next: res => this.inserirImagemHtml(res.url),
+            error: () => {},
+          });
+        }
+        return;
+      }
+    }
+  }
+
+  onComentarioPaste(event: ClipboardEvent) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        event.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          this.imagemService.upload(file, this.auth.usuario()?.id).subscribe({
+            next: res => this.inserirImagemComentario(res.url),
             error: () => {},
           });
         }
@@ -398,6 +430,10 @@ export class TarefaDetalheModalComponent {
 
   private inserirImagemHtml(url: string) {
     document.execCommand('insertHTML', false, `<img src="${url}" class="descricao-img" />`);
+  }
+
+  private inserirImagemComentario(url: string) {
+    document.execCommand('insertHTML', false, `<img src="${url}" class="comentario-img" style="max-width:100%;border-radius:8px;" />`);
   }
 
   onDescricaoViewClick(event: MouseEvent) {

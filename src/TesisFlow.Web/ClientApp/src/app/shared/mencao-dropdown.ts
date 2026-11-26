@@ -13,7 +13,7 @@ export interface MembroMencao {
   imports: [MatIconModule],
   template: `
     @if (visivel && filtrados.length > 0) {
-      <div class="mencao-dropdown">
+      <div class="mencao-dropdown" [style.top.px]="top ?? 0" [style.left.px]="left ?? 0">
         <div class="mencao-header">Mencionar usuario</div>
         @for (m of filtrados; track m.usuarioId) {
           <div class="mencao-item" (click)="selecionar(m)">
@@ -29,7 +29,7 @@ export interface MembroMencao {
   styles: [`
     .mencao-dropdown {
       position: absolute;
-      bottom: calc(100% - 4px);
+      top: 0;
       left: 0;
       max-height: 260px;
       width: 280px;
@@ -102,6 +102,8 @@ export class MencaoDropdownComponent {
   @Input() membros: MembroMencao[] = [];
   @Input() termo = '';
   @Input() visivel = false;
+  @Input() top: number | null = null;
+  @Input() left: number | null = null;
 
   @Output() selecionado = new EventEmitter<MembroMencao>();
 

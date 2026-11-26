@@ -152,6 +152,60 @@ export class ChatService {
     });
   }
 
+  private tempIdCounter = 0;
+
+  private inserirMensagemTemp(usuarioId: number, msg: MensagemChat): void {
+    const tempId = -(++this.tempIdCounter);
+    this._mensagensMap.update(map => {
+      const msgs = map[usuarioId] || [];
+      return { ...map, [usuarioId]: [...msgs, { ...msg, id: tempId }] };
+    });
+  }
+
+  private substituirMensagemTemp(usuarioId: number, msg: MensagemChat): void {
+    this._mensagensMap.update(map => {
+      const msgs = (map[usuarioId] || []).filter(m => m.id > 0);
+      if (!msgs.some(m => m.id === msg.id)) msgs.push(msg);
+      return { ...map, [usuarioId]: msgs };
+    });
+  }
+
+  private removerMensagensTemp(usuarioId: number): void {
+    this._mensagensMap.update(map => {
+      const msgs = (map[usuarioId] || []).filter(m => m.id > 0);
+      return { ...map, [usuarioId]: msgs };
+    });
+  }
+
+  private inserirMensagemGrupoTemp(grupoId: number, msg: MensagemChat): void {
+    const tempId = -(++this.tempIdCounter);
+    this._mensagensGrupoMap.update(map => {
+      const msgs = map[grupoId] || [];
+      return { ...map, [grupoId]: [...msgs, { ...msg, id: tempId }] };
+    });
+  }
+
+  private substituirMensagemGrupoTemp(grupoId: number, msg: MensagemChat): void {
+    this._mensagensGrupoMap.update(map => {
+      const msgs = (map[grupoId] || []).filter(m => m.id > 0);
+      if (!msgs.some(m => m.id === msg.id)) msgs.push(msg);
+      return { ...map, [grupoId]: msgs };
+    });
+  }
+
+  private removerMensagensGrupoTemp(grupoId: number): void {
+    this._mensagensGrupoMap.update(map => {
+      const msgs = (map[grupoId] || []).filter(m => m.id > 0);
+      return { ...map, [grupoId]: msgs };
+    });
+  }
+
+  private atualizarUltimaContato(usuarioId: number, ultimaMensagem: string, ultimaData: Date): void {
+    this.contatos.update(lista => lista.map(c =>
+      c.usuarioId === usuarioId ? { ...c, ultimaMensagem, ultimaData } : c
+    ));
+  }
+
   private upsertContato(contato: ContatoChat): void {
     this.contatos.update(lista => {
       const i = lista.findIndex(c => c.usuarioId === contato.usuarioId);
@@ -228,11 +282,17 @@ export class ChatService {
       const outroId = ehMinha ? msg.destinatarioId : msg.remetenteId;
       const resumo = msg.audio ? '[Áudio]' : msg.imagem ? '[Imagem]' : msg.vinculo ? `[${msg.vinculo.tipo === 'colegio' ? 'Escola' : 'Tarefa'}]` : msg.texto;
 
-      this.inserirMensagemSeNova(outroId, {
+      const mensagemRecebida = {
         ...msg,
         entregue: msg.entregue ?? false,
         lida: msg.lida ?? false,
-      } as MensagemChat);
+      } as MensagemChat;
+
+      if (ehMinha) {
+        this.substituirMensagemTemp(outroId, mensagemRecebida);
+      } else {
+        this.inserirMensagemSeNova(outroId, mensagemRecebida);
+      }
 
       if (ehMinha) {
         this.upsertContato({
@@ -390,11 +450,17 @@ export class ChatService {
     const alvo = this.conversaAtiva();
     const grupoAberto = alvo?.tipo === 'grupo' && alvo.id === grupoId;
 
-    this.inserirMensagemGrupoSeNova(grupoId, {
+    const mensagemRecebida = {
       ...msg,
       entregue: msg.entregue ?? false,
       lida: msg.lida ?? false,
-    } as MensagemChat);
+    } as MensagemChat;
+
+    if (ehMinha) {
+      this.substituirMensagemGrupoTemp(grupoId, mensagemRecebida);
+    } else {
+      this.inserirMensagemGrupoSeNova(grupoId, mensagemRecebida);
+    }
 
     this.grupos.update(lista => {
       const existe = lista.find(g => g.grupoId === grupoId);
@@ -569,21 +635,39 @@ export class ChatService {
     this.digitandoAtual.delete(usuarioId);
     this.enviarDigitando(usuarioId, false);
 
+    this.inserirMensagemTemp(usuarioId, {
+      id: 0,
+      remetenteId: meuId,
+      remetenteNome: this.auth.usuario()?.nome ?? '',
+      destinatarioId: usuarioId,
+      texto,
+      lida: false,
+      entregue: false,
+      data: new Date(),
+      mensagemRespondidaId,
+    } as MensagemChat);
+    this.atualizarUltimaContato(usuarioId, texto, new Date());
+
     const dto = { texto, remetenteId: meuId, destinatarioId: usuarioId, mensagemRespondidaId };
-    this.http.post<any>('/api/Chat', dto).subscribe(msg => {
-      msg.data = dataDe(msg);
-      msg.entregue = msg.entregue ?? false;
-      msg.lida = msg.lida ?? false;
-      this.inserirMensagemSeNova(usuarioId, msg as MensagemChat);
-      this.upsertContato({
-        usuarioId,
-        nome: msg.destinatarioNome || `Usuário ${usuarioId}`,
-        avatar: (msg.destinatarioNome || '?').charAt(0).toUpperCase(),
-        foto: msg.destinatarioFoto,
-        ultimaMensagem: texto,
-        ultimaData: msg.data,
-        naoLidas: 0,
-      });
+    this.http.post<any>('/api/Chat', dto).subscribe({
+      next: msg => {
+        msg.data = dataDe(msg);
+        msg.entregue = msg.entregue ?? false;
+        msg.lida = msg.lida ?? false;
+        this.substituirMensagemTemp(usuarioId, msg as MensagemChat);
+        this.upsertContato({
+          usuarioId,
+          nome: msg.destinatarioNome || `Usuário ${usuarioId}`,
+          avatar: (msg.destinatarioNome || '?').charAt(0).toUpperCase(),
+          foto: msg.destinatarioFoto,
+          ultimaMensagem: texto,
+          ultimaData: msg.data,
+          naoLidas: 0,
+        });
+      },
+      error: () => {
+        this.removerMensagensTemp(usuarioId);
+      },
     });
   }
 
@@ -591,14 +675,32 @@ export class ChatService {
     const meuId = this.auth.usuario()?.id;
     if (!meuId) return;
 
+    this.inserirMensagemGrupoTemp(grupoId, {
+      id: 0,
+      remetenteId: meuId,
+      remetenteNome: this.auth.usuario()?.nome ?? '',
+      grupoId,
+      texto,
+      lida: false,
+      entregue: false,
+      data: new Date(),
+    } as MensagemChat);
+    this.grupos.update(lista => lista.map(g =>
+      g.grupoId === grupoId ? { ...g, ultimaMensagem: texto, ultimaData: new Date() } : g));
+
     const dto = { remetenteId: meuId, texto };
-    this.http.post<any>(`/api/Chat/grupo/${grupoId}/mensagem`, dto).subscribe(msg => {
-      msg.data = dataDe(msg);
-      msg.entregue = msg.entregue ?? false;
-      msg.lida = msg.lida ?? false;
-      this.inserirMensagemGrupoSeNova(grupoId, msg as MensagemChat);
-      this.grupos.update(lista => lista.map(g =>
-        g.grupoId === grupoId ? { ...g, ultimaMensagem: texto, ultimaData: msg.data } : g));
+    this.http.post<any>(`/api/Chat/grupo/${grupoId}/mensagem`, dto).subscribe({
+      next: msg => {
+        msg.data = dataDe(msg);
+        msg.entregue = msg.entregue ?? false;
+        msg.lida = msg.lida ?? false;
+        this.substituirMensagemGrupoTemp(grupoId, msg as MensagemChat);
+        this.grupos.update(lista => lista.map(g =>
+          g.grupoId === grupoId ? { ...g, ultimaMensagem: texto, ultimaData: msg.data } : g));
+      },
+      error: () => {
+        this.removerMensagensGrupoTemp(grupoId);
+      },
     });
   }
 

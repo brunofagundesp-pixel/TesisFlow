@@ -24,6 +24,7 @@ import { ColegioSelectComponent } from '../../shared/colegio-select/colegio-sele
 import { CategoriaService } from '../categorias/categoria.service';
 import { toDateTimeLocal, toUtcIso } from '../../core/utils/date.util';
 import { baixarEventoIcs } from '../../core/utils/calendar.util';
+import { membrosEfetivos } from '../../core/utils/projeto.util';
 
 interface EventoHistorico { icon: string; mensagem: string; autor: string; data: string; timestamp: number; }
 
@@ -97,7 +98,7 @@ export class TarefaDetalheComponent implements OnInit, OnDestroy {
         dataEntrega: [toDateTimeLocal(t.dataEntrega)],
       });
       this.carregarComentarios(); this.carregarAnexos(); this.carregarHistorico();
-      this.projetoService.obter(t.projetoId).subscribe(p => this.membros = p.membros || []);
+      this.projetoService.obter(t.projetoId).subscribe(p => this.membros = membrosEfetivos(p, this.auth.usuario()));
     });
   }
 
@@ -113,8 +114,10 @@ export class TarefaDetalheComponent implements OnInit, OnDestroy {
   inserirLink() { const url = prompt('URL:'); if (url) document.execCommand('createLink', false, url); }
   inserirCodigo() { const s = window.getSelection(); if (s?.rangeCount) { const r = s.getRangeAt(0); const code = document.createElement('code'); code.style.cssText='background:var(--tf-surface-hover);padding:2px 6px;border-radius:4px;font-size:0.85em;'; code.textContent = r.toString()||'codigo'; r.deleteContents(); r.insertNode(code); } }
   imagemAmpliada: string | null = null;
-  onDescricaoPaste(event: ClipboardEvent) { const items = event.clipboardData?.items; if (!items) return; for (let i = 0; i < items.length; i++) { const item = items[i]; if (item.type.startsWith('image/')) { event.preventDefault(); const file = item.getAsFile(); if (file) { this.imagemService.upload(file).subscribe({ next: res => this.inserirImagemHtml(res.url), error: () => {} }); } return; } } }
+  onDescricaoPaste(event: ClipboardEvent) { const items = event.clipboardData?.items; if (!items) return; for (let i = 0; i < items.length; i++) { const item = items[i]; if (item.type.startsWith('image/')) { event.preventDefault(); const file = item.getAsFile(); if (file) { this.imagemService.upload(file, this.auth.usuario()?.id).subscribe({ next: res => this.inserirImagemHtml(res.url), error: () => {} }); } return; } } }
+  onComentarioPaste(event: ClipboardEvent) { const items = event.clipboardData?.items; if (!items) return; for (let i = 0; i < items.length; i++) { const item = items[i]; if (item.type.startsWith('image/')) { event.preventDefault(); const file = item.getAsFile(); if (file) { this.imagemService.upload(file, this.auth.usuario()?.id).subscribe({ next: res => this.inserirImagemComentario(res.url), error: () => {} }); } return; } } }
   private inserirImagemHtml(url: string) { document.execCommand('insertHTML', false, `<img src="${url}" class="descricao-img" />`); }
+  private inserirImagemComentario(url: string) { document.execCommand('insertHTML', false, `<img src="${url}" class="comentario-img" style="max-width:100%;border-radius:8px;" />`); }
   onDescricaoViewClick(event: MouseEvent) { const img = (event.target as HTMLElement).closest('img.descricao-img'); if (img) { event.stopPropagation(); this.imagemAmpliada = (img as HTMLImageElement).src; return; } this.toggleEditDescricao(); }
   fecharImagem() { this.imagemAmpliada = null; }
   adicionarAoCalendario() { baixarEventoIcs(this.tarefa); }

@@ -20,17 +20,20 @@ namespace TesisFlow.Api.Controllers
         private readonly UsuarioSalvar _salvar;
         private readonly UsuarioExcluir _excluir;
         private readonly CaminhosService _caminhos;
+        private readonly FirebaseStorageService _firebase;
 
         public UsuariosController(
             UsuarioConsultar consultar,
             UsuarioSalvar salvar,
             UsuarioExcluir excluir,
-            CaminhosService caminhos)
+            CaminhosService caminhos,
+            FirebaseStorageService firebase)
         {
             _consultar = consultar;
             _salvar = salvar;
             _excluir = excluir;
             _caminhos = caminhos;
+            _firebase = firebase;
         }
 
         [HttpGet]
@@ -102,38 +105,32 @@ namespace TesisFlow.Api.Controllers
             var usuario = await _consultar.ObterEntidadePorIdAsync(id);
             if (usuario == null) return NotFound();
 
-            var diretorio = Path.Combine(_caminhos.UploadsBasePath, "avatares");
-            Directory.CreateDirectory(diretorio);
-
-            var nomeArquivo = $"{id}_{Guid.NewGuid():N}{extensao}";
-            var caminho = Path.Combine(diretorio, nomeArquivo);
-
-            using (var stream = new FileStream(caminho, FileMode.Create))
-            {
-                await arquivo.CopyToAsync(stream);
-            }
-
             var fotoAnterior = usuario.Foto;
+
+            string url;
+            using (var stream = arquivo.OpenReadStream())
+            {
+                url = await _firebase.UploadAsync($"avatares/usuario-{id}", stream, arquivo.ContentType ?? "image/jpeg", extensao);
+            }
 
             try
             {
-                await _salvar.DefinirFotoAsync(id, $"/api/Usuarios/{id}/foto?f={nomeArquivo}");
+                await _salvar.DefinirFotoAsync(id, url);
             }
             catch
             {
-                if (System.IO.File.Exists(caminho))
-                {
-                    try { System.IO.File.Delete(caminho); } catch { /* ignora */ }
-                }
+                await _firebase.DeleteAsync(url);
                 throw;
             }
 
             ExcluirArquivoAnterior(fotoAnterior, "avatares");
+            await _firebase.DeleteAsync(fotoAnterior);
 
             var dto = await _consultar.ObterPorIdAsync(id);
             return Ok(dto);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}/foto")]
         public IActionResult ObterFoto(int id, [FromQuery] string? f)
         {
@@ -154,6 +151,7 @@ namespace TesisFlow.Api.Controllers
             if (usuario == null) return NotFound();
 
             ExcluirArquivoAnterior(usuario.Foto, "avatares");
+            await _firebase.DeleteAsync(usuario.Foto);
 
             await _salvar.DefinirFotoAsync(id, null);
 
@@ -178,38 +176,32 @@ namespace TesisFlow.Api.Controllers
             var usuario = await _consultar.ObterEntidadePorIdAsync(id);
             if (usuario == null) return NotFound();
 
-            var diretorio = Path.Combine(_caminhos.UploadsBasePath, "banners");
-            Directory.CreateDirectory(diretorio);
-
-            var nomeArquivo = $"{id}_{Guid.NewGuid():N}{extensao}";
-            var caminho = Path.Combine(diretorio, nomeArquivo);
-
-            using (var stream = new FileStream(caminho, FileMode.Create))
-            {
-                await arquivo.CopyToAsync(stream);
-            }
-
             var bannerAnterior = usuario.Banner;
+
+            string url;
+            using (var stream = arquivo.OpenReadStream())
+            {
+                url = await _firebase.UploadAsync($"banners/usuario-{id}", stream, arquivo.ContentType ?? "image/jpeg", extensao);
+            }
 
             try
             {
-                await _salvar.DefinirBannerAsync(id, $"/api/Usuarios/{id}/banner?f={nomeArquivo}");
+                await _salvar.DefinirBannerAsync(id, url);
             }
             catch
             {
-                if (System.IO.File.Exists(caminho))
-                {
-                    try { System.IO.File.Delete(caminho); } catch { /* ignora */ }
-                }
+                await _firebase.DeleteAsync(url);
                 throw;
             }
 
             ExcluirArquivoAnterior(bannerAnterior, "banners");
+            await _firebase.DeleteAsync(bannerAnterior);
 
             var dto = await _consultar.ObterPorIdAsync(id);
             return Ok(dto);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}/banner")]
         public IActionResult ObterBanner(int id, [FromQuery] string? f)
         {
@@ -230,6 +222,7 @@ namespace TesisFlow.Api.Controllers
             if (usuario == null) return NotFound();
 
             ExcluirArquivoAnterior(usuario.Banner, "banners");
+            await _firebase.DeleteAsync(usuario.Banner);
 
             await _salvar.DefinirBannerAsync(id, null);
 

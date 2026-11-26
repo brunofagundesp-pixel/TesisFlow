@@ -71,6 +71,7 @@ builder.Services.AddHostedService<RetornoLembreteService>();
 builder.Services.AddScoped<INotificacaoDispatcher, NotificacaoDispatcher>();
 builder.Services.AddScoped<TokenServico>();
 builder.Services.AddSingleton<CaminhosService>();
+builder.Services.AddSingleton<FirebaseStorageService>();
 
 var connectionString = builder.Configuration.GetConnectionString("TesisFlowDB")!;
 var serverVersion = ServerVersion.AutoDetect(connectionString);

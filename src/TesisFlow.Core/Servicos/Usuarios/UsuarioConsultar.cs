@@ -25,6 +25,12 @@ namespace TesisFlow.Core.Servicos.Usuarios
             return usuario != null ? MapToDTO(usuario) : null;
         }
 
+        public async Task<Dictionary<int, UsuarioDTO>> ObterVariosAsync(IEnumerable<int> ids)
+        {
+            var usuarios = await _repositorio.ObterPorIdsAsync(ids);
+            return usuarios.ToDictionary(u => u.Id, MapToDTO);
+        }
+
         public async Task<IEnumerable<UsuarioAdminDTO>> ObterAdminAsync()
         {
             var usuarios = await _repositorio.ObterTodosAsync();

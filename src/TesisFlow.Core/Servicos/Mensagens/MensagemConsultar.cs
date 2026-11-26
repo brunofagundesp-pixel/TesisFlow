@@ -94,6 +94,15 @@ namespace TesisFlow.Core.Servicos.Mensagens
             return ParaDto(m, grupo?.Nome, totalParticipantes, leituras.GetValueOrDefault(m.Id, 0));
         }
 
+        public async Task<MensagemDTO?> ObterDtoParaGrupoAsync(int mensagemId, GrupoChat grupo)
+        {
+            var m = await _repositorio.ObterPorIdAsync(mensagemId);
+            if (m == null) return null;
+
+            var totalParticipantes = grupo.Participantes.Count(p => p.Ativo);
+            return ParaDto(m, grupo.Nome, totalParticipantes, 0);
+        }
+
         public async Task<IEnumerable<ContatoChatDTO>> ObterContatosAsync(int usuarioId)
         {
             var mensagens = await _repositorio.ObterConversasRecentesAsync(usuarioId);

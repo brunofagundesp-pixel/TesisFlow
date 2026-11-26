@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TesisFlow.Api.Services;
 
@@ -8,14 +9,16 @@ namespace TesisFlow.Api.Controllers
     public class ImagensController : ControllerBase
     {
         private readonly CaminhosService _caminhos;
+        private readonly FirebaseStorageService _firebase;
 
-        public ImagensController(CaminhosService caminhos)
+        public ImagensController(CaminhosService caminhos, FirebaseStorageService firebase)
         {
             _caminhos = caminhos;
+            _firebase = firebase;
         }
 
         [HttpPost("upload")]
-        public async Task<IActionResult> Upload([FromForm] IFormFile imagem)
+        public async Task<IActionResult> Upload([FromForm] IFormFile imagem, [FromForm] int usuarioId)
         {
             if (imagem == null || imagem.Length == 0)
                 return BadRequest("Imagem invalida.");
@@ -24,17 +27,15 @@ namespace TesisFlow.Api.Controllers
             if (string.IsNullOrEmpty(extensao))
                 extensao = ".png";
 
-            var nome = $"{Guid.NewGuid()}{extensao}";
-            var dir = Path.Combine(_caminhos.UploadsBasePath, "descricao");
-            Directory.CreateDirectory(dir);
+            var subpasta = usuarioId > 0 ? $"descricao/usuario-{usuarioId}" : "descricao";
 
-            var caminho = Path.Combine(dir, nome);
-            using var stream = new FileStream(caminho, FileMode.Create);
-            await imagem.CopyToAsync(stream);
+            using var stream = imagem.OpenReadStream();
+            var url = await _firebase.UploadAsync(subpasta, stream, imagem.ContentType ?? "image/png", extensao);
 
-            return Ok(new { url = $"/api/Imagens/{nome}" });
+            return Ok(new { url });
         }
 
+        [AllowAnonymous]
         [HttpGet("{nome}")]
         public IActionResult Obter(string nome)
         {

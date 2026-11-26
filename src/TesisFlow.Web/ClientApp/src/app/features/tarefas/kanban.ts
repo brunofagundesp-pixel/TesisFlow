@@ -34,6 +34,7 @@ import { NotificacaoService } from '../../core/services/notificacao.service';
 import { Projeto, Tarefa, StatusTarefa, PrioridadeTarefa, QuadroConfiguracao, TarefaSave, TarefaMove, Categoria } from '../../core/models';
 import { CategoriaService } from '../categorias/categoria.service';
 import { toDateTimeLocal, toUtcIso } from '../../core/utils/date.util';
+import { membrosEfetivos } from '../../core/utils/projeto.util';
 
 interface ColunaKanban {
   status: StatusTarefa;
@@ -151,6 +152,10 @@ export class KanbanComponent implements OnInit, OnDestroy {
 
   get filtroCount(): number {
     return this.filtroStatus.size + this.filtroPrioridade.size + this.filtroTipo.size + this.filtroResponsavel.size;
+  }
+
+  get membrosEfetivosProjeto() {
+    return membrosEfetivos(this.projeto, this.auth.usuario());
   }
 
   get quantidadeSelecionada(): number {
