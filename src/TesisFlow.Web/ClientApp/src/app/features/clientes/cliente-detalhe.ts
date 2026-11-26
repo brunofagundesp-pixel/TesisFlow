@@ -410,6 +410,10 @@ export class ClienteDetalheComponent implements OnInit {
     return `${partes[2]}/${partes[1]}/${partes[0]}`;
   }
 
+  ehChaveTarefa(protocolo: string): boolean {
+    return /^[A-Z]{2,4}-\d+$/.test((protocolo || '').trim());
+  }
+
   get codigoColegio(): string {
     return (this.cliente.idTesis || '').replace(/^0+/, '').slice(0, 7);
   }

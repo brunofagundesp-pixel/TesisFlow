@@ -696,6 +696,15 @@
 
 .col-titulo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem; }
 .col-protocolo { width: 140px; flex-shrink: 0; }
+
+.protocolo-link {
+  color: var(--tf-primary);
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 600;
+
+  &:hover { text-decoration: underline; }
+}
 .col-usuario { width: 140px; flex-shrink: 0; }
 .col-data { width: 100px; flex-shrink: 0; }
 .col-professor { flex: 1; min-width: 0; }

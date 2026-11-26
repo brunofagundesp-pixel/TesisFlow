@@ -288,6 +288,15 @@
   word-break: break-all;
 }
 
+.protocolo-link {
+  color: var(--tf-primary);
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 600;
+
+  &:hover { text-decoration: underline; }
+}
+
 .sidebar-field {
   width: 100%;
   background: var(--tf-surface);

@@ -1,4 +1,5 @@
 import { Component, Inject, OnInit } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -35,7 +36,7 @@ interface EventoHistorico {
     MatFormFieldModule, MatInputModule, MatSelectModule,
     MatExpansionModule, MatTooltipModule,
     FormsModule, SlicePipe, DatePipe, TextFieldModule, MatSnackBarModule,
-    AuthUrlPipe,
+    AuthUrlPipe, RouterLink,
   ],
   templateUrl: './atendimento-dialog.html',
   styleUrl: './atendimento-dialog.scss',

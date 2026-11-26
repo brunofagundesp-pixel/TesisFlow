@@ -110,7 +110,11 @@
 
       <div class="info-group">
         <span class="info-label">Protocolo</span>
-        <span class="info-value mono">{{ editando.protocolo }}</span>
+        @if (temVinculo && tarefa?.chave) {
+          <a class="info-value mono protocolo-link" [routerLink]="['/tarefas', tarefa.chave]">{{ tarefa.chave }}</a>
+        } @else {
+          <span class="info-value mono">{{ editando.protocolo }}</span>
+        }
       </div>
     </div>
   </div>

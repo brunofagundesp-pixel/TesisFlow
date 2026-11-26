@@ -183,7 +183,11 @@
                           <span class="row-desc">{{ a.descricao }}</span>
                         }
                       </div>
-                      <span class="col-protocolo mono">{{ a.protocolo | slice:0:8 }}</span>
+                      @if (ehChaveTarefa(a.protocolo)) {
+                        <a class="col-protocolo mono protocolo-link" [routerLink]="['/tarefas', a.protocolo]">{{ a.protocolo }}</a>
+                      } @else {
+                        <span class="col-protocolo mono">{{ a.protocolo | slice:0:8 }}</span>
+                      }
                       <span class="col-usuario">{{ a.usuario }}</span>
                       <span class="col-data">{{ formatarData(a.data) }}</span>
                     </div>
