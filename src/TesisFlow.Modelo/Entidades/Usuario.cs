@@ -8,6 +8,7 @@ namespace TesisFlow.Modelo.Entidades
         public string? Foto { get; set; }
         public string? Banner { get; set; }
         public string? Cargo { get; set; }
+        public string? TesisCcSid { get; set; }
 
         public ICollection<ProjetoMembro> ProjetosMembro { get; set; } = new List<ProjetoMembro>();
         public ICollection<TarefaResponsavel> TarefaResponsaveis { get; set; } = new List<TarefaResponsavel>();

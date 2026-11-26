@@ -31,10 +31,15 @@ namespace TesisFlow.Core.Servicos.Integracoes
         /// </summary>
         public string GerarSystemToken()
         {
+            var sid = _configuration["TesisCc:SystemSid"] ?? "23562";
+            return GerarToken(sid);
+        }
+
+        public string GerarToken(string sid)
+        {
             var key = _configuration["TesisCc:JwtKey"];
             var issuer = _configuration["TesisCc:JwtIssuer"] ?? "tesis.inf.br";
             var audience = _configuration["TesisCc:JwtAudience"] ?? "tesis.inf.br";
-            var sid = _configuration["TesisCc:SystemSid"] ?? "23562";
             var expireHoras = double.TryParse(_configuration["TesisCc:JwtExpireHours"], out var h) ? h : 24;
 
             var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key ?? string.Empty));
@@ -312,12 +317,13 @@ namespace TesisFlow.Core.Servicos.Integracoes
         /// Salva/atualiza um contato (atendimento) na API externa TesisCc.
         /// Retorna o idContato criado quando a resposta o informa; caso contrario, null.
         /// </summary>
-        public async Task<int?> SalvarContatoAsync(TesisCcContatoDTO contato)
+        public async Task<int?> SalvarContatoAsync(TesisCcContatoDTO contato, string? sid = null)
         {
             try
             {
                 var client = _httpClientFactory.CreateClient("TesisCc");
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GerarSystemToken());
+                var token = string.IsNullOrWhiteSpace(sid) ? GerarSystemToken() : GerarToken(sid);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 var response = await client.PostAsJsonAsync("api/tesiscc/SalvarContato", contato);
 
                 if (!response.IsSuccessStatusCode)

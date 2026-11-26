@@ -39,6 +39,16 @@ namespace TesisFlow.Core.Servicos.Usuarios
             return await _repositorio.AtualizarAsync(usuario);
         }
 
+        public async Task<Usuario> DefinirTesisCcSidAsync(int id, string? tesisCcSid)
+        {
+            var usuario = await _repositorio.ObterPorIdAsync(id)
+                ?? throw new KeyNotFoundException("Usuário não encontrado.");
+
+            usuario.TesisCcSid = string.IsNullOrWhiteSpace(tesisCcSid) ? null : tesisCcSid.Trim();
+
+            return await _repositorio.AtualizarAsync(usuario);
+        }
+
         public async Task<Usuario> DefinirFotoAsync(int id, string? foto)
         {
             var usuario = await _repositorio.ObterPorIdAsync(id)

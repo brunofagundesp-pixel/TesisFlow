@@ -35,6 +35,8 @@ namespace TesisFlow.Api.Services
                 new Claim("name", usuario.Nome),
                 new Claim(ClaimTypes.Name, usuario.Nome),
                 new Claim(JwtRegisteredClaimNames.Email, usuario.Email),
+                new Claim("role", usuario.Cargo ?? string.Empty),
+                new Claim(ClaimTypes.Role, usuario.Cargo ?? string.Empty),
             };
 
             var token = new JwtSecurityToken(

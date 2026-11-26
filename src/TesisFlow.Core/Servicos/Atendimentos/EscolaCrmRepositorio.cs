@@ -30,6 +30,13 @@ namespace TesisFlow.Core.Servicos.Atendimentos
                 .FirstOrDefaultAsync(e => e.Ativo && e.ColegioId == colegioId);
         }
 
+        public async Task<EscolaCrm?> ObterPorColegioIncluindoInativoAsync(int colegioId)
+        {
+            return await _context.EscolasCrm
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.ColegioId == colegioId);
+        }
+
         public async Task<EscolaCrm?> ObterPorIdAsync(int id)
         {
             return await _context.EscolasCrm
@@ -42,6 +49,27 @@ namespace TesisFlow.Core.Servicos.Atendimentos
             _context.EscolasCrm.Add(escolaCrm);
             await _context.SaveChangesAsync();
             return escolaCrm;
+        }
+
+        public async Task<EscolaCrm> ReativarAsync(EscolaCrm escolaCrm)
+        {
+            var existente = await _context.EscolasCrm.FindAsync(escolaCrm.Id);
+            if (existente == null)
+                throw new KeyNotFoundException();
+
+            existente.Ativo = true;
+            existente.ColegioNome = escolaCrm.ColegioNome;
+            existente.EtapaComercial = escolaCrm.EtapaComercial;
+            existente.ResponsavelId = escolaCrm.ResponsavelId;
+            existente.ResponsavelNome = escolaCrm.ResponsavelNome;
+            existente.ContatoPrincipalId = escolaCrm.ContatoPrincipalId;
+            existente.ContatoPrincipalNome = escolaCrm.ContatoPrincipalNome;
+            existente.MotivoEncerramento = null;
+            existente.MotivoObservacao = null;
+            existente.DataConversao = null;
+
+            await _context.SaveChangesAsync();
+            return existente;
         }
 
         public async Task<EscolaCrm> AtualizarAsync(EscolaCrm escolaCrm, int usuarioId, string usuarioNome)

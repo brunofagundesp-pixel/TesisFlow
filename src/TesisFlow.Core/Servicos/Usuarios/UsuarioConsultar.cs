@@ -25,6 +25,22 @@ namespace TesisFlow.Core.Servicos.Usuarios
             return usuario != null ? MapToDTO(usuario) : null;
         }
 
+        public async Task<IEnumerable<UsuarioAdminDTO>> ObterAdminAsync()
+        {
+            var usuarios = await _repositorio.ObterTodosAsync();
+            return usuarios
+                .OrderBy(u => u.Nome)
+                .Select(u => new UsuarioAdminDTO
+                {
+                    Id = u.Id,
+                    Nome = u.Nome,
+                    Email = u.Email,
+                    Cargo = u.Cargo,
+                    TesisCcSid = u.TesisCcSid,
+                    Ativo = u.Ativo
+                });
+        }
+
         public async Task<UsuarioDTO?> ObterPorEmailAsync(string email)
         {
             var usuario = await _repositorio.ObterPorEmailAsync(email);

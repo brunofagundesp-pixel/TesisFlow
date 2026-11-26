@@ -17,6 +17,7 @@ namespace TesisFlow.Contexto.ModeloConfiguracao
             builder.Property(u => u.Foto).HasMaxLength(1000);
             builder.Property(u => u.Banner).HasMaxLength(1000);
             builder.Property(u => u.Cargo).HasMaxLength(100);
+            builder.Property(u => u.TesisCcSid).HasMaxLength(50);
 
             builder.HasIndex(u => u.Email).IsUnique();
         }

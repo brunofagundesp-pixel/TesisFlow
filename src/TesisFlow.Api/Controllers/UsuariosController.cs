@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TesisFlow.Api.Services;
 using TesisFlow.Core.Servicos.Usuarios;
@@ -37,6 +38,29 @@ namespace TesisFlow.Api.Controllers
         {
             var usuarios = await _consultar.ObterTodosAsync();
             return Ok(usuarios);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("admin")]
+        public async Task<IActionResult> GetAdmin()
+        {
+            var usuarios = await _consultar.ObterAdminAsync();
+            return Ok(usuarios);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id}/tesisccsid")]
+        public async Task<IActionResult> DefinirTesisCcSid(int id, [FromBody] TesisCcSidAtualizarDTO dto)
+        {
+            try
+            {
+                await _salvar.DefinirTesisCcSidAsync(id, dto.TesisCcSid);
+                return Ok();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
         }
 
         [HttpGet("{id}")]
@@ -250,5 +274,10 @@ namespace TesisFlow.Api.Controllers
         public required string Nome { get; set; }
         public string? Cargo { get; set; }
         public string? Foto { get; set; }
+    }
+
+    public class TesisCcSidAtualizarDTO
+    {
+        public string? TesisCcSid { get; set; }
     }
 }

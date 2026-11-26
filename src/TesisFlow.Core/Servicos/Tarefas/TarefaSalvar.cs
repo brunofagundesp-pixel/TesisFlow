@@ -367,7 +367,13 @@ namespace TesisFlow.Core.Servicos.Tarefas
                 ProtocoloComentario = tarefa.Chave,
             };
 
-            var contatoId = await _tesisCcService.SalvarContatoAsync(contato);
+            var sid = await _context.Usuarios
+                .AsNoTracking()
+                .Where(u => u.Id == tarefa.CriadorId)
+                .Select(u => u.TesisCcSid)
+                .FirstOrDefaultAsync();
+
+            var contatoId = await _tesisCcService.SalvarContatoAsync(contato, sid);
             if (contatoId != null && tarefa.ContatoId != contatoId)
             {
                 tarefa.ContatoId = contatoId;

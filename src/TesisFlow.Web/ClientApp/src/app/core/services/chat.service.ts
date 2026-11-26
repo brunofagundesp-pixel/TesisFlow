@@ -1,4 +1,4 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import * as signalR from '@microsoft/signalr';
 import { AuthService } from './auth.service';
@@ -103,6 +103,12 @@ export class ChatService {
 
   readonly contatos = signal<ContatoChat[]>([]);
   readonly grupos = signal<GrupoChatContato[]>([]);
+  readonly contatosOrdenados = computed(() =>
+    [...this.contatos()].sort((a, b) => b.ultimaData.getTime() - a.ultimaData.getTime())
+  );
+  readonly gruposOrdenados = computed(() =>
+    [...this.grupos()].sort((a, b) => b.ultimaData.getTime() - a.ultimaData.getTime())
+  );
   private _mensagensMap = signal<Record<number, MensagemChat[]>>({});
   private _mensagensGrupoMap = signal<Record<number, MensagemChat[]>>({});
   readonly digitandoMap = signal<Record<number, boolean>>({});
@@ -166,6 +172,11 @@ export class ChatService {
     const userId = this.auth.usuario()?.id;
     if (!userId) return;
 
+    this.carregarContatosEGrupos(userId);
+    this.conectarSignalR(userId);
+  }
+
+  private carregarContatosEGrupos(userId: number): void {
     this.http.get<ContatoChat[]>(`/api/Chat/conversas/${userId}`).subscribe(contatos => {
       this.contatos.set(contatos.map(c => ({
         ...c,
@@ -194,8 +205,6 @@ export class ChatService {
       })));
       this.recalcularNaoLidas();
     });
-
-    this.conectarSignalR(userId);
   }
 
   private conectarSignalR(userId: number): void {
@@ -205,6 +214,7 @@ export class ChatService {
       .withUrl(`/hubs/chat?userId=${userId}`, {
         accessTokenFactory: () => obterToken() ?? '',
       })
+      .withAutomaticReconnect()
       .build();
 
     this.hubConnection.on('ReceberMensagem', (msg: any) => {
@@ -359,6 +369,15 @@ export class ChatService {
       const map: Record<number, StatusUsuario> = {};
       for (const s of statuses) map[s.usuarioId] = s.status;
       this.statusMap.update(() => map);
+    });
+
+    this.hubConnection.onreconnected(() => {
+      this.carregarContatosEGrupos(userId);
+      const ativa = this.conversaAtiva();
+      if (ativa) {
+        if (ativa.tipo === 'grupo') this.carregarMensagensGrupo(ativa.id);
+        else this.carregarMensagens(ativa.id);
+      }
     });
 
     this.hubConnection.start().catch(err => console.warn('Chat SignalR erro:', err));

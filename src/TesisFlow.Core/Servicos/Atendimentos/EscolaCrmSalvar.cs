@@ -58,6 +58,18 @@ namespace TesisFlow.Core.Servicos.Atendimentos
             if (existente != null)
                 return existente;
 
+            var inativo = await _repositorio.ObterPorColegioIncluindoInativoAsync(colegioId);
+            if (inativo != null)
+            {
+                inativo.ColegioNome = colegioNome ?? string.Empty;
+                inativo.EtapaComercial = EtapaComercial.PrimeiroContato;
+                inativo.ResponsavelId = usuarioId;
+                inativo.ResponsavelNome = usuarioNome ?? string.Empty;
+                inativo.ContatoPrincipalId = contatoId;
+                inativo.ContatoPrincipalNome = contatoNome;
+                return await _repositorio.ReativarAsync(inativo);
+            }
+
             var escolaCrm = new EscolaCrm
             {
                 ColegioId = colegioId,

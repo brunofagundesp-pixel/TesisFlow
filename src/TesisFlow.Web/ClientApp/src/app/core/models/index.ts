@@ -5,6 +5,16 @@ export interface Usuario {
   foto?: string;
   banner?: string;
   cargo?: string;
+  tesisCcSid?: string;
+  ativo: boolean;
+}
+
+export interface UsuarioAdmin {
+  id: number;
+  nome: string;
+  email: string;
+  cargo?: string;
+  tesisCcSid?: string;
   ativo: boolean;
 }
 

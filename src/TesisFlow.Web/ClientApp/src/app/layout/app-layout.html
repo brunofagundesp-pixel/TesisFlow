@@ -388,6 +388,14 @@
             }
           </div>
 
+          @if (auth.usuario()?.cargo?.toLowerCase() === 'admin') {
+            <a mat-list-item routerLink="/admin" routerLinkActive="active" class="sidebar-link"
+               [matTooltip]="!sidebarOpen() ? 'Administração' : null" matTooltipPosition="right">
+              <mat-icon>admin_panel_settings</mat-icon>
+              <span class="sidebar-text">Administração</span>
+            </a>
+          }
+
           <a mat-list-item routerLink="/lixeira" routerLinkActive="active" class="sidebar-link sidebar-link-bottom"
              [matTooltip]="!sidebarOpen() ? 'Lixeira' : null" matTooltipPosition="right">
             <mat-icon>restore_from_trash</mat-icon>

@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, OnInit, OnDestroy, HostListener, signal, ViewChild, ElementRef } from '@angular/core';
+import { Component, Output, EventEmitter, OnInit, OnDestroy, HostListener, signal, ViewChild, ElementRef, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -56,13 +56,46 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
   private audioEstado = signal<Record<number, { tocando: boolean; tempoAtual: number; duracao: number }>>({});
   private audioAtual: HTMLAudioElement | null = null;
 
+  private ultimaConversa: string | null = null;
+  private ultimaContagem = -1;
+
   constructor(
     public chatService: ChatService,
     public callService: CallService,
     public auth: AuthService,
     private dialog: MatDialog,
     private router: Router,
-  ) {}
+  ) {
+    effect(() => {
+      const a = this.chatService.conversaAtiva();
+      const key = a ? `${a.tipo}:${a.id}` : null;
+      const count = this.mensagensAtivas.length;
+
+      if (!key) {
+        this.ultimaConversa = null;
+        this.ultimaContagem = -1;
+        return;
+      }
+
+      if (key !== this.ultimaConversa) {
+        this.ultimaConversa = key;
+        this.ultimaContagem = count;
+        this.agendarRolagemParaFinal();
+        return;
+      }
+
+      if (count !== this.ultimaContagem) {
+        this.ultimaContagem = count;
+        const el = this.mensagensContainer?.nativeElement;
+        if (!el) {
+          this.agendarRolagemParaFinal();
+          return;
+        }
+        const pertoDoFinal = el.scrollHeight - el.scrollTop - el.clientHeight < 200;
+        if (pertoDoFinal) this.agendarRolagemParaFinal();
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.callService.inicializar();
@@ -151,6 +184,29 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
     if (this.mesmoDia(d, ontem)) return 'Ontem';
 
     return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  formatarDataContato(data: Date): string {
+    if (!data) return '';
+
+    const agora = new Date();
+    const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    const dataDia = new Date(data.getFullYear(), data.getMonth(), data.getDate());
+
+    const diffDias = Math.round((inicioHoje.getTime() - dataDia.getTime()) / 86400000);
+
+    if (diffDias <= 0) {
+      return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    if (diffDias === 1) return 'Ontem';
+
+    if (diffDias < 7) {
+      const dias = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+      return dias[dataDia.getDay()];
+    }
+
+    return dataDia.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   abrirConversa(id: number): void {
@@ -334,6 +390,13 @@ export class ChatPanelComponent implements OnInit, OnDestroy {
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     this.mostrarRolarAbaixo = false;
+  }
+
+  private agendarRolagemParaFinal(): void {
+    requestAnimationFrame(() => {
+      const el = this.mensagensContainer?.nativeElement;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
   }
 
   alternarBusca(): void {

@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -36,7 +37,7 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ClockSkew = TimeSpan.Zero,
             NameClaimType = "name",
-            RoleClaimType = "role"
+            RoleClaimType = ClaimTypes.Role
         };
 
         options.Events = new JwtBearerEvents
@@ -156,6 +157,7 @@ static async Task AplicarMigracoesAsync(WebApplication app)
         await GarantirColunaAsync(db, "Projetos", "Icone", "VARCHAR(50) NULL");
         await GarantirTamanhoColunaAsync(db, "Projetos", "Icone", 50, "VARCHAR(50) NULL");
         await GarantirColunaAsync(db, "ProjetoMembros", "Status", "INT NOT NULL DEFAULT 2");
+        await GarantirColunaAsync(db, "Usuarios", "TesisCcSid", "VARCHAR(50) NULL");
         await GarantirTabelaColegioNotasAsync(db);
         await GarantirColunaAsync(db, "ColegioNotas", "Cor", "VARCHAR(20) NOT NULL DEFAULT ''");
         await GarantirColunaAsync(db, "ColegioNotas", "Fixa", "TINYINT(1) NOT NULL DEFAULT 0");

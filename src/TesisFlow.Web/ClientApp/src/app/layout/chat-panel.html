@@ -196,8 +196,8 @@
       }
     </div>
     <div class="chat-contatos">
-      @if (chatService.grupos().length > 0) {
-        @for (g of chatService.grupos(); track g.grupoId) {
+      @if (chatService.gruposOrdenados().length > 0) {
+        @for (g of chatService.gruposOrdenados(); track g.grupoId) {
           <div class="chat-contato-card" (click)="abrirGrupo(g.grupoId)">
             <div class="chat-foto-wrapper">
               <span class="chat-contato-foto chat-contato-foto--grupo">
@@ -207,7 +207,7 @@
             <div class="chat-contato-content">
               <div class="chat-contato-top">
                 <span class="chat-contato-nome">{{ g.nome }}</span>
-                <span class="chat-contato-data">{{ g.ultimaData | date:'HH:mm' }}</span>
+                <span class="chat-contato-data">{{ formatarDataContato(g.ultimaData) }}</span>
               </div>
               <div class="chat-contato-bottom">
                 <span class="chat-contato-msg">{{ g.ultimaMensagem }}</span>
@@ -219,7 +219,7 @@
           </div>
         }
       }
-      @for (c of chatService.contatos(); track c.usuarioId) {
+      @for (c of chatService.contatosOrdenados(); track c.usuarioId) {
         <div class="chat-contato-card" (click)="abrirConversa(c.usuarioId)">
           <div class="chat-foto-wrapper">
             <span class="chat-contato-foto">
@@ -231,7 +231,7 @@
           <div class="chat-contato-content">
             <div class="chat-contato-top">
               <span class="chat-contato-nome">{{ c.nome }}</span>
-              <span class="chat-contato-data">{{ c.ultimaData | date:'HH:mm' }}</span>
+              <span class="chat-contato-data">{{ formatarDataContato(c.ultimaData) }}</span>
             </div>
             <div class="chat-contato-bottom">
               <span class="chat-contato-msg">{{ c.ultimaMensagem }}</span>

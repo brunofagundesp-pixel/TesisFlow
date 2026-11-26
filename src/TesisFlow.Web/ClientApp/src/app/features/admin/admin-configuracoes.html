@@ -1,0 +1,47 @@
+<div class="admin-page">
+  <div class="admin-header">
+    <a routerLink="/dashboard" class="admin-back">
+      <mat-icon>arrow_back</mat-icon>
+      Voltar
+    </a>
+    <h1>Administração</h1>
+    <span>Vincule o SID do TesisCc de cada usuário para registrar o atendimento no nome correto</span>
+  </div>
+
+  @if (carregando()) {
+    <div class="admin-empty">Carregando usuários...</div>
+  } @else if (usuarios().length === 0) {
+    <div class="admin-empty">Nenhum usuário encontrado.</div>
+  } @else {
+    <div class="admin-list">
+      @for (u of usuarios(); track u.id) {
+        <div class="admin-row">
+          <div class="admin-user">
+            <div class="admin-avatar">{{ inicial(u.nome) }}</div>
+            <div class="admin-user-info">
+              <span class="admin-nome">
+                {{ u.nome }}
+                @if (!u.ativo) {
+                  <span class="admin-inativo">inativo</span>
+                }
+              </span>
+              <span class="admin-email">{{ u.email }}</span>
+            </div>
+            <span class="admin-cargo">{{ u.cargo || '—' }}</span>
+          </div>
+
+          <div class="admin-sid">
+            <mat-form-field appearance="outline" class="admin-sid-input">
+              <mat-label>SID TesisCc</mat-label>
+              <input matInput [(ngModel)]="sids[u.id]" placeholder="ex.: 23562" />
+            </mat-form-field>
+            <button mat-flat-button color="primary" (click)="salvar(u)" [disabled]="salvando(u)">
+              <mat-icon>{{ salvando(u) ? 'hourglass_empty' : 'save' }}</mat-icon>
+              Salvar
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

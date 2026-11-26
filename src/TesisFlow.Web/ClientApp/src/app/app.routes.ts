@@ -12,8 +12,10 @@ import { KanbanComponent } from './features/tarefas/kanban';
 import { TarefaDetalheComponent } from './features/tarefas/tarefa-detalhe-page';
 import { ProjetoConfiguracoesComponent } from './features/projetos/projeto-configuracoes';
 import { PerfilConfiguracoesComponent } from './features/perfil/perfil-configuracoes';
+import { AdminConfiguracoesComponent } from './features/admin/admin-configuracoes';
 import { LixeiraComponent } from './features/lixeira/lixeira';
 import { AuthGuard } from './core/guards/auth.guard';
+import { AdminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -35,6 +37,7 @@ export const routes: Routes = [
       { path: 'tarefas/:chave', component: TarefaDetalheComponent },
       { path: 'lixeira', component: LixeiraComponent },
       { path: 'configuracoes', component: PerfilConfiguracoesComponent },
+      { path: 'admin', component: AdminConfiguracoesComponent, canActivate: [AdminGuard] },
     ],
   },
   { path: '**', redirectTo: 'dashboard' },
