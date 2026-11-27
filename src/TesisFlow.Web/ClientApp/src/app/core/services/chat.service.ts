@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import * as signalR from '@microsoft/signalr';
 import { AuthService } from './auth.service';
 import { obterToken } from '../token-storage';
+import { normalizarTexto } from '../utils/texto.util';
 
 export interface ContatoChat {
   usuarioId: number;
@@ -935,10 +936,10 @@ export class ChatService {
     }
 
     const filtrar = (usuarios: { id: number; nome: string; foto?: string }[]) => {
-      const t = termo.toLowerCase().trim();
+      const t = normalizarTexto(termo);
       this.sugestoesBusca.set(
         usuarios
-          .filter(u => u.id !== userId && !excl.has(u.id) && u.nome.toLowerCase().includes(t))
+          .filter(u => u.id !== userId && !excl.has(u.id) && normalizarTexto(u.nome).includes(t))
           .slice(0, 6)
           .map(u => ({ usuarioId: u.id, nome: u.nome, avatar: u.nome.charAt(0).toUpperCase(), foto: u.foto }))
       );

@@ -4,7 +4,7 @@ namespace TesisFlow.Core.Interfaces
 {
     public interface IComentarioRepositorio
     {
-        Task<IEnumerable<Comentario>> ObterPorTarefaAsync(int tarefaId);
+        Task<(IEnumerable<Comentario> Comentarios, bool TemMais)> ObterPorTarefaPaginadoAsync(int tarefaId, int skip, int take);
         Task<Comentario?> ObterPorIdAsync(int id);
         Task<Comentario> AdicionarAsync(Comentario comentario);
         Task<Comentario> AtualizarAsync(Comentario comentario);

@@ -27,13 +27,6 @@ namespace TesisFlow.Modelo.DTOs
         public required string Senha { get; set; }
     }
 
-    public class UsuarioRegistroDTO
-    {
-        public required string Nome { get; set; }
-        public required string Email { get; set; }
-        public required string Senha { get; set; }
-    }
-
     public class LoginResponseDTO
     {
         public required string Token { get; set; }

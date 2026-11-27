@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { Usuario, UsuarioAdmin } from '../models';
+import { Usuario, UsuarioAdmin, UsuarioCriar } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class UsuarioService {
@@ -11,8 +11,20 @@ export class UsuarioService {
     return this.api.get<UsuarioAdmin[]>('Usuarios/admin');
   }
 
+  criar(dto: UsuarioCriar): Observable<Usuario> {
+    return this.api.post<Usuario>('Usuarios', dto);
+  }
+
+  excluir(usuarioId: number): Observable<void> {
+    return this.api.delete<void>(`Usuarios/${usuarioId}`);
+  }
+
   definirTesisCcSid(usuarioId: number, tesisCcSid: string | null): Observable<void> {
     return this.api.put<void>(`Usuarios/${usuarioId}/tesisccsid`, { tesisCcSid });
+  }
+
+  definirCargo(usuarioId: number, cargo: string | null): Observable<Usuario> {
+    return this.api.put<Usuario>(`Usuarios/${usuarioId}/cargo`, { cargo });
   }
 
   atualizarFoto(usuarioId: number, arquivo: File): Observable<Usuario> {

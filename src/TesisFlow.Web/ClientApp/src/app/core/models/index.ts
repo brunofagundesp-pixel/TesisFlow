@@ -23,10 +23,11 @@ export interface UsuarioLogin {
   senha: string;
 }
 
-export interface UsuarioRegistro {
+export interface UsuarioCriar {
   nome: string;
   email: string;
   senha: string;
+  cargo?: string;
 }
 
 export interface Projeto {

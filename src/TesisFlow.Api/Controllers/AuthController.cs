@@ -11,32 +11,14 @@ namespace TesisFlow.Api.Controllers
     public class AuthController : ControllerBase
     {
         private readonly UsuarioConsultar _usuarioConsultar;
-        private readonly UsuarioSalvar _usuarioSalvar;
         private readonly TokenServico _tokenServico;
 
         public AuthController(
             UsuarioConsultar usuarioConsultar,
-            UsuarioSalvar usuarioSalvar,
             TokenServico tokenServico)
         {
             _usuarioConsultar = usuarioConsultar;
-            _usuarioSalvar = usuarioSalvar;
             _tokenServico = tokenServico;
-        }
-
-        [AllowAnonymous]
-        [HttpPost("registro")]
-        public async Task<IActionResult> Registro([FromBody] UsuarioRegistroDTO dto)
-        {
-            try
-            {
-                var usuario = await _usuarioSalvar.CriarAsync(dto.Nome, dto.Email, dto.Senha);
-                return Ok(new { usuario.Id, usuario.Nome, usuario.Email });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { mensagem = ex.Message });
-            }
         }
 
         [AllowAnonymous]

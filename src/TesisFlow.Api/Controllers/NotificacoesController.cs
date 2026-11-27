@@ -1,4 +1,8 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using TesisFlow.Contexto.Contextos;
 using TesisFlow.Core.Servicos.Notificacoes;
 using TesisFlow.Modelo.DTOs;
 
@@ -10,22 +14,28 @@ namespace TesisFlow.Api.Controllers
     {
         private readonly NotificacaoConsultar _consultar;
         private readonly NotificacaoServico _servico;
+        private readonly ApplicationDbContextTesisFlow _context;
 
         public NotificacoesController(
             NotificacaoConsultar consultar,
-            NotificacaoServico servico)
+            NotificacaoServico servico,
+            ApplicationDbContextTesisFlow context)
         {
             _consultar = consultar;
             _servico = servico;
+            _context = context;
         }
 
         [HttpGet("usuario/{usuarioId}")]
         public async Task<IActionResult> GetPorUsuario(int usuarioId)
         {
+            if (usuarioId != UsuarioAtual()) return Forbid();
+
             var notificacoes = await _consultar.ObterPorUsuarioAsync(usuarioId);
             return Ok(notificacoes);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] NotificacaoSalvarDTO dto)
         {
@@ -38,6 +48,13 @@ namespace TesisFlow.Api.Controllers
         [HttpPut("{id}/lida")]
         public async Task<IActionResult> MarcarLida(int id)
         {
+            var usuarioId = UsuarioAtual();
+            var notificacao = await _context.Notificacoes.FirstOrDefaultAsync(n => n.Id == id);
+            if (notificacao == null) return NotFound();
+
+            if (notificacao.TargetUserId != null && notificacao.TargetUserId != usuarioId && !User.IsInRole("Admin"))
+                return Forbid();
+
             await _servico.MarcarComoLidaAsync(id);
             return Ok();
         }
@@ -45,6 +62,8 @@ namespace TesisFlow.Api.Controllers
         [HttpPut("usuario/{usuarioId}/lidas")]
         public async Task<IActionResult> MarcarTodasLidas(int usuarioId)
         {
+            if (usuarioId != UsuarioAtual()) return Forbid();
+
             await _servico.MarcarTodasComoLidasAsync(usuarioId);
             return Ok();
         }
@@ -52,8 +71,16 @@ namespace TesisFlow.Api.Controllers
         [HttpPut("tarefa/{tarefaId}/lida")]
         public async Task<IActionResult> MarcarTarefaComoLida(int tarefaId, [FromQuery] int usuarioId)
         {
+            if (usuarioId != UsuarioAtual()) return Forbid();
+
             await _servico.MarcarTarefaComoLidaAsync(tarefaId, usuarioId);
             return Ok();
+        }
+
+        private int UsuarioAtual()
+        {
+            var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(idStr, out var id) ? id : 0;
         }
     }
 }

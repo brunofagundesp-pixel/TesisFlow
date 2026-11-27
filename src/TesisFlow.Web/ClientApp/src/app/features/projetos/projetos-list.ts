@@ -71,8 +71,7 @@ export class ProjetosListComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(confirmado => {
       if (!confirmado) return;
-      const email = this.auth.usuario()?.email || '';
-      this.projetoService.excluir(id, email).subscribe({
+      this.projetoService.excluir(id).subscribe({
         next: () => this.carregarProjetos(),
         error: err => console.error('Erro ao excluir projeto:', err),
       });

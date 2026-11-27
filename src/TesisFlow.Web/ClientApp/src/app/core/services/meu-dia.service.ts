@@ -24,7 +24,7 @@ export class MeuDiaService {
     if (!usuarioId || this.carregado) return;
 
     this.carregado = true;
-    this.tarefaService.listarMeuDiaTarefas(usuarioId).subscribe(tarefas => {
+    this.tarefaService.listarMeuDiaTarefas().subscribe(tarefas => {
       this._tarefas.set(tarefas);
     });
   }
@@ -38,7 +38,7 @@ export class MeuDiaService {
   recarregar(): void {
     const usuarioId = this.auth.usuario()?.id;
     if (!usuarioId) return;
-    this.tarefaService.listarMeuDiaTarefas(usuarioId).subscribe(tarefas => {
+    this.tarefaService.listarMeuDiaTarefas().subscribe(tarefas => {
       this._tarefas.set(tarefas);
     });
   }

@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { HttpClient } from '@angular/common/http';
 import { CallService } from '../core/services/call.service';
 import { AuthService } from '../core/services/auth.service';
+import { normalizarTexto } from '../core/utils/texto.util';
 
 @Component({
   selector: 'app-call-modal',
@@ -592,13 +593,13 @@ export class CallModalComponent {
   }
 
   buscar(): void {
-    const t = this.termoBusca.trim().toLowerCase();
+    const t = normalizarTexto(this.termoBusca);
     const meuId = this.auth.usuario()?.id;
     if (!t || t.length < 1) { this.sugestoes = []; return; }
 
     this.http.get<any[]>('/api/Usuarios').subscribe(usuarios => {
       this.sugestoes = usuarios
-        .filter((u: any) => u.id !== meuId && u.nome.toLowerCase().includes(t) && !this.callService.callState().participants.find(p => p.userId === u.id))
+        .filter((u: any) => u.id !== meuId && normalizarTexto(u.nome).includes(t) && !this.callService.callState().participants.find(p => p.userId === u.id))
         .slice(0, 6)
         .map((u: any) => ({ id: u.id, nome: u.nome }));
     });

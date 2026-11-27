@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { AppLayoutComponent } from './layout/app-layout';
 import { LoginComponent } from './features/auth/login';
-import { RegistroComponent } from './features/auth/registro';
 import { DashboardComponent } from './features/dashboard/dashboard';
 import { MeuDiaComponent } from './features/meu-dia/meu-dia';
 import { ClientesListComponent } from './features/clientes/clientes-list';
@@ -19,7 +18,6 @@ import { AdminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
-  { path: 'registro', component: RegistroComponent },
   {
     path: '',
     component: AppLayoutComponent,

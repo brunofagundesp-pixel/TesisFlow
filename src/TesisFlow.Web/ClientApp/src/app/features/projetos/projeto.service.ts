@@ -15,10 +15,6 @@ export class ProjetoService {
     return this.api.get<Projeto>(`Projetos/${id}`);
   }
 
-  listarPorUsuario(usuarioId: number): Observable<Projeto[]> {
-    return this.api.get<Projeto[]>(`Projetos/usuario/${usuarioId}`);
-  }
-
   criar(dto: ProjetoSave): Observable<Projeto> {
     return this.api.post<Projeto>('Projetos', dto);
   }
@@ -27,8 +23,8 @@ export class ProjetoService {
     return this.api.put<Projeto>(`Projetos/${id}`, dto);
   }
 
-  excluir(id: number, email: string): Observable<void> {
-    return this.api.delete<void>(`Projetos/${id}?email=${encodeURIComponent(email)}`);
+  excluir(id: number): Observable<void> {
+    return this.api.delete<void>(`Projetos/${id}`);
   }
 
   convidarMembro(projetoId: number, email: string): Observable<void> {

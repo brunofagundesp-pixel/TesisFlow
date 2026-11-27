@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
+import { normalizarTexto } from '../core/utils/texto.util';
 
 export interface MembroMencao {
   usuarioId: number;
@@ -108,9 +109,9 @@ export class MencaoDropdownComponent {
   @Output() selecionado = new EventEmitter<MembroMencao>();
 
   get filtrados(): MembroMencao[] {
-    const t = this.termo.toLowerCase().trim();
+    const t = normalizarTexto(this.termo);
     if (!t) return this.membros.slice(0, 10);
-    return this.membros.filter(m => m.usuarioNome.toLowerCase().includes(t));
+    return this.membros.filter(m => normalizarTexto(m.usuarioNome).includes(t));
   }
 
   selecionar(m: MembroMencao) {

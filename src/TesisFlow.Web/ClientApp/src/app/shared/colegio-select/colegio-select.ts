@@ -10,6 +10,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { ClienteApiService } from '../../features/clientes/cliente-api.service';
 import { Cliente } from '../../features/clientes/clientes-data';
 import { ColegioRef } from '../../core/models';
+import { normalizarTexto } from '../../core/utils/texto.util';
 
 @Component({
   selector: 'app-colegio-select',
@@ -70,9 +71,9 @@ export class ColegioSelectComponent implements ControlValueAccessor, OnInit {
 
   onInput(valor: string): void {
     this.termo = valor;
-    const q = valor.trim().toLowerCase();
+    const q = normalizarTexto(valor);
     this.filtrados = this.clientes.filter(
-      (c) => !q || c.nome.toLowerCase().includes(q) || (c.apelido || '').toLowerCase().includes(q),
+      (c) => !q || normalizarTexto(c.nome).includes(q) || normalizarTexto(c.apelido || '').includes(q),
     );
 
     if (!valor || valor.trim().length === 0) {

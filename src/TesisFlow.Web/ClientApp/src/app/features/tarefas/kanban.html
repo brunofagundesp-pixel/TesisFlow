@@ -27,6 +27,10 @@
           <mat-icon>view_list</mat-icon>
           Lista
         </button>
+        <button class="tab-btn" [class.tab-btn--active]="viewAtiva === 'calendario'" (click)="trocarView('calendario')">
+          <mat-icon>calendar_month</mat-icon>
+          Calendario
+        </button>
       </div>
     }
   </div>
@@ -79,6 +83,14 @@
               <span>Responsavel</span>
               @if (filtroResponsavel.size > 0) { <span class="filtro-cat-count">{{ filtroResponsavel.size }}</span> }
             </div>
+            <div class="filtro-cat" [class.filtro-cat--active]="filtroCategoriaAtiva === 'escola'" (click)="$event.stopPropagation(); filtroCategoriaAtiva = 'escola'">
+              <span>Escola</span>
+              @if (filtroEscola.size > 0) { <span class="filtro-cat-count">{{ filtroEscola.size }}</span> }
+            </div>
+            <div class="filtro-cat" [class.filtro-cat--active]="filtroCategoriaAtiva === 'contato'" (click)="$event.stopPropagation(); filtroCategoriaAtiva = 'contato'">
+              <span>Contato</span>
+              @if (filtroContato.size > 0) { <span class="filtro-cat-count">{{ filtroContato.size }}</span> }
+            </div>
           </div>
 
           <div class="filtro-painel">
@@ -117,6 +129,32 @@
               } @else {
                 <span class="filtro-vazio">Nenhum membro no projeto</span>
               }
+            }
+            @if (filtroCategoriaAtiva === 'escola') {
+              <input class="filtro-busca" type="text" placeholder="Pesquisar escola..." [(ngModel)]="escolaBusca" (click)="$event.stopPropagation()" />
+              <div class="filtro-lista">
+                @for (nome of escolasDisponiveis; track nome) {
+                  <div class="filtro-item" (click)="$event.stopPropagation(); toggleFiltroEscola(nome)">
+                    <mat-icon>{{ filtroEscola.has(nome) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+                    <span>{{ nome }}</span>
+                  </div>
+                } @empty {
+                  <span class="filtro-vazio">Nenhuma escola encontrada</span>
+                }
+              </div>
+            }
+            @if (filtroCategoriaAtiva === 'contato') {
+              <input class="filtro-busca" type="text" placeholder="Pesquisar contato..." [(ngModel)]="contatoBusca" (click)="$event.stopPropagation()" />
+              <div class="filtro-lista">
+                @for (nome of contatosDisponiveis; track nome) {
+                  <div class="filtro-item" (click)="$event.stopPropagation(); toggleFiltroContato(nome)">
+                    <mat-icon>{{ filtroContato.has(nome) ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>
+                    <span>{{ nome }}</span>
+                  </div>
+                } @empty {
+                  <span class="filtro-vazio">Nenhum contato encontrado</span>
+                }
+              </div>
             }
 
             @if (filtroCount > 0) {
@@ -281,6 +319,77 @@
       </div>
     }
     }
+  } @else if (viewAtiva === 'calendario') {
+    <div class="calendario-container">
+      <div class="calendario-layout" cdkDropListGroup>
+        <div class="calendario-main">
+          <div class="calendario-header">
+            <button mat-icon-button (click)="mudarMes(-1)" aria-label="Mês anterior"><mat-icon>chevron_left</mat-icon></button>
+            <button mat-button class="calendario-hoje" (click)="irHoje()">Hoje</button>
+            <button mat-icon-button (click)="mudarMes(1)" aria-label="Próximo mês"><mat-icon>chevron_right</mat-icon></button>
+            <h2 class="calendario-titulo">{{ mesLabel }}</h2>
+          </div>
+
+          <div class="calendario-grid calendario-dias-semana">
+            <span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span>
+          </div>
+
+          <div class="calendario-grid">
+            @for (dia of diasCalendario; track dia.data.getTime()) {
+              <div
+                class="calendario-dia"
+                [class.calendario-dia--fora]="!dia.noMes"
+                cdkDropList
+                [cdkDropListData]="tarefasDoDia(dia.data)"
+                (cdkDropListDropped)="soltarNoDia($event, dia.data)">
+                <span class="calendario-dia-numero" [class.calendario-dia-numero--hoje]="ehHoje(dia.data)">{{ dia.data.getDate() }}</span>
+                <div class="calendario-dia-tarefas">
+                  @for (tarefa of tarefasDoDia(dia.data); track tarefa.id) {
+                    <button class="calendario-chip" cdkDrag [cdkDragData]="tarefa" [class]="'cs-' + tarefa.status" (click)="abrirTarefa(tarefa)" [title]="tarefa.titulo">
+                      <span class="calendario-chip-chave">{{ tarefa.chave }}</span>
+                      <span class="calendario-chip-titulo">{{ tarefa.titulo }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <aside class="calendario-semdata">
+          <h3 class="calendario-semdata-titulo">Sem data</h3>
+          <div class="calendario-semdata-lista" cdkDropList [cdkDropListData]="tarefasSemData" (cdkDropListDropped)="soltarNaSemData($event)" (scroll)="onSemDataScroll($event)">
+            @for (tarefa of tarefasSemData; track tarefa.id) {
+              <div class="tarefa-card calendario-tarefa" cdkDrag [cdkDragData]="tarefa" [class.tarefa-card--concluida]="isConcluida(tarefa)" (click)="abrirTarefa(tarefa)">
+                <div class="tarefa-titulo-row">
+                  <span class="tarefa-titulo">{{ tarefa.titulo }}</span>
+                  <mat-icon class="tarefa-prio-icon" [class]="'p-icon-' + tarefa.prioridade">{{ prioridadeIcone(tarefa.prioridade) }}</mat-icon>
+                </div>
+                @if (tarefa.colegioNome) {
+                  <span class="tarefa-colegio">{{ tarefa.colegioNome }}</span>
+                }
+                <div class="tarefa-meta">
+                  <mat-icon class="tarefa-tipo-icon" [style.color]="tarefa.categoriaCor">{{ tarefa.categoriaIcone }}</mat-icon>
+                  <span class="tarefa-chave">{{ tarefa.chave }}</span>
+                  @if (tarefa.responsaveis.length > 0) {
+                    <div class="tarefa-avatares">
+                      @for (r of tarefa.responsaveis.slice(0, 3); track r.id) {
+                        <div class="tarefa-avatar" [title]="r.nome">{{ r.nome.charAt(0) }}</div>
+                      }
+                      @if (tarefa.responsaveis.length > 3) {
+                        <span class="tarefa-avatar-count">+{{ tarefa.responsaveis.length - 3 }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <span class="calendario-semdata-vazio">Nenhuma tarefa sem data</span>
+            }
+          </div>
+        </aside>
+      </div>
+    </div>
   } @else {
     <div class="lista-container">
       <table class="tarefa-lista">

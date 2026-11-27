@@ -24,6 +24,7 @@ import { ProjetoService } from '../projetos/projeto.service';
 import { QuadroConfiguracaoService } from '../projetos/quadro-configuracao.service';
 import { TarefaService } from './tarefa.service';
 import { GlobalTaskDialogComponent } from '../../shared/global-task-dialog';
+import { DefinirHorarioDialogComponent } from '../../shared/definir-horario-dialog';
 import { TarefaDetalheModalComponent } from '../projetos/tarefa-detalhe-modal';
 import { ProjetoMembroDialogComponent } from '../projetos/projeto-membro-dialog';
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog';
@@ -35,6 +36,7 @@ import { Projeto, Tarefa, StatusTarefa, PrioridadeTarefa, QuadroConfiguracao, Ta
 import { CategoriaService } from '../categorias/categoria.service';
 import { toDateTimeLocal, toUtcIso } from '../../core/utils/date.util';
 import { membrosEfetivos } from '../../core/utils/projeto.util';
+import { normalizarTexto } from '../../core/utils/texto.util';
 
 interface ColunaKanban {
   status: StatusTarefa;
@@ -105,7 +107,7 @@ export class KanbanComponent implements OnInit, OnDestroy {
   quadrosConfig: QuadroConfiguracao[] = [];
   loading = true;
   erro = '';
-  viewAtiva: 'quadros' | 'lista' = 'quadros';
+  viewAtiva: 'quadros' | 'lista' | 'calendario' = 'quadros';
   tarefaMenu: Tarefa | null = null;
   menuPos = { top: 0, left: 0 };
   prioridadeMenu: Tarefa | null = null;
@@ -131,8 +133,12 @@ export class KanbanComponent implements OnInit, OnDestroy {
   filtroPrioridade = new Set<number>();
   filtroTipo = new Set<number>();
   filtroResponsavel = new Set<number>();
+  filtroEscola = new Set<string>();
+  filtroContato = new Set<string>();
+  escolaBusca = '';
+  contatoBusca = '';
 
-  filtroCategoriaAtiva: 'status' | 'prioridade' | 'tipo' | 'responsavel' = 'status';
+  filtroCategoriaAtiva: 'status' | 'prioridade' | 'tipo' | 'responsavel' | 'escola' | 'contato' = 'status';
 
   readonly statusEntries: [number, string][] = [
     [StatusTarefa.Backlog, 'Backlog'],
@@ -151,7 +157,29 @@ export class KanbanComponent implements OnInit, OnDestroy {
   categorias: Categoria[] = [];
 
   get filtroCount(): number {
-    return this.filtroStatus.size + this.filtroPrioridade.size + this.filtroTipo.size + this.filtroResponsavel.size;
+    return this.filtroStatus.size + this.filtroPrioridade.size + this.filtroTipo.size + this.filtroResponsavel.size + this.filtroEscola.size + this.filtroContato.size;
+  }
+
+  get escolasDisponiveis(): string[] {
+    const termo = normalizarTexto(this.escolaBusca);
+    const nomes = new Set<string>();
+    for (const t of this.todasTarefas) {
+      if (t.colegioNome) nomes.add(t.colegioNome);
+    }
+    return [...nomes]
+      .filter(n => !termo || normalizarTexto(n).includes(termo))
+      .sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
+  }
+
+  get contatosDisponiveis(): string[] {
+    const termo = normalizarTexto(this.contatoBusca);
+    const nomes = new Set<string>();
+    for (const t of this.todasTarefas) {
+      if (t.contatoNome) nomes.add(t.contatoNome);
+    }
+    return [...nomes]
+      .filter(n => !termo || normalizarTexto(n).includes(termo))
+      .sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
   }
 
   get membrosEfetivosProjeto() {
@@ -330,6 +358,7 @@ export class KanbanComponent implements OnInit, OnDestroy {
   aplicarFiltros() {
     this.selecionadas.clear();
     this.fecharAcaoEmMassa();
+    this.limiteSemData = this.semDataPorPagina;
     let tarefas = this.todasTarefas;
 
     const termo = this.termoBusca.trim().toLowerCase();
@@ -352,6 +381,12 @@ export class KanbanComponent implements OnInit, OnDestroy {
     }
     if (this.filtroResponsavel.size > 0) {
       tarefas = tarefas.filter(t => t.responsaveis.some(r => this.filtroResponsavel.has(r.id)));
+    }
+    if (this.filtroEscola.size > 0) {
+      tarefas = tarefas.filter(t => t.colegioNome && this.filtroEscola.has(t.colegioNome));
+    }
+    if (this.filtroContato.size > 0) {
+      tarefas = tarefas.filter(t => t.contatoNome && this.filtroContato.has(t.contatoNome));
     }
 
     if (this.somenteMinhas) {
@@ -468,6 +503,10 @@ export class KanbanComponent implements OnInit, OnDestroy {
     this.filtroPrioridade.clear();
     this.filtroTipo.clear();
     this.filtroResponsavel.clear();
+    this.filtroEscola.clear();
+    this.filtroContato.clear();
+    this.escolaBusca = '';
+    this.contatoBusca = '';
     this.aplicarFiltros();
   }
 
@@ -476,9 +515,69 @@ export class KanbanComponent implements OnInit, OnDestroy {
     this.aplicarFiltros();
   }
 
-  trocarView(view: 'quadros' | 'lista') {
+  trocarView(view: 'quadros' | 'lista' | 'calendario') {
     this.viewAtiva = view;
     this.limparSelecao();
+  }
+
+  mesAtual = new Date();
+
+  get mesLabel(): string {
+    return this.mesAtual.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  }
+
+  get diasCalendario(): { data: Date; noMes: boolean }[] {
+    const ano = this.mesAtual.getFullYear();
+    const mes = this.mesAtual.getMonth();
+    const primeiro = new Date(ano, mes, 1);
+    const deslocamento = (primeiro.getDay() + 6) % 7; // segunda-feira = 0
+    const inicio = new Date(ano, mes, 1 - deslocamento);
+
+    const dias: { data: Date; noMes: boolean }[] = [];
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
+      dias.push({ data: d, noMes: d.getMonth() === mes });
+    }
+    return dias;
+  }
+
+  private chaveData(d: Date): string {
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  }
+
+  tarefasDoDia(data: Date): Tarefa[] {
+    const chave = this.chaveData(data);
+    return this.tarefasFiltradas.filter(t => !t.criando && t.dataEntrega && this.chaveData(new Date(t.dataEntrega)) === chave);
+  }
+
+  limiteSemData = 20;
+  readonly semDataPorPagina = 20;
+
+  get tarefasSemData(): Tarefa[] {
+    return this.tarefasFiltradas.filter(t => !t.criando && !t.dataEntrega).slice(0, this.limiteSemData);
+  }
+
+  onSemDataScroll(event: Event) {
+    const el = event.target as HTMLElement;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 120) {
+      this.limiteSemData += this.semDataPorPagina;
+    }
+  }
+
+  ehHoje(data: Date): boolean {
+    const hoje = new Date();
+    return data.getFullYear() === hoje.getFullYear()
+      && data.getMonth() === hoje.getMonth()
+      && data.getDate() === hoje.getDate();
+  }
+
+  mudarMes(delta: number): void {
+    const m = this.mesAtual;
+    this.mesAtual = new Date(m.getFullYear(), m.getMonth() + delta, 1);
+  }
+
+  irHoje(): void {
+    this.mesAtual = new Date();
   }
 
   toggleSelecao(tarefa: Tarefa, event: Event) {
@@ -576,6 +675,24 @@ export class KanbanComponent implements OnInit, OnDestroy {
       filtro.delete(valor);
     } else {
       filtro.add(valor);
+    }
+    this.aplicarFiltros();
+  }
+
+  toggleFiltroEscola(valor: string) {
+    if (this.filtroEscola.has(valor)) {
+      this.filtroEscola.delete(valor);
+    } else {
+      this.filtroEscola.add(valor);
+    }
+    this.aplicarFiltros();
+  }
+
+  toggleFiltroContato(valor: string) {
+    if (this.filtroContato.has(valor)) {
+      this.filtroContato.delete(valor);
+    } else {
+      this.filtroContato.add(valor);
     }
     this.aplicarFiltros();
   }
@@ -873,6 +990,63 @@ export class KanbanComponent implements OnInit, OnDestroy {
 
   dataEntregaLocal(tarefa: Tarefa): string {
     return toDateTimeLocal(tarefa.dataEntrega);
+  }
+
+  private montarDto(tarefa: Tarefa): TarefaSave {
+    return {
+      titulo: tarefa.titulo,
+      descricao: tarefa.descricao,
+      status: tarefa.status,
+      prioridade: tarefa.prioridade,
+      tipo: tarefa.tipo,
+      projetoId: tarefa.projetoId,
+      sprintId: tarefa.sprintId,
+      responsavelIds: tarefa.responsaveis.map(r => r.id),
+      criadorId: tarefa.criadorId,
+      atorId: this.auth.usuario()?.id,
+      colegioId: tarefa.colegioId,
+      colegioNome: tarefa.colegioNome,
+      contatoNome: tarefa.contatoNome,
+      dataEntrega: tarefa.dataEntrega,
+    };
+  }
+
+  soltarNoDia(event: CdkDragDrop<Tarefa[]>, dia: Date) {
+    if (event.previousContainer === event.container) return;
+    const tarefa = event.item.data as Tarefa;
+    if (!tarefa || tarefa.criando) return;
+
+    const horaInicial = tarefa.dataEntrega ? toDateTimeLocal(tarefa.dataEntrega).slice(11, 16) : undefined;
+
+    const dialogRef = this.dialog.open(DefinirHorarioDialogComponent, {
+      width: '360px',
+      data: { data: dia, titulo: tarefa.titulo, horaInicial },
+    });
+
+    dialogRef.afterClosed().subscribe((hora: string | null) => {
+      if (!hora) return;
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const local = `${dia.getFullYear()}-${pad(dia.getMonth() + 1)}-${pad(dia.getDate())}T${hora}`;
+      const iso = toUtcIso(local);
+
+      const dto: TarefaSave = { ...this.montarDto(tarefa), dataEntrega: iso ?? undefined };
+      this.tarefaService.atualizar(tarefa.id, dto).subscribe({
+        next: () => { if (this.projeto) this.carregarTarefas(this.projeto.id); },
+        error: () => this.snackbar.open('Não foi possível mover a tarefa.', 'OK', { duration: 3000 }),
+      });
+    });
+  }
+
+  soltarNaSemData(event: CdkDragDrop<Tarefa[]>) {
+    if (event.previousContainer === event.container) return;
+    const tarefa = event.item.data as Tarefa;
+    if (!tarefa || tarefa.criando) return;
+
+    const dto: TarefaSave = { ...this.montarDto(tarefa), dataEntrega: undefined };
+    this.tarefaService.atualizar(tarefa.id, dto).subscribe({
+      next: () => { if (this.projeto) this.carregarTarefas(this.projeto.id); },
+      error: () => this.snackbar.open('Não foi possível mover a tarefa.', 'OK', { duration: 3000 }),
+    });
   }
 
   alterarDataEntrega(tarefa: Tarefa, event: Event) {

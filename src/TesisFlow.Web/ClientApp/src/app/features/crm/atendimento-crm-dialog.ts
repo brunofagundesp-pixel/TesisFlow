@@ -15,6 +15,7 @@ import {
 import { CrmService } from './crm.service';
 import { ClienteApiService } from '../clientes/cliente-api.service';
 import { Cliente } from '../clientes/clientes-data';
+import { normalizarTexto } from '../../core/utils/texto.util';
 
 @Component({
   selector: 'app-atendimento-crm-dialog',
@@ -127,10 +128,10 @@ export class AtendimentoCrmDialogComponent implements OnInit {
   }
 
   get escolasFiltradas(): Cliente[] {
-    const t = this.escolaBusca.toLowerCase().trim();
+    const t = normalizarTexto(this.escolaBusca);
     if (!t) return this.escolas.slice(0, 30);
     return this.escolas
-      .filter(e => e.nome.toLowerCase().includes(t) || e.apelido.toLowerCase().includes(t))
+      .filter(e => normalizarTexto(e.nome).includes(t) || normalizarTexto(e.apelido).includes(t))
       .slice(0, 30);
   }
 

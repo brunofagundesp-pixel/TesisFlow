@@ -18,27 +18,27 @@ namespace TesisFlow.Core.Servicos.Tarefas
         private static DateTime? ComoUtc(DateTime? data) =>
             data.HasValue ? ComoUtc(data.Value) : null;
 
-        public async Task<TarefaDTO?> ObterPorChaveAsync(string chave)
+        public async Task<TarefaDTO?> ObterPorChaveAsync(string chave, int usuarioId)
         {
-            var tarefa = await _repositorio.ObterPorChaveAsync(chave);
+            var tarefa = await _repositorio.ObterPorChaveAsync(chave, usuarioId);
             return tarefa != null ? MapToDTO(tarefa) : null;
         }
 
-        public async Task<IEnumerable<TarefaDTO>> ObterPorProjetoAsync(int projetoId)
+        public async Task<IEnumerable<TarefaDTO>> ObterPorProjetoAsync(int projetoId, int usuarioId)
         {
-            var tarefas = await _repositorio.ObterPorProjetoAsync(projetoId);
+            var tarefas = await _repositorio.ObterPorProjetoAsync(projetoId, usuarioId);
             return tarefas.Select(MapToDTO);
         }
 
-        public async Task<TarefaDTO?> ObterPorIdAsync(int id)
+        public async Task<TarefaDTO?> ObterPorIdAsync(int id, int usuarioId)
         {
-            var tarefa = await _repositorio.ObterPorIdAsync(id);
+            var tarefa = await _repositorio.ObterPorIdComAcessoAsync(id, usuarioId);
             return tarefa != null ? MapToDTO(tarefa) : null;
         }
 
-        public async Task<IEnumerable<TarefaDTO>> ObterPorSprintAsync(int sprintId)
+        public async Task<IEnumerable<TarefaDTO>> ObterPorSprintAsync(int sprintId, int usuarioId)
         {
-            var tarefas = await _repositorio.ObterPorSprintAsync(sprintId);
+            var tarefas = await _repositorio.ObterPorSprintAsync(sprintId, usuarioId);
             return tarefas.Select(MapToDTO);
         }
 

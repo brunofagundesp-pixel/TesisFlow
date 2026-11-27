@@ -14,13 +14,34 @@ namespace TesisFlow.Core.Servicos.Comentarios
             _context = context;
         }
 
-        public async Task<IEnumerable<Comentario>> ObterPorTarefaAsync(int tarefaId)
+        public async Task<(IEnumerable<Comentario> Comentarios, bool TemMais)> ObterPorTarefaPaginadoAsync(int tarefaId, int skip, int take)
         {
-            return await _context.Comentarios
+            var principais = await _context.Comentarios
+                .AsNoTracking()
                 .Include(c => c.Usuario)
-                .Where(c => c.TarefaId == tarefaId && c.Ativo)
+                .Where(c => c.TarefaId == tarefaId && c.Ativo && c.ComentarioPaiId == null)
                 .OrderByDescending(c => c.DataCriacao)
+                .Skip(skip)
+                .Take(take + 1)
                 .ToListAsync();
+
+            var temMais = principais.Count > take;
+            if (temMais) principais = principais.Take(take).ToList();
+
+            var ids = principais.Select(c => c.Id).ToList();
+
+            var respostas = new List<Comentario>();
+            if (ids.Count > 0)
+            {
+                respostas = await _context.Comentarios
+                    .AsNoTracking()
+                    .Include(c => c.Usuario)
+                    .Where(c => c.TarefaId == tarefaId && c.Ativo && c.ComentarioPaiId != null && EF.Constant(ids).Contains(c.ComentarioPaiId.Value))
+                    .OrderBy(c => c.DataCriacao)
+                    .ToListAsync();
+            }
+
+            return (principais.Concat(respostas).ToList(), temMais);
         }
 
         public async Task<Comentario?> ObterPorIdAsync(int id)

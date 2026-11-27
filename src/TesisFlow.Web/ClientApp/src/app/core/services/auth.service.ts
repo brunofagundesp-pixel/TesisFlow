@@ -2,7 +2,7 @@ import { Injectable, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { ApiService } from './api.service';
-import { Usuario, UsuarioLogin, UsuarioRegistro } from '../models';
+import { Usuario, UsuarioLogin } from '../models';
 import { USUARIO_STORAGE_KEY, definirToken, removerToken } from '../token-storage';
 
 @Injectable({ providedIn: 'root' })
@@ -10,7 +10,7 @@ export class AuthService {
   private _usuario = signal<Usuario | null>(this.carregarDaStorage());
   readonly usuario = computed(() => this._usuario());
   readonly logado = computed(() => !!this._usuario());
-  readonly isMaster = computed(() => this._usuario()?.email === 'bruno.tesis@hotmail.com');
+  readonly isMaster = computed(() => this._usuario()?.cargo?.toLowerCase() === 'admin');
 
   constructor(private api: ApiService, private router: Router) {}
 
@@ -22,10 +22,6 @@ export class AuthService {
         this._usuario.set(res.usuario);
       })
     );
-  }
-
-  registro(dto: UsuarioRegistro): Observable<Usuario> {
-    return this.api.post<Usuario>('Auth/registro', dto);
   }
 
   atualizarUsuario(usuario: Usuario): void {

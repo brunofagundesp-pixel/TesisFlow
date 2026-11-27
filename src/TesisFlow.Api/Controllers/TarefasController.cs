@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using TesisFlow.Core.Servicos.Tarefas;
 using TesisFlow.Modelo.DTOs;
@@ -26,19 +27,19 @@ namespace TesisFlow.Api.Controllers
         }
 
         [HttpGet("buscar")]
-        public async Task<IActionResult> Buscar([FromQuery] string termo, [FromQuery] int usuarioId)
+        public async Task<IActionResult> Buscar([FromQuery] string termo)
         {
             if (string.IsNullOrWhiteSpace(termo) || termo.Length < 2)
                 return Ok(new List<TarefaDTO>());
 
-            var tarefas = await _consultar.BuscarAsync(termo.Trim(), usuarioId);
+            var tarefas = await _consultar.BuscarAsync(termo.Trim(), UsuarioAtual());
             return Ok(tarefas);
         }
 
         [HttpGet("chave/{chave}")]
         public async Task<IActionResult> GetByChave(string chave)
         {
-            var tarefa = await _consultar.ObterPorChaveAsync(chave);
+            var tarefa = await _consultar.ObterPorChaveAsync(chave, UsuarioAtual());
             if (tarefa == null) return NotFound();
             return Ok(tarefa);
         }
@@ -46,14 +47,14 @@ namespace TesisFlow.Api.Controllers
         [HttpGet("projeto/{projetoId}")]
         public async Task<IActionResult> GetByProjeto(int projetoId)
         {
-            var tarefas = await _consultar.ObterPorProjetoAsync(projetoId);
+            var tarefas = await _consultar.ObterPorProjetoAsync(projetoId, UsuarioAtual());
             return Ok(tarefas);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var tarefa = await _consultar.ObterPorIdAsync(id);
+            var tarefa = await _consultar.ObterPorIdAsync(id, UsuarioAtual());
             if (tarefa == null) return NotFound();
             return Ok(tarefa);
         }
@@ -61,35 +62,35 @@ namespace TesisFlow.Api.Controllers
         [HttpGet("sprint/{sprintId}")]
         public async Task<IActionResult> GetBySprint(int sprintId)
         {
-            var tarefas = await _consultar.ObterPorSprintAsync(sprintId);
+            var tarefas = await _consultar.ObterPorSprintAsync(sprintId, UsuarioAtual());
             return Ok(tarefas);
         }
 
-        [HttpGet("responsavel/{usuarioId}")]
-        public async Task<IActionResult> GetByResponsavel(int usuarioId)
+        [HttpGet("responsavel")]
+        public async Task<IActionResult> GetByResponsavel()
         {
-            var tarefas = await _consultar.ObterPorResponsavelAsync(usuarioId);
+            var tarefas = await _consultar.ObterPorResponsavelAsync(UsuarioAtual());
             return Ok(tarefas);
         }
 
-        [HttpGet("meu-dia/{usuarioId}")]
-        public async Task<IActionResult> GetMeuDia(int usuarioId)
+        [HttpGet("meu-dia")]
+        public async Task<IActionResult> GetMeuDia()
         {
-            var ids = await _meuDia.ObterIdsAsync(usuarioId);
+            var ids = await _meuDia.ObterIdsAsync(UsuarioAtual());
             return Ok(ids);
         }
 
-        [HttpGet("meu-dia/{usuarioId}/tarefas")]
-        public async Task<IActionResult> GetMeuDiaTarefas(int usuarioId)
+        [HttpGet("meu-dia/tarefas")]
+        public async Task<IActionResult> GetMeuDiaTarefas()
         {
-            var tarefas = await _consultar.ObterPorMeuDiaAsync(usuarioId);
+            var tarefas = await _consultar.ObterPorMeuDiaAsync(UsuarioAtual());
             return Ok(tarefas);
         }
 
-        [HttpGet("lixeira/{usuarioId}")]
-        public async Task<IActionResult> GetLixeira(int usuarioId)
+        [HttpGet("lixeira")]
+        public async Task<IActionResult> GetLixeira()
         {
-            var tarefas = await _consultar.ListarLixeiraAsync(usuarioId);
+            var tarefas = await _consultar.ListarLixeiraAsync(UsuarioAtual());
             return Ok(tarefas);
         }
 
@@ -203,6 +204,12 @@ namespace TesisFlow.Api.Controllers
             {
                 return NotFound();
             }
+        }
+
+        private int UsuarioAtual()
+        {
+            var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(idStr, out var id) ? id : 0;
         }
     }
 }

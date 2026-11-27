@@ -60,6 +60,10 @@ export class TarefaDetalheSidebarComponent implements OnChanges, OnDestroy {
   comentarioForm!: FormGroup;
   membros: ProjetoMembro[] = [];
   comentarios: Comentario[] = [];
+  temMaisComentarios = false;
+  carregandoMaisComentarios = false;
+  private comentariosSkip = 0;
+  readonly comentariosPorPagina = 10;
   anexos: Anexo[] = [];
   historico: HistoricoTarefa[] = [];
   enviandoComentario = false;
@@ -294,11 +298,30 @@ export class TarefaDetalheSidebarComponent implements OnChanges, OnDestroy {
   }
 
   carregarComentarios() {
-    this.comentarioService.listar(this.tarefa.id).subscribe(c => {
-      this.comentarios = c;
+    this.comentariosSkip = 0;
+    this.comentarioService.listar(this.tarefa.id, 0, this.comentariosPorPagina).subscribe(res => {
+      this.comentarios = res.comentarios;
+      this.temMaisComentarios = res.temMais;
+      this.comentariosSkip = res.comentarios.filter(c => !c.comentarioPaiId).length;
       this.cdr.detectChanges();
-      for (const com of c) this.carregarReacoes(com.id);
+      this.carregarReacoes(res.comentarios.map(c => c.id));
       this.verificarCarregamento();
+    });
+  }
+
+  carregarMaisComentarios() {
+    if (this.carregandoMaisComentarios) return;
+    this.carregandoMaisComentarios = true;
+    this.comentarioService.listar(this.tarefa.id, this.comentariosSkip, this.comentariosPorPagina).subscribe({
+      next: res => {
+        this.comentarios = [...this.comentarios, ...res.comentarios];
+        this.temMaisComentarios = res.temMais;
+        this.comentariosSkip += res.comentarios.filter(c => !c.comentarioPaiId).length;
+        this.carregarReacoes(res.comentarios.map(c => c.id));
+        this.carregandoMaisComentarios = false;
+        this.cdr.detectChanges();
+      },
+      error: () => this.carregandoMaisComentarios = false,
     });
   }
 
@@ -606,8 +629,29 @@ export class TarefaDetalheSidebarComponent implements OnChanges, OnDestroy {
     this.toggleEditDescricao();
   }
 
+  onComentarioClick(event: MouseEvent, c: Comentario) {
+    const img = (event.target as HTMLElement).closest('img.comentario-img');
+    if (img) {
+      event.stopPropagation();
+      this.imagemAmpliada = (img as HTMLImageElement).src;
+      return;
+    }
+    if (this.isOwner(c)) this.iniciarEdicaoComentario(c);
+  }
+
   fecharImagem() {
     this.imagemAmpliada = null;
+  }
+
+  baixarImagem() {
+    if (!this.imagemAmpliada) return;
+    const url = this.imagemAmpliada.includes('?') ? `${this.imagemAmpliada}&download=1` : `${this.imagemAmpliada}?download=1`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 
   adicionarAoCalendario() {
@@ -637,15 +681,19 @@ export class TarefaDetalheSidebarComponent implements OnChanges, OnDestroy {
     return c.texto;
   }
 
-  carregarReacoes(comentarioId: number) {
-    this.comentarioService.listarReacoes(comentarioId).subscribe(r => {
-      this.reacoesMap[comentarioId] = r;
+  carregarReacoes(ids: number[]) {
+    if (ids.length === 0) return;
+    this.comentarioService.listarReacoesVarias(ids).subscribe(map => {
       const userId = this.auth.usuario()?.id;
-      if (userId) {
-        for (const re of r) {
-          const emoji = this.codeToEmoji[re.emoji] || re.emoji;
-          if (re.usuarios.some(u => u.usuarioId === userId)) {
-            this.minhaReacao[comentarioId] = emoji;
+      for (const id of ids) {
+        const reacoes = map[id] ?? [];
+        this.reacoesMap[id] = reacoes;
+        if (userId) {
+          for (const re of reacoes) {
+            const emoji = this.codeToEmoji[re.emoji] || re.emoji;
+            if (re.usuarios.some(u => u.usuarioId === userId)) {
+              this.minhaReacao[id] = emoji;
+            }
           }
         }
       }

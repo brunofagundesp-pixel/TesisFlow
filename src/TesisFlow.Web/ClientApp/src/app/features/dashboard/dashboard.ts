@@ -258,7 +258,7 @@ export class DashboardComponent implements OnInit {
       return;
     }
     this.carregando = true;
-    this.tarefaService.listarPorResponsavel(usuarioId).subscribe({
+    this.tarefaService.listarPorResponsavel().subscribe({
       next: tarefas => {
         this.todasTarefas = tarefas;
         this.agrupar();

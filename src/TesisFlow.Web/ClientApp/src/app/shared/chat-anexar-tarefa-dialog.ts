@@ -230,8 +230,7 @@ export class ChatAnexarTarefaDialogComponent {
     }
     this.carregando = true;
     this.timer = setTimeout(() => {
-      const usuarioId = this.data.usuarioId ?? this.auth.usuario()?.id ?? 0;
-      this.tarefaService.buscar(q, usuarioId).subscribe({
+      this.tarefaService.buscar(q).subscribe({
         next: tarefas => { this.resultados = tarefas; this.carregando = false; },
         error: () => { this.resultados = []; this.carregando = false; },
       });

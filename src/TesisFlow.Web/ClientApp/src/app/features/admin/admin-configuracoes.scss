@@ -4,6 +4,91 @@
   margin: 0 auto;
 }
 
+.admin-tab-content {
+  padding-top: 1.5rem;
+}
+
+.admin-criar {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: var(--tf-surface);
+  border: 1px solid var(--tf-border);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.admin-criar h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--tf-text-primary);
+  margin: 0 0 1rem;
+}
+
+.admin-criar-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+
+  mat-form-field {
+    flex: 1 1 200px;
+  }
+
+  button {
+    border-radius: 10px;
+    font-weight: 600;
+    height: 40px;
+
+    mat-icon {
+      font-size: 1.05rem;
+      width: 1.05rem;
+      height: 1.05rem;
+      margin-right: 0.3rem;
+    }
+  }
+}
+
+.admin-excluir {
+  border-radius: 10px;
+  font-weight: 600;
+
+  mat-icon {
+    font-size: 1.05rem;
+    width: 1.05rem;
+    height: 1.05rem;
+    margin-right: 0.3rem;
+  }
+}
+
+.admin-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-cargo-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.admin-cargo-input {
+  width: 180px;
+}
+
+.admin-cargo-edit button {
+  border-radius: 10px;
+  font-weight: 600;
+
+  mat-icon {
+    font-size: 1.05rem;
+    width: 1.05rem;
+    height: 1.05rem;
+    margin-right: 0.3rem;
+  }
+}
+
 .admin-header {
   margin-bottom: 1.5rem;
 }

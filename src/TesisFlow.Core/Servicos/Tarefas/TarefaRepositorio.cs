@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using TesisFlow.Contexto.Contextos;
 using TesisFlow.Core.Interfaces;
@@ -29,7 +30,12 @@ namespace TesisFlow.Core.Servicos.Tarefas
                 .ToListAsync();
         }
 
-        public async Task<Tarefa?> ObterPorChaveAsync(string chave)
+        private Expression<Func<Tarefa, bool>> PodeVer(int usuarioId) =>
+            t => t.Projeto.LiderId == usuarioId ||
+                 _context.ProjetoMembros.Any(pm => pm.ProjetoId == t.ProjetoId
+                     && pm.UsuarioId == usuarioId && pm.Ativo && pm.Status == Modelo.Enums.StatusConvite.Aceito);
+
+        public async Task<Tarefa?> ObterPorChaveAsync(string chave, int usuarioId)
         {
             return await _context.Tarefas
                 .AsNoTracking()
@@ -39,7 +45,9 @@ namespace TesisFlow.Core.Servicos.Tarefas
                 .Include(t => t.TarefaResponsaveis).ThenInclude(tr => tr.Usuario)
                 .Include(t => t.Criador)
                 .Include(t => t.Sprint)
-                .FirstOrDefaultAsync(t => t.Chave == chave && t.Ativo);
+                .Where(t => t.Chave == chave && t.Ativo)
+                .Where(PodeVer(usuarioId))
+                .FirstOrDefaultAsync();
         }
 
         public async Task<Tarefa?> ObterPorIdAsync(int id)
@@ -56,7 +64,23 @@ namespace TesisFlow.Core.Servicos.Tarefas
                 .FirstOrDefaultAsync(t => t.Id == id && t.Ativo);
         }
 
-        public async Task<IEnumerable<Tarefa>> ObterPorProjetoAsync(int projetoId)
+        public async Task<Tarefa?> ObterPorIdComAcessoAsync(int id, int usuarioId)
+        {
+            return await _context.Tarefas
+                .AsNoTracking()
+                .AsSplitQuery()
+                .Include(t => t.Projeto)
+                .Include(t => t.Categoria)
+                .Include(t => t.TarefaResponsaveis).ThenInclude(tr => tr.Usuario)
+                .Include(t => t.Criador)
+                .Include(t => t.Sprint)
+                .Include(t => t.Comentarios).ThenInclude(c => c.Usuario)
+                .Where(t => t.Id == id && t.Ativo)
+                .Where(PodeVer(usuarioId))
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<IEnumerable<Tarefa>> ObterPorProjetoAsync(int projetoId, int usuarioId)
         {
             return await _context.Tarefas
                 .AsNoTracking()
@@ -67,11 +91,12 @@ namespace TesisFlow.Core.Servicos.Tarefas
                 .Include(t => t.Criador)
                 .Include(t => t.Sprint)
                 .Where(t => t.ProjetoId == projetoId && t.Ativo)
+                .Where(PodeVer(usuarioId))
                 .OrderBy(t => t.Ordem)
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Tarefa>> ObterPorSprintAsync(int sprintId)
+        public async Task<IEnumerable<Tarefa>> ObterPorSprintAsync(int sprintId, int usuarioId)
         {
             return await _context.Tarefas
                 .AsNoTracking()
@@ -80,6 +105,7 @@ namespace TesisFlow.Core.Servicos.Tarefas
                 .Include(t => t.Categoria)
                 .Include(t => t.TarefaResponsaveis).ThenInclude(tr => tr.Usuario)
                 .Where(t => t.SprintId == sprintId && t.Ativo)
+                .Where(PodeVer(usuarioId))
                 .OrderBy(t => t.Ordem)
                 .ToListAsync();
         }
@@ -130,9 +156,8 @@ namespace TesisFlow.Core.Servicos.Tarefas
                 .Include(t => t.TarefaResponsaveis).ThenInclude(tr => tr.Usuario)
                 .Include(t => t.Criador)
                 .Where(t => t.Ativo
-                    && (_context.ProjetoMembros.Any(pm => pm.ProjetoId == t.ProjetoId && pm.UsuarioId == usuarioId && pm.Ativo)
-                        || t.Projeto.LiderId == usuarioId)
                     && (t.Titulo.Contains(termo) || t.Chave != null && t.Chave.Contains(termo) || (t.Descricao != null && t.Descricao.Contains(termo))))
+                .Where(PodeVer(usuarioId))
                 .OrderByDescending(t => t.DataCriacao)
                 .Take(10)
                 .ToListAsync();
@@ -219,9 +244,8 @@ namespace TesisFlow.Core.Servicos.Tarefas
                 .Include(t => t.TarefaResponsaveis).ThenInclude(tr => tr.Usuario)
                 .Include(t => t.Criador)
                 .Include(t => t.Sprint)
-                .Where(t => !t.Ativo
-                    && (_context.ProjetoMembros.Any(pm => pm.ProjetoId == t.ProjetoId && pm.UsuarioId == usuarioId && pm.Ativo)
-                        || t.Projeto.LiderId == usuarioId))
+                .Where(t => !t.Ativo)
+                .Where(PodeVer(usuarioId))
                 .OrderByDescending(t => t.DataExclusao)
                 .ToListAsync();
         }

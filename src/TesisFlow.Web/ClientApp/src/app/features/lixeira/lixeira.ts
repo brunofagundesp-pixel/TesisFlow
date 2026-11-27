@@ -40,7 +40,7 @@ export class LixeiraComponent implements OnInit {
     if (!usuarioId) return;
 
     this.carregando = true;
-    this.tarefaService.listarLixeira(usuarioId).subscribe({
+    this.tarefaService.listarLixeira().subscribe({
       next: (tarefas) => {
         this.tarefas = tarefas;
         this.carregando = false;

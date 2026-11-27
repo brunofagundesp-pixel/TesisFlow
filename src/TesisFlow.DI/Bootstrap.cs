@@ -12,6 +12,7 @@ using TesisFlow.Core.Servicos.Mensagens;
 using TesisFlow.Core.Servicos.Integracoes;
 using TesisFlow.Core.Servicos.ColegioNotas;
 using TesisFlow.Core.Servicos.Atendimentos;
+using TesisFlow.Core.Servicos.Acesso;
 
 namespace TesisFlow.DI
 {
@@ -105,6 +106,9 @@ namespace TesisFlow.DI
             // Servicos - EscolaCrm (pipeline)
             services.AddScoped<EscolaCrmConsultar>();
             services.AddScoped<EscolaCrmSalvar>();
+
+            // Servicos - Acesso (verificacao de membro/lider)
+            services.AddScoped<ProjetoAcessoService>();
         }
     }
 }

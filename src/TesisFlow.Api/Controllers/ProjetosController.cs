@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TesisFlow.Core.Servicos.Projetos;
 using TesisFlow.Modelo.DTOs;
@@ -22,23 +24,23 @@ namespace TesisFlow.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            var projetos = await _consultar.ObterTodosAsync();
+            var projetos = await _consultar.ObterPorUsuarioAsync(UsuarioAtual());
             return Ok(projetos);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
+            var usuarioId = UsuarioAtual();
             var projeto = await _consultar.ObterPorIdAsync(id);
             if (projeto == null) return NotFound();
-            return Ok(projeto);
-        }
 
-        [HttpGet("usuario/{usuarioId}")]
-        public async Task<IActionResult> GetByUsuario(int usuarioId)
-        {
-            var projetos = await _consultar.ObterPorUsuarioAsync(usuarioId);
-            return Ok(projetos);
+            if (!User.IsInRole("Admin")
+                && projeto.LiderId != usuarioId
+                && !projeto.Membros.Any(m => m.UsuarioId == usuarioId))
+                return Forbid();
+
+            return Ok(projeto);
         }
 
         [HttpPost]
@@ -46,7 +48,7 @@ namespace TesisFlow.Api.Controllers
         {
             try
             {
-                var projeto = await _salvar.CriarAsync(dto.Nome, dto.Descricao, dto.Cor, dto.Icone, dto.LiderId);
+                var projeto = await _salvar.CriarAsync(dto.Nome, dto.Descricao, dto.Cor, dto.Icone, UsuarioAtual());
                 var projetoDto = await _consultar.ObterPorIdAsync(projeto.Id);
                 return CreatedAtAction(nameof(GetById), new { id = projeto.Id }, projetoDto);
             }
@@ -59,6 +61,13 @@ namespace TesisFlow.Api.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] ProjetoSalvarDTO dto)
         {
+            var usuarioId = UsuarioAtual();
+            var atual = await _consultar.ObterPorIdAsync(id);
+            if (atual == null) return NotFound();
+
+            if (!User.IsInRole("Admin") && atual.LiderId != usuarioId)
+                return Forbid();
+
             try
             {
                 await _salvar.AtualizarAsync(id, dto.Nome, dto.Descricao, dto.Cor, dto.Icone, dto.LiderId);
@@ -71,12 +80,10 @@ namespace TesisFlow.Api.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id, [FromQuery] string email)
+        public async Task<IActionResult> Delete(int id)
         {
-            if (email != "bruno.tesis@hotmail.com")
-                return Forbid();
-
             try
             {
                 await _excluir.ExcluirAsync(id);
@@ -128,6 +135,12 @@ namespace TesisFlow.Api.Controllers
             {
                 return NotFound();
             }
+        }
+
+        private int UsuarioAtual()
+        {
+            var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(idStr, out var id) ? id : 0;
         }
     }
 }

@@ -7,9 +7,10 @@ namespace TesisFlow.Core.Interfaces
     {
         Task<IEnumerable<Tarefa>> ObterTodosAsync();
         Task<Tarefa?> ObterPorIdAsync(int id);
-        Task<Tarefa?> ObterPorChaveAsync(string chave);
-        Task<IEnumerable<Tarefa>> ObterPorProjetoAsync(int projetoId);
-        Task<IEnumerable<Tarefa>> ObterPorSprintAsync(int sprintId);
+        Task<Tarefa?> ObterPorIdComAcessoAsync(int id, int usuarioId);
+        Task<Tarefa?> ObterPorChaveAsync(string chave, int usuarioId);
+        Task<IEnumerable<Tarefa>> ObterPorProjetoAsync(int projetoId, int usuarioId);
+        Task<IEnumerable<Tarefa>> ObterPorSprintAsync(int sprintId, int usuarioId);
         Task<IEnumerable<Tarefa>> ObterPorResponsavelAsync(int usuarioId);
         Task<IEnumerable<Tarefa>> ObterPorMeuDiaAsync(int usuarioId);
         Task<Tarefa> AdicionarAsync(Tarefa tarefa);

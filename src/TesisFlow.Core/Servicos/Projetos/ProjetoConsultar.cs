@@ -25,8 +25,8 @@ namespace TesisFlow.Core.Servicos.Projetos
         {
             var projeto = await _repositorio.ObterPorIdAsync(id);
             if (projeto == null) return null;
-            var contagens = await _repositorio.ObterQuantidadeTarefasAsync();
-            return MapToDTO(projeto, contagens.GetValueOrDefault(projeto.Id, 0));
+            var quantidade = await _repositorio.ObterQuantidadeTarefasAsync(id);
+            return MapToDTO(projeto, quantidade);
         }
 
         public async Task<IEnumerable<ProjetoDTO>> ObterPorUsuarioAsync(int usuarioId)

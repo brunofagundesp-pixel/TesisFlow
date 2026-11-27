@@ -33,6 +33,12 @@ namespace TesisFlow.Core.Servicos.Projetos
                 .ToDictionaryAsync(x => x.ProjetoId, x => x.Count);
         }
 
+        public async Task<int> ObterQuantidadeTarefasAsync(int projetoId)
+        {
+            return await _context.Tarefas
+                .CountAsync(t => t.ProjetoId == projetoId && t.Ativo);
+        }
+
         public async Task AdicionarMembroAsync(int projetoId, int usuarioId)
         {
             var existente = await _context.ProjetoMembros
@@ -91,11 +97,13 @@ namespace TesisFlow.Core.Servicos.Projetos
 
         public async Task<IEnumerable<Projeto>> ObterPorUsuarioAsync(int usuarioId)
         {
-            return await _context.ProjetoMembros
-                .Where(pm => pm.UsuarioId == usuarioId && pm.Ativo)
-                .Select(pm => pm.Projeto)
+            return await _context.Projetos
+                .AsNoTracking()
                 .Include(p => p.Lider)
-                .Where(p => p.Ativo)
+                .Include(p => p.Membros).ThenInclude(m => m.Usuario)
+                .Where(p => p.Ativo && (
+                    p.LiderId == usuarioId ||
+                    p.Membros.Any(m => m.UsuarioId == usuarioId && m.Ativo && m.Status == Modelo.Enums.StatusConvite.Aceito)))
                 .ToListAsync();
         }
 

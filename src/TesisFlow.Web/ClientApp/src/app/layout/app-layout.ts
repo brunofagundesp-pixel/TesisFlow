@@ -28,6 +28,7 @@ import { Cliente } from '../features/clientes/clientes-data';
 import { ProjetoDialogComponent } from '../features/projetos/projeto-dialog';
 import { GlobalTaskDialogComponent } from '../shared/global-task-dialog';
 import { TarefaDetalheModalComponent } from '../features/projetos/tarefa-detalhe-modal';
+import { normalizarTexto } from '../core/utils/texto.util';
 import { ChatPanelComponent } from './chat-panel';
 import { CallModalComponent } from './call-modal';
 import { Projeto, ProjetoSave, Tarefa, StatusTarefa, TarefaSave } from '../core/models';
@@ -262,7 +263,7 @@ export class AppLayoutComponent implements OnInit, OnDestroy {
         const usuarioId = this.auth.usuario()?.id;
         if (!usuarioId) return of([]);
         this.ultimoTermoApi = termo;
-        return this.tarefaService.buscar(termo, usuarioId);
+        return this.tarefaService.buscar(termo);
       }),
       finalize(() => this.carregando = false),
     ).subscribe(tarefas => {
@@ -368,17 +369,18 @@ export class AppLayoutComponent implements OnInit, OnDestroy {
   }
 
   filtrarColegios(termo: string) {
-    const q = termo.toLowerCase();
+    const buscaNormalizada = normalizarTexto(termo);
+    const q = buscaNormalizada;
     if (q.length < 2) {
       this.colegiosFiltrados = [];
       return;
     }
     this.colegiosFiltrados = this.colegios.filter(c =>
-      (c.nome || '').toLowerCase().includes(q) ||
-      (c.apelido || '').toLowerCase().includes(q) ||
-      (c.contato || '').toLowerCase().includes(q) ||
-      (c.telefone || '').toLowerCase().includes(q) ||
-      (c.cidade || '').toLowerCase().includes(q)
+      normalizarTexto(c.nome || '').includes(q) ||
+      normalizarTexto(c.apelido || '').includes(q) ||
+      normalizarTexto(c.contato || '').includes(q) ||
+      normalizarTexto(c.telefone || '').includes(q) ||
+      normalizarTexto(c.cidade || '').includes(q)
     );
   }
 

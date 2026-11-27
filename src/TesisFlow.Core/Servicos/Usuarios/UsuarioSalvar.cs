@@ -12,7 +12,7 @@ namespace TesisFlow.Core.Servicos.Usuarios
             _repositorio = repositorio;
         }
 
-        public async Task<Usuario> CriarAsync(string nome, string email, string senha)
+        public async Task<Usuario> CriarAsync(string nome, string email, string senha, string? cargo = null)
         {
             if (await _repositorio.EmailExisteAsync(email))
                 throw new InvalidOperationException("Email já cadastrado.");
@@ -21,7 +21,8 @@ namespace TesisFlow.Core.Servicos.Usuarios
             {
                 Nome = nome,
                 Email = email,
-                SenhaHash = BCrypt.Net.BCrypt.HashPassword(senha)
+                SenhaHash = BCrypt.Net.BCrypt.HashPassword(senha),
+                Cargo = cargo
             };
 
             return await _repositorio.AdicionarAsync(usuario);
@@ -45,6 +46,16 @@ namespace TesisFlow.Core.Servicos.Usuarios
                 ?? throw new KeyNotFoundException("Usuário não encontrado.");
 
             usuario.TesisCcSid = string.IsNullOrWhiteSpace(tesisCcSid) ? null : tesisCcSid.Trim();
+
+            return await _repositorio.AtualizarAsync(usuario);
+        }
+
+        public async Task<Usuario> DefinirCargoAsync(int id, string? cargo)
+        {
+            var usuario = await _repositorio.ObterPorIdAsync(id)
+                ?? throw new KeyNotFoundException("Usuário não encontrado.");
+
+            usuario.Cargo = string.IsNullOrWhiteSpace(cargo) ? null : cargo.Trim();
 
             return await _repositorio.AtualizarAsync(usuario);
         }

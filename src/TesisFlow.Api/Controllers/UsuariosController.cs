@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TesisFlow.Api.Services;
@@ -66,6 +67,45 @@ namespace TesisFlow.Api.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{id}/cargo")]
+        public async Task<IActionResult> DefinirCargo(int id, [FromBody] UsuarioCargoDTO dto)
+        {
+            var usuarioAtualId = UsuarioAtual();
+
+            var alvo = await _consultar.ObterEntidadePorIdAsync(id);
+            if (alvo == null) return NotFound();
+
+            if (id == usuarioAtualId && EhAdmin(alvo.Cargo) && !EhAdmin(dto.Cargo))
+                return BadRequest(new { mensagem = "Você não pode remover o próprio cargo de administrador." });
+
+            try
+            {
+                var usuarioDto = await _salvar.DefinirCargoAsync(id, dto.Cargo);
+                return Ok(usuarioDto);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        public async Task<IActionResult> Criar([FromBody] UsuarioCriarDTO dto)
+        {
+            try
+            {
+                var usuario = await _salvar.CriarAsync(dto.Nome, dto.Email, dto.Senha, dto.Cargo);
+                var usuarioDto = await _consultar.ObterPorIdAsync(usuario.Id);
+                return Ok(usuarioDto);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { mensagem = ex.Message });
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -74,6 +114,7 @@ namespace TesisFlow.Api.Controllers
             return Ok(usuario);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] UsuarioAtualizarDTO dto)
         {
@@ -230,6 +271,7 @@ namespace TesisFlow.Api.Controllers
             return Ok(dto);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -260,6 +302,17 @@ namespace TesisFlow.Api.Controllers
                 try { System.IO.File.Delete(caminho); } catch { /* ignora falha ao remover arquivo anterior */ }
             }
         }
+
+        private int UsuarioAtual()
+        {
+            var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(idStr, out var id) ? id : 0;
+        }
+
+        private static bool EhAdmin(string? cargo)
+        {
+            return !string.IsNullOrWhiteSpace(cargo) && cargo.Trim().Equals("admin", StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     public class UsuarioAtualizarDTO
@@ -267,6 +320,19 @@ namespace TesisFlow.Api.Controllers
         public required string Nome { get; set; }
         public string? Cargo { get; set; }
         public string? Foto { get; set; }
+    }
+
+    public class UsuarioCriarDTO
+    {
+        public required string Nome { get; set; }
+        public required string Email { get; set; }
+        public required string Senha { get; set; }
+        public string? Cargo { get; set; }
+    }
+
+    public class UsuarioCargoDTO
+    {
+        public string? Cargo { get; set; }
     }
 
     public class TesisCcSidAtualizarDTO

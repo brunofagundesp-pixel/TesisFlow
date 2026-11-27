@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TesisFlow.Contexto.Contextos;
@@ -25,10 +26,14 @@ namespace TesisFlow.Api.Controllers
         }
 
         [HttpGet("tarefa/{tarefaId}")]
-        public async Task<IActionResult> GetByTarefa(int tarefaId)
+        public async Task<IActionResult> GetByTarefa(int tarefaId, [FromQuery] int skip = 0, [FromQuery] int take = 10)
         {
-            var comentarios = await _consultar.ObterPorTarefaAsync(tarefaId);
-            return Ok(comentarios);
+            var usuarioId = UsuarioAtual();
+            if (!User.IsInRole("Admin") && !await PodeVerTarefaAsync(tarefaId, usuarioId))
+                return Forbid();
+
+            var resultado = await _consultar.ObterPorTarefaPaginadoAsync(tarefaId, skip, take);
+            return Ok(new { resultado.Comentarios, resultado.TemMais });
         }
 
         [HttpPost]
@@ -41,6 +46,9 @@ namespace TesisFlow.Api.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] ComentarioSalvarDTO dto)
         {
+            if (!await EhDonoOuAdminAsync(id))
+                return Forbid();
+
             try
             {
                 var comentario = await _salvar.AtualizarAsync(id, dto);
@@ -53,8 +61,11 @@ namespace TesisFlow.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id, [FromQuery] int usuarioId)
+        public async Task<IActionResult> Delete(int id)
         {
+            if (!await EhDonoOuAdminAsync(id))
+                return Forbid();
+
             try
             {
                 await _excluir.ExcluirAsync(id);
@@ -117,6 +128,32 @@ namespace TesisFlow.Api.Controllers
             return Ok(await ListarReacoesAsync(id));
         }
 
+        [HttpGet("reacoes")]
+        public async Task<IActionResult> ListarReacoesEmLote([FromQuery] string ids)
+        {
+            var idLista = (ids ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out var n) ? n : (int?)null)
+                .Where(n => n.HasValue)
+                .Select(n => n!.Value)
+                .Distinct()
+                .ToList();
+
+            if (idLista.Count == 0)
+                return Ok(new Dictionary<int, List<ReacaoDTO>>());
+
+            var reacoes = await _context.ComentarioReacoes
+                .Where(r => EF.Constant(idLista).Contains(r.ComentarioId))
+                .Include(r => r.Usuario)
+                .ToListAsync();
+
+            var resultado = reacoes
+                .GroupBy(r => r.ComentarioId)
+                .ToDictionary(g => g.Key, g => AgruparReacoes(g));
+
+            return Ok(resultado);
+        }
+
         private async Task<List<ReacaoDTO>> ListarReacoesAsync(int comentarioId)
         {
             var reacoes = await _context.ComentarioReacoes
@@ -124,7 +161,11 @@ namespace TesisFlow.Api.Controllers
                 .Include(r => r.Usuario)
                 .ToListAsync();
 
-            return reacoes
+            return AgruparReacoes(reacoes);
+        }
+
+        private static List<ReacaoDTO> AgruparReacoes(IEnumerable<ComentarioReacao> reacoes) =>
+            reacoes
                 .GroupBy(r => r.Emoji)
                 .Select(g => new ReacaoDTO
                 {
@@ -137,6 +178,35 @@ namespace TesisFlow.Api.Controllers
                     }).ToList()
                 })
                 .ToList();
+
+        private int UsuarioAtual()
+        {
+            var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(idStr, out var id) ? id : 0;
+        }
+
+        private async Task<bool> EhDonoOuAdminAsync(int comentarioId)
+        {
+            if (User.IsInRole("Admin")) return true;
+
+            var comentario = await _context.Comentarios.FirstOrDefaultAsync(c => c.Id == comentarioId);
+            if (comentario == null) return false;
+
+            return comentario.UsuarioId == UsuarioAtual();
+        }
+
+        private async Task<bool> PodeVerTarefaAsync(int tarefaId, int usuarioId)
+        {
+            var tarefa = await _context.Tarefas.FirstOrDefaultAsync(t => t.Id == tarefaId);
+            if (tarefa == null) return false;
+
+            var projetoId = tarefa.ProjetoId;
+
+            var ehLider = await _context.Projetos.AnyAsync(p => p.Id == projetoId && p.LiderId == usuarioId);
+            if (ehLider) return true;
+
+            return await _context.ProjetoMembros.AnyAsync(pm => pm.ProjetoId == projetoId
+                && pm.UsuarioId == usuarioId && pm.Ativo && pm.Status == TesisFlow.Modelo.Enums.StatusConvite.Aceito);
         }
     }
 }

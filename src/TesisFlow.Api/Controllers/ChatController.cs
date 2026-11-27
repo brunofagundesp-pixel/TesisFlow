@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using TesisFlow.Api.Hubs;
@@ -39,6 +40,8 @@ namespace TesisFlow.Api.Controllers
         [HttpGet("conversas/{usuarioId}")]
         public async Task<IActionResult> GetContatos(int usuarioId)
         {
+            if (usuarioId != UsuarioAtual()) return Forbid();
+
             var contatos = await _consultar.ObterContatosAsync(usuarioId);
             return Ok(contatos.OrderByDescending(c => c.UltimaData));
         }
@@ -46,6 +49,8 @@ namespace TesisFlow.Api.Controllers
         [HttpGet("conversas/{usuarioA}/{usuarioB}")]
         public async Task<IActionResult> GetHistorico(int usuarioA, int usuarioB, [FromQuery] int? antesId = null, [FromQuery] int limite = 50)
         {
+            if (usuarioA != UsuarioAtual()) return Forbid();
+
             var mensagens = await _consultar.ObterConversaAsync(usuarioA, usuarioB, antesId, limite);
             return Ok(mensagens);
         }
@@ -53,6 +58,7 @@ namespace TesisFlow.Api.Controllers
         [HttpGet("buscar/{usuarioId}")]
         public async Task<IActionResult> Buscar(int usuarioId, [FromQuery] string termo, [FromQuery] int? contatoId = null)
         {
+            if (usuarioId != UsuarioAtual()) return Forbid();
             if (string.IsNullOrWhiteSpace(termo) || termo.Trim().Length < 2)
                 return Ok(new List<MensagemBuscaDTO>());
 
@@ -63,6 +69,8 @@ namespace TesisFlow.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] MensagemSalvarDTO dto)
         {
+            if (dto.RemetenteId != UsuarioAtual()) return Forbid();
+
             var mensagem = await _salvar.EnviarAsync(dto.Texto, dto.RemetenteId, dto.DestinatarioId, dto.MensagemRespondidaId, dto.Vinculo);
             var mensagemDto = await MontarDtoAsync(mensagem);
 
@@ -76,6 +84,7 @@ namespace TesisFlow.Api.Controllers
         [RequestSizeLimit(TamanhoMaximoAudio)]
         public async Task<IActionResult> PostAudio([FromForm] IFormFile? audio, [FromForm] int remetenteId, [FromForm] int destinatarioId, [FromForm] int duracao, [FromForm] int? mensagemRespondidaId)
         {
+            if (remetenteId != UsuarioAtual()) return Forbid();
             if (audio == null || audio.Length == 0)
                 return BadRequest(new { mensagem = "Áudio inválido." });
 
@@ -110,6 +119,8 @@ namespace TesisFlow.Api.Controllers
         [HttpGet("grupos/{usuarioId}")]
         public async Task<IActionResult> GetGrupos(int usuarioId)
         {
+            if (usuarioId != UsuarioAtual()) return Forbid();
+
             var grupos = await _consultar.ObterGruposAsync(usuarioId);
             return Ok(grupos);
         }
@@ -117,6 +128,8 @@ namespace TesisFlow.Api.Controllers
         [HttpGet("grupo/{usuarioId}/{grupoId}")]
         public async Task<IActionResult> GetConversaGrupo(int usuarioId, int grupoId, [FromQuery] int? antesId = null, [FromQuery] int limite = 50)
         {
+            if (usuarioId != UsuarioAtual()) return Forbid();
+
             var mensagens = await _consultar.ObterConversaGrupoAsync(usuarioId, grupoId, antesId, limite);
             return Ok(mensagens);
         }
@@ -124,6 +137,8 @@ namespace TesisFlow.Api.Controllers
         [HttpPost("grupo")]
         public async Task<IActionResult> PostGrupo([FromBody] GrupoCriarDTO dto)
         {
+            if (dto.RemetenteId != UsuarioAtual()) return Forbid();
+
             var ids = dto.ParticipanteIds.Where(id => id != dto.RemetenteId).Distinct().ToList();
 
             var grupo = await _salvar.CriarGrupoAsync(dto.RemetenteId, dto.Nome, ids);
@@ -154,6 +169,8 @@ namespace TesisFlow.Api.Controllers
         [HttpPost("grupo/{grupoId}/mensagem")]
         public async Task<IActionResult> PostMensagemGrupo(int grupoId, [FromBody] GrupoEnviarDTO dto)
         {
+            if (dto.RemetenteId != UsuarioAtual()) return Forbid();
+
             var grupo = await _salvar.ObterGrupoAsync(grupoId);
             if (grupo == null || !grupo.Participantes.Any(p => p.Ativo && p.UsuarioId == dto.RemetenteId))
                 return Forbid();
@@ -173,6 +190,7 @@ namespace TesisFlow.Api.Controllers
         [RequestSizeLimit(TamanhoMaximoAudio)]
         public async Task<IActionResult> PostAudioGrupo(int grupoId, [FromForm] IFormFile? audio, [FromForm] int remetenteId, [FromForm] int duracao)
         {
+            if (remetenteId != UsuarioAtual()) return Forbid();
             if (!await _consultar.UsuarioEhParticipanteAsync(grupoId, remetenteId))
                 return Forbid();
 
@@ -214,6 +232,7 @@ namespace TesisFlow.Api.Controllers
         [RequestSizeLimit(TamanhoMaximoImagem)]
         public async Task<IActionResult> PostImagemGrupo(int grupoId, [FromForm] IFormFile? arquivo, [FromForm] int remetenteId)
         {
+            if (remetenteId != UsuarioAtual()) return Forbid();
             if (!await _consultar.UsuarioEhParticipanteAsync(grupoId, remetenteId))
                 return Forbid();
 
@@ -270,6 +289,8 @@ namespace TesisFlow.Api.Controllers
         [HttpDelete("grupo/{grupoId}/participante/{usuarioId}")]
         public async Task<IActionResult> RemoverParticipante(int grupoId, int usuarioId, [FromQuery] int solicitanteId)
         {
+            if (solicitanteId != UsuarioAtual()) return Forbid();
+
             var grupo = await _salvar.ObterGrupoAsync(grupoId);
             if (grupo == null) return NotFound();
 
@@ -301,6 +322,8 @@ namespace TesisFlow.Api.Controllers
         [HttpPost("grupo/{grupoId}/participante")]
         public async Task<IActionResult> AdicionarParticipante(int grupoId, [FromBody] GrupoAdicionarParticipanteDTO dto)
         {
+            if (dto.SolicitanteId != UsuarioAtual()) return Forbid();
+
             var grupo = await _salvar.ObterGrupoAsync(grupoId);
             if (grupo == null) return NotFound();
 
@@ -333,6 +356,7 @@ namespace TesisFlow.Api.Controllers
         [RequestSizeLimit(TamanhoMaximoImagem)]
         public async Task<IActionResult> PostImagem([FromForm] IFormFile? arquivo, [FromForm] int remetenteId, [FromForm] int destinatarioId, [FromForm] int? mensagemRespondidaId)
         {
+            if (remetenteId != UsuarioAtual()) return Forbid();
             if (arquivo == null || arquivo.Length == 0)
                 return BadRequest(new { mensagem = "Imagem inválida." });
 
@@ -507,6 +531,12 @@ namespace TesisFlow.Api.Controllers
                 .SendAsync("MensagensLidas", destinatarioId);
 
             return Ok();
+        }
+
+        private int UsuarioAtual()
+        {
+            var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return int.TryParse(idStr, out var id) ? id : 0;
         }
     }
 }

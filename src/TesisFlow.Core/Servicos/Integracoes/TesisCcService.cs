@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using System.Globalization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -108,42 +109,63 @@ namespace TesisFlow.Core.Servicos.Integracoes
                 else if (!string.Equals(situacao, "Todos", StringComparison.OrdinalIgnoreCase))
                     filtros.Add($"situacao eq '{situacao.Trim().Replace("'", "''")}'");
 
-                if (!string.IsNullOrWhiteSpace(busca))
-                {
-                    var termo = busca.Trim().ToLowerInvariant().Replace("'", "''");
-                    filtros.Add($"(contains(tolower(nome), '{termo}') or contains(tolower(apelido), '{termo}'))");
-                }
-
                 if (!string.IsNullOrWhiteSpace(uf))
                     filtros.Add($"uf eq '{uf.Trim().Replace("'", "''")}'");
 
                 if (!string.IsNullOrWhiteSpace(municipio))
                     filtros.Add($"municipio eq '{municipio.Trim().Replace("'", "''")}'");
 
-                var url = "odata/cc_cliente?";
-                if (filtros.Count > 0)
-                    url += $"$filter={Uri.EscapeDataString(string.Join(" and ", filtros))}&";
-                if (top.HasValue) url += $"$top={top.Value}&";
-                if (skip.HasValue) url += $"$skip={skip.Value}&";
-                url += "$count=true&$orderby=idColegio";
-
                 var client = _httpClientFactory.CreateClient("TesisCc");
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", GerarSystemToken());
 
-                var response = await client.GetAsync(url);
-                if (!response.IsSuccessStatusCode)
+                var termoBusca = RemoverAcentos(busca ?? string.Empty).Trim();
+                var filtrarBusca = termoBusca.Length > 0;
+                var tamanhoPagina = filtrarBusca ? 500 : top;
+                var offset = filtrarBusca ? 0 : skip ?? 0;
+                var correspondencias = new List<ColegioDTO>();
+                var totalFiltrado = 0;
+                var totalApi = 0;
+
+                do
                 {
-                    var corpo = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("TesisCc ListarColegios retornou {Status}: {Corpo}", (int)response.StatusCode, corpo);
-                    return vazio;
+                    var url = "odata/cc_cliente?";
+                    if (filtros.Count > 0)
+                        url += $"$filter={Uri.EscapeDataString(string.Join(" and ", filtros))}&";
+                    if (tamanhoPagina.HasValue) url += $"$top={tamanhoPagina.Value}&";
+                    if (offset > 0 || filtrarBusca) url += $"$skip={offset}&";
+                    url += "$count=true&$orderby=idColegio";
+
+                    var response = await client.GetAsync(url);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var corpo = await response.Content.ReadAsStringAsync();
+                        _logger.LogWarning("TesisCc ListarColegios retornou {Status}: {Corpo}", (int)response.StatusCode, corpo);
+                        return vazio;
+                    }
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    var data = JsonSerializer.Deserialize<ColegioODataResponseDTO>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (data == null) return vazio;
+
+                    var itens = data.Value.Select(MapColegio).ToList();
+                    totalApi = data.Count ?? totalApi;
+                    if (!filtrarBusca) return (itens, totalApi > 0 ? totalApi : itens.Count);
+
+                    var filtrados = itens.Where(c =>
+                        RemoverAcentos(c.Nome).Contains(termoBusca, StringComparison.OrdinalIgnoreCase) ||
+                        RemoverAcentos(c.Apelido).Contains(termoBusca, StringComparison.OrdinalIgnoreCase)).ToList();
+                    totalFiltrado += filtrados.Count;
+                    var paginaInicio = skip ?? 0;
+                    if (totalFiltrado > paginaInicio && (!top.HasValue || correspondencias.Count < top.Value))
+                        correspondencias.AddRange(filtrados
+                            .Skip(Math.Max(0, paginaInicio - (totalFiltrado - filtrados.Count)))
+                            .Take(top.HasValue ? top.Value - correspondencias.Count : int.MaxValue));
+                    offset += itens.Count;
+                    if (itens.Count == 0 || offset >= totalApi) break;
                 }
+                while (filtrarBusca);
 
-                var json = await response.Content.ReadAsStringAsync();
-                var data = JsonSerializer.Deserialize<ColegioODataResponseDTO>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                if (data == null) return vazio;
-
-                var itens = data.Value.Select(MapColegio).ToList();
-                return (itens, data.Count ?? itens.Count);
+                return (correspondencias, totalFiltrado);
             }
             catch (Exception ex)
             {
@@ -167,21 +189,23 @@ namespace TesisFlow.Core.Servicos.Integracoes
 
             try
             {
-                var skip = 0;
-                var total = 0;
-
-                do
+                if (!string.IsNullOrWhiteSpace(busca))
                 {
-                    var (itens, totalPagina) = await ListarColegiosAsync(tamanhoPagina, skip, situacao, busca, uf, municipio);
-                    if (itens.Count == 0) break;
-
-                    total = totalPagina;
+                    var (itens, _) = await ListarColegiosAsync(null, 0, situacao, busca, uf, municipio);
                     resultado.AddRange(itens);
-                    skip += itens.Count;
-
-                    if (resultado.Count >= total) break;
                 }
-                while (true);
+                else
+                {
+                    var skip = 0;
+                    while (true)
+                    {
+                        var (itens, total) = await ListarColegiosAsync(tamanhoPagina, skip, situacao, null, uf, municipio);
+                        if (itens.Count == 0) break;
+                        resultado.AddRange(itens);
+                        skip += itens.Count;
+                        if (skip >= total) break;
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -277,6 +301,13 @@ namespace TesisFlow.Core.Servicos.Integracoes
             IdTesis = api.IdTesis ?? string.Empty,
             IdDiarioRaw = api.IdDiario,
         };
+
+        private static string RemoverAcentos(string texto)
+        {
+            var decomposed = texto.Normalize(NormalizationForm.FormD);
+            var chars = decomposed.Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark).ToArray();
+            return new string(chars).Normalize(NormalizationForm.FormC);
+        }
 
         /// <summary>
         /// Lista as situacoes de cliente disponiveis na API externa TesisCc.

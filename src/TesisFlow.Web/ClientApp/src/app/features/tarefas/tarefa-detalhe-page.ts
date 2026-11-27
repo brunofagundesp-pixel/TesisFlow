@@ -39,6 +39,10 @@ export class TarefaDetalheComponent implements OnInit, OnDestroy {
   form!: FormGroup;
   tarefa!: Tarefa;
   comentarios: Comentario[] = [];
+  temMaisComentarios = false;
+  carregandoMaisComentarios = false;
+  private comentariosSkip = 0;
+  readonly comentariosPorPagina = 10;
   anexos: Anexo[] = [];
   historico: HistoricoTarefa[] = [];
   enviandoComentario = false; enviandoAnexo = false; dragOver = false; carregando = true;
@@ -119,18 +123,21 @@ export class TarefaDetalheComponent implements OnInit, OnDestroy {
   private inserirImagemHtml(url: string) { document.execCommand('insertHTML', false, `<img src="${url}" class="descricao-img" />`); }
   private inserirImagemComentario(url: string) { document.execCommand('insertHTML', false, `<img src="${url}" class="comentario-img" style="max-width:100%;border-radius:8px;" />`); }
   onDescricaoViewClick(event: MouseEvent) { const img = (event.target as HTMLElement).closest('img.descricao-img'); if (img) { event.stopPropagation(); this.imagemAmpliada = (img as HTMLImageElement).src; return; } this.toggleEditDescricao(); }
+  onComentarioClick(event: MouseEvent, c: Comentario) { const img = (event.target as HTMLElement).closest('img.comentario-img'); if (img) { event.stopPropagation(); this.imagemAmpliada = (img as HTMLImageElement).src; return; } if (this.isOwner(c)) this.iniciarEdicaoComentario(c); }
   fecharImagem() { this.imagemAmpliada = null; }
+  baixarImagem() { if (!this.imagemAmpliada) return; const url = this.imagemAmpliada.includes('?') ? `${this.imagemAmpliada}&download=1` : `${this.imagemAmpliada}?download=1`; const a = document.createElement('a'); a.href = url; a.download = ''; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
   adicionarAoCalendario() { baixarEventoIcs(this.tarefa); }
   get isOwner(): (c: Comentario) => boolean { return (c: Comentario) => c.usuarioId === this.auth.usuario()?.id; }
   respostasDoComentario(paiId: number): Comentario[] { return this.comentarios.filter(c => c.comentarioPaiId === paiId); }
   comentariosPrincipais(): Comentario[] { return this.comentarios.filter(c => !c.comentarioPaiId); }
 
-  carregarComentarios() { this.comentarioService.listar(this.tarefa.id).subscribe(c => { this.comentarios = c; for (const com of c) this.carregarReacoes(com.id); this.verificar(); }); }
+  carregarComentarios() { this.comentariosSkip = 0; this.comentarioService.listar(this.tarefa.id, 0, this.comentariosPorPagina).subscribe(res => { this.comentarios = res.comentarios; this.temMaisComentarios = res.temMais; this.comentariosSkip = res.comentarios.filter(c => !c.comentarioPaiId).length; this.carregarReacoes(res.comentarios.map(c => c.id)); this.verificar(); }); }
+  carregarMaisComentarios() { if (this.carregandoMaisComentarios) return; this.carregandoMaisComentarios = true; this.comentarioService.listar(this.tarefa.id, this.comentariosSkip, this.comentariosPorPagina).subscribe({ next: res => { this.comentarios = [...this.comentarios, ...res.comentarios]; this.temMaisComentarios = res.temMais; this.comentariosSkip += res.comentarios.filter(c => !c.comentarioPaiId).length; this.carregarReacoes(res.comentarios.map(c => c.id)); this.carregandoMaisComentarios = false; }, error: () => this.carregandoMaisComentarios = false }); }
   carregarAnexos() { this.anexoService.listar(this.tarefa.id).subscribe(a => { this.anexos = a; this.verificar(); }); }
   carregarHistorico() { this.historicoService.listar(this.tarefa.id).subscribe(h => { this.historico = h; this.verificar(); }); }
   verificar() { this.loaded.anexos = this.loaded.comentarios = this.loaded.historico = true; if (this.carregando) setTimeout(() => { this.carregando = false; this.cdr.detectChanges(); }, 300); }
 
-  carregarReacoes(id: number) { this.comentarioService.listarReacoes(id).subscribe(r => { this.reacoesMap[id] = r; const uid = this.auth.usuario()?.id; if (uid) for (const re of r) { if (re.usuarios.some(u => u.usuarioId === uid)) this.minhaReacao[id] = this.codeToEmoji[re.emoji] || re.emoji; } this.cdr.detectChanges(); }); }
+  carregarReacoes(ids: number[]) { if (ids.length === 0) return; this.comentarioService.listarReacoesVarias(ids).subscribe(map => { const uid = this.auth.usuario()?.id; for (const id of ids) { const reacoes = map[id] ?? []; this.reacoesMap[id] = reacoes; if (uid) for (const re of reacoes) { if (re.usuarios.some(u => u.usuarioId === uid)) this.minhaReacao[id] = this.codeToEmoji[re.emoji] || re.emoji; } } this.cdr.detectChanges(); }); }
   reagir(c: Comentario, emoji: string) { const uid = this.auth.usuario()?.id; if (!uid) return; this.comentarioService.reagir(c.id, {emoji: this.emojiToCode[emoji] || emoji, usuarioId: uid}).subscribe(r => { this.reacoesMap[c.id] = r; if (r.some(x => x.usuarios.some(u => u.usuarioId === uid))) this.minhaReacao[c.id] = emoji; else delete this.minhaReacao[c.id]; this.cdr.detectChanges(); }); }
   getReacoes(c: Comentario): Reacao[] { return (this.reacoesMap[c.id] || []).map(r => ({...r, emoji: this.codeToEmoji[r.emoji] || r.emoji})); }
 

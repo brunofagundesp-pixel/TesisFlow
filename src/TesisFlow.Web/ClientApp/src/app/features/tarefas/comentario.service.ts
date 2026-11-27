@@ -7,8 +7,8 @@ import { Comentario, ComentarioSave, Reacao, ReacaoSave } from '../../core/model
 export class ComentarioService {
   constructor(private api: ApiService) {}
 
-  listar(tarefaId: number): Observable<Comentario[]> {
-    return this.api.get<Comentario[]>(`Comentarios/tarefa/${tarefaId}`);
+  listar(tarefaId: number, skip = 0, take = 10): Observable<{ comentarios: Comentario[]; temMais: boolean }> {
+    return this.api.get<{ comentarios: Comentario[]; temMais: boolean }>(`Comentarios/tarefa/${tarefaId}?skip=${skip}&take=${take}`);
   }
 
   criar(dto: ComentarioSave): Observable<Comentario> {
@@ -29,5 +29,9 @@ export class ComentarioService {
 
   listarReacoes(comentarioId: number): Observable<Reacao[]> {
     return this.api.get<Reacao[]>(`Comentarios/${comentarioId}/reacoes`);
+  }
+
+  listarReacoesVarias(comentarioIds: number[]): Observable<Record<number, Reacao[]>> {
+    return this.api.get<Record<number, Reacao[]>>(`Comentarios/reacoes?ids=${comentarioIds.join(',')}`);
   }
 }

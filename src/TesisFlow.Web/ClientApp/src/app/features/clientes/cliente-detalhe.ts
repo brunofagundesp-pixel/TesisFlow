@@ -21,6 +21,7 @@ import {
 } from '../crm/crm-data';
 import { AtendimentoCrmDialogComponent } from '../crm/atendimento-crm-dialog';
 import { ConfirmarSimplesDialogComponent } from '../../shared/confirmar-simples-dialog';
+import { normalizarTexto } from '../../core/utils/texto.util';
 
 interface TabDef {
   label: string;
@@ -584,12 +585,12 @@ export class ClienteDetalheComponent implements OnInit {
   }
 
   readonly atendimentosFiltrados = computed(() => {
-    const desc = this.filtroAtendimentoDescricao().toLowerCase().trim();
-    const proto = this.filtroAtendimentoProtocolo().toLowerCase().trim();
+    const desc = normalizarTexto(this.filtroAtendimentoDescricao());
+    const proto = normalizarTexto(this.filtroAtendimentoProtocolo());
     const usuario = this.filtroAtendimentoUsuario();
     return this.atendimentosMock.filter(a => {
-      if (desc && !a.titulo.toLowerCase().includes(desc) && !a.descricao.toLowerCase().includes(desc)) return false;
-      if (proto && !a.protocolo.toLowerCase().includes(proto)) return false;
+      if (desc && !normalizarTexto(a.titulo).includes(desc) && !normalizarTexto(a.descricao).includes(desc)) return false;
+      if (proto && !normalizarTexto(a.protocolo).includes(proto)) return false;
       if (usuario !== 'Todos' && a.usuario !== usuario) return false;
       return true;
     });
@@ -612,10 +613,10 @@ export class ClienteDetalheComponent implements OnInit {
   }
 
   readonly diarioFiltrados = computed(() => {
-    const nome = this.filtroDiarioNome().toLowerCase().trim();
+    const nome = normalizarTexto(this.filtroDiarioNome());
     const idStr = this.filtroDiarioId().trim();
     return this.diarioMock.filter(d => {
-      if (nome && !d.nome.toLowerCase().includes(nome)) return false;
+      if (nome && !normalizarTexto(d.nome).includes(nome)) return false;
       if (idStr && d.id !== idStr) return false;
       return true;
     });
@@ -638,23 +639,23 @@ export class ClienteDetalheComponent implements OnInit {
   }
 
   readonly portalAlunoFiltrados = computed(() => {
-    const nome = this.filtroPortalNomeUsuario().toLowerCase().trim();
-    const login = this.filtroPortalLogin().toLowerCase().trim();
+    const nome = normalizarTexto(this.filtroPortalNomeUsuario());
+    const login = normalizarTexto(this.filtroPortalLogin());
     const tipo = this.filtroPortalTipoUsuario();
     return this.portalAlunoMock.filter(p => {
-      if (nome && !p.nomeUsuario.toLowerCase().includes(nome)) return false;
-      if (login && !p.login.toLowerCase().includes(login)) return false;
+      if (nome && !normalizarTexto(p.nomeUsuario).includes(nome)) return false;
+      if (login && !normalizarTexto(p.login).includes(login)) return false;
       if (tipo !== 'Todos' && p.tipoUsuario !== tipo) return false;
       return true;
     });
   });
 
   readonly portalAlunoAdminFiltrados = computed(() => {
-    const nome = this.filtroPortalAdminNomeUsuario().toLowerCase().trim();
-    const login = this.filtroPortalAdminLogin().toLowerCase().trim();
+    const nome = normalizarTexto(this.filtroPortalAdminNomeUsuario());
+    const login = normalizarTexto(this.filtroPortalAdminLogin());
     return this.portalAlunoAdminMock.filter(p => {
-      if (nome && !p.nomeUsuario.toLowerCase().includes(nome)) return false;
-      if (login && !p.login.toLowerCase().includes(login)) return false;
+      if (nome && !normalizarTexto(p.nomeUsuario).includes(nome)) return false;
+      if (login && !normalizarTexto(p.login).includes(login)) return false;
       return true;
     });
   });

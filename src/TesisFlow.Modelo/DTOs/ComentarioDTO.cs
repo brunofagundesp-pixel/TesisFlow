@@ -20,4 +20,10 @@ namespace TesisFlow.Modelo.DTOs
         public int UsuarioId { get; set; }
         public int? ComentarioPaiId { get; set; }
     }
+
+    public class ComentariosPaginadoDTO
+    {
+        public List<ComentarioDTO> Comentarios { get; set; } = new();
+        public bool TemMais { get; set; }
+    }
 }

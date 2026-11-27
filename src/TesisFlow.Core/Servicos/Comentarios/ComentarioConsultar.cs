@@ -13,10 +13,14 @@ namespace TesisFlow.Core.Servicos.Comentarios
             _repositorio = repositorio;
         }
 
-        public async Task<IEnumerable<ComentarioDTO>> ObterPorTarefaAsync(int tarefaId)
+        public async Task<ComentariosPaginadoDTO> ObterPorTarefaPaginadoAsync(int tarefaId, int skip, int take)
         {
-            var comentarios = await _repositorio.ObterPorTarefaAsync(tarefaId);
-            return comentarios.Select(MapToDTO);
+            var (comentarios, temMais) = await _repositorio.ObterPorTarefaPaginadoAsync(tarefaId, skip, take);
+            return new ComentariosPaginadoDTO
+            {
+                Comentarios = comentarios.Select(MapToDTO).ToList(),
+                TemMais = temMais
+            };
         }
 
         private static ComentarioDTO MapToDTO(Comentario c) => new()
@@ -29,7 +33,9 @@ namespace TesisFlow.Core.Servicos.Comentarios
             UsuarioFoto = c.Usuario?.Foto,
             ComentarioPaiId = c.ComentarioPaiId,
             Curtidas = c.Curtidas,
-            DataCriacao = c.DataCriacao
+            DataCriacao = c.DataCriacao.Kind == DateTimeKind.Utc
+                ? c.DataCriacao
+                : DateTime.SpecifyKind(c.DataCriacao, DateTimeKind.Utc)
         };
     }
 }

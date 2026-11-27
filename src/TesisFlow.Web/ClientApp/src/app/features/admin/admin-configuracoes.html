@@ -5,43 +5,124 @@
       Voltar
     </a>
     <h1>Administração</h1>
-    <span>Vincule o SID do TesisCc de cada usuário para registrar o atendimento no nome correto</span>
+    <span>Gerencie usuários e o vínculo com o TesisCc</span>
   </div>
 
-  @if (carregando()) {
-    <div class="admin-empty">Carregando usuários...</div>
-  } @else if (usuarios().length === 0) {
-    <div class="admin-empty">Nenhum usuário encontrado.</div>
-  } @else {
-    <div class="admin-list">
-      @for (u of usuarios(); track u.id) {
-        <div class="admin-row">
-          <div class="admin-user">
-            <div class="admin-avatar">{{ inicial(u.nome) }}</div>
-            <div class="admin-user-info">
-              <span class="admin-nome">
-                {{ u.nome }}
-                @if (!u.ativo) {
-                  <span class="admin-inativo">inativo</span>
-                }
-              </span>
-              <span class="admin-email">{{ u.email }}</span>
-            </div>
-            <span class="admin-cargo">{{ u.cargo || '—' }}</span>
-          </div>
-
-          <div class="admin-sid">
-            <mat-form-field appearance="outline" class="admin-sid-input">
-              <mat-label>SID TesisCc</mat-label>
-              <input matInput [(ngModel)]="sids[u.id]" placeholder="ex.: 23562" />
+  <mat-tab-group>
+    <mat-tab label="Usuários">
+      <div class="admin-tab-content">
+        <div class="admin-criar">
+          <h2>Cadastrar usuário</h2>
+          <div class="admin-criar-form">
+            <mat-form-field appearance="outline">
+              <mat-label>Nome</mat-label>
+              <input matInput [(ngModel)]="novoUsuario.nome" placeholder="Nome completo" />
             </mat-form-field>
-            <button mat-flat-button color="primary" (click)="salvar(u)" [disabled]="salvando(u)">
-              <mat-icon>{{ salvando(u) ? 'hourglass_empty' : 'save' }}</mat-icon>
-              Salvar
+            <mat-form-field appearance="outline">
+              <mat-label>Email</mat-label>
+              <input matInput type="email" [(ngModel)]="novoUsuario.email" placeholder="email@exemplo.com" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Senha</mat-label>
+              <input matInput type="password" [(ngModel)]="novoUsuario.senha" placeholder="Mínimo 6 caracteres" />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Cargo</mat-label>
+              <input matInput [(ngModel)]="novoUsuario.cargo" placeholder="ex.: admin" />
+            </mat-form-field>
+            <button mat-flat-button color="primary" (click)="criarUsuario()" [disabled]="criando()">
+              <mat-icon>{{ criando() ? 'hourglass_empty' : 'person_add' }}</mat-icon>
+              {{ criando() ? 'Cadastrando...' : 'Cadastrar' }}
             </button>
           </div>
         </div>
-      }
-    </div>
-  }
+
+        @if (carregando()) {
+          <div class="admin-empty">Carregando usuários...</div>
+        } @else if (usuarios().length === 0) {
+          <div class="admin-empty">Nenhum usuário encontrado.</div>
+        } @else {
+          <div class="admin-list">
+            @for (u of usuarios(); track u.id) {
+              <div class="admin-row">
+                <div class="admin-user">
+                  <div class="admin-avatar">{{ inicial(u.nome) }}</div>
+                  <div class="admin-user-info">
+                    <span class="admin-nome">
+                      {{ u.nome }}
+                      @if (!u.ativo) {
+                        <span class="admin-inativo">inativo</span>
+                      }
+                    </span>
+                    <span class="admin-email">{{ u.email }}</span>
+                  </div>
+                </div>
+
+                <div class="admin-acoes">
+                  <div class="admin-cargo-edit">
+                    <mat-form-field appearance="outline" class="admin-cargo-input">
+                      <mat-label>Cargo</mat-label>
+                      <input matInput [(ngModel)]="cargos[u.id]" placeholder="ex.: admin" />
+                    </mat-form-field>
+                    <button mat-flat-button color="primary" (click)="salvarCargo(u)" [disabled]="salvandoCargo(u)">
+                      <mat-icon>{{ salvandoCargo(u) ? 'hourglass_empty' : 'save' }}</mat-icon>
+                      Salvar
+                    </button>
+                  </div>
+
+                  @if (u.ativo) {
+                    <button mat-stroked-button color="warn" class="admin-excluir" (click)="excluir(u)" [disabled]="excluindo(u)">
+                      <mat-icon>{{ excluindo(u) ? 'hourglass_empty' : 'person_remove' }}</mat-icon>
+                      {{ excluindo(u) ? 'Inativando...' : 'Inativar' }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <mat-tab label="SID TesisCc">
+      <div class="admin-tab-content">
+        @if (carregando()) {
+          <div class="admin-empty">Carregando usuários...</div>
+        } @else if (usuarios().length === 0) {
+          <div class="admin-empty">Nenhum usuário encontrado.</div>
+        } @else {
+          <div class="admin-list">
+            @for (u of usuarios(); track u.id) {
+              <div class="admin-row">
+                <div class="admin-user">
+                  <div class="admin-avatar">{{ inicial(u.nome) }}</div>
+                  <div class="admin-user-info">
+                    <span class="admin-nome">
+                      {{ u.nome }}
+                      @if (!u.ativo) {
+                        <span class="admin-inativo">inativo</span>
+                      }
+                    </span>
+                    <span class="admin-email">{{ u.email }}</span>
+                  </div>
+                  <span class="admin-cargo">{{ u.cargo || '—' }}</span>
+                </div>
+
+                <div class="admin-sid">
+                  <mat-form-field appearance="outline" class="admin-sid-input">
+                    <mat-label>SID TesisCc</mat-label>
+                    <input matInput [(ngModel)]="sids[u.id]" placeholder="ex.: 23562" />
+                  </mat-form-field>
+                  <button mat-flat-button color="primary" (click)="salvar(u)" [disabled]="salvando(u)">
+                    <mat-icon>{{ salvando(u) ? 'hourglass_empty' : 'save' }}</mat-icon>
+                    Salvar
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </mat-tab>
+  </mat-tab-group>
 </div>

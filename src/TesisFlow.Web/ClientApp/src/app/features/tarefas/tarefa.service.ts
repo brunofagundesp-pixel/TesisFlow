@@ -23,20 +23,20 @@ export class TarefaService {
     return this.api.get<Tarefa[]>(`Tarefas/sprint/${sprintId}`);
   }
 
-  listarPorResponsavel(usuarioId: number): Observable<Tarefa[]> {
-    return this.api.get<Tarefa[]>(`Tarefas/responsavel/${usuarioId}`);
+  listarPorResponsavel(): Observable<Tarefa[]> {
+    return this.api.get<Tarefa[]>('Tarefas/responsavel');
   }
 
-  listarMeuDia(usuarioId: number): Observable<number[]> {
-    return this.api.get<number[]>(`Tarefas/meu-dia/${usuarioId}`);
+  listarMeuDia(): Observable<number[]> {
+    return this.api.get<number[]>('Tarefas/meu-dia');
   }
 
-  listarMeuDiaTarefas(usuarioId: number): Observable<Tarefa[]> {
-    return this.api.get<Tarefa[]>(`Tarefas/meu-dia/${usuarioId}/tarefas`);
+  listarMeuDiaTarefas(): Observable<Tarefa[]> {
+    return this.api.get<Tarefa[]>('Tarefas/meu-dia/tarefas');
   }
 
-  listarLixeira(usuarioId: number): Observable<Tarefa[]> {
-    return this.api.get<Tarefa[]>(`Tarefas/lixeira/${usuarioId}`);
+  listarLixeira(): Observable<Tarefa[]> {
+    return this.api.get<Tarefa[]>('Tarefas/lixeira');
   }
 
   restaurar(id: number): Observable<Tarefa> {
@@ -79,8 +79,8 @@ export class TarefaService {
     return this.api.post<void>('Tarefas/em-massa/excluir', { ids });
   }
 
-  buscar(termo: string, usuarioId: number): Observable<Tarefa[]> {
-    return this.api.get<Tarefa[]>(`Tarefas/buscar?termo=${encodeURIComponent(termo)}&usuarioId=${usuarioId}`);
+  buscar(termo: string): Observable<Tarefa[]> {
+    return this.api.get<Tarefa[]>(`Tarefas/buscar?termo=${encodeURIComponent(termo)}`);
   }
 
   excluir(id: number): Observable<void> {

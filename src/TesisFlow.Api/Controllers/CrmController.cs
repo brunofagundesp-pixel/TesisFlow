@@ -44,6 +44,8 @@ namespace TesisFlow.Api.Controllers
         [HttpGet("retornos/{usuarioId}")]
         public async Task<IActionResult> GetRetornos(int usuarioId)
         {
+            if (usuarioId != UsuarioAtual().Id) return Forbid();
+
             var retornos = await _consultar.ObterRetornosAsync(usuarioId);
             return Ok(retornos);
         }
