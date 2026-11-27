@@ -28,7 +28,6 @@ namespace TesisFlow.Api.Controllers
         public async Task<IActionResult> GetPorColegio(int colegioId)
         {
             var escola = await _consultar.ObterPorColegioAsync(colegioId);
-            if (escola == null) return NotFound();
             return Ok(escola);
         }
 

@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges, OnDestroy, SimpleChanges, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, OnDestroy, SimpleChanges, ChangeDetectorRef, HostListener } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -17,6 +17,7 @@ import { MeuDiaService } from '../../core/services/meu-dia.service';
 import { MencaoService } from '../../core/services/mencao.service';
 import { NotificacaoService } from '../../core/services/notificacao.service';
 import { ImagemService } from '../../core/services/imagem.service';
+import { criarMarcacaoImagemComentario, prepararHtmlComentario } from '../../core/utils/comentario-imagem.util';
 import { MencaoDropdownComponent, MembroMencao } from '../../shared/mencao-dropdown';
 import { AnexoService } from '../tarefas/anexo.service';
 import { HistoricoTarefaService } from '../tarefas/historico-tarefa.service';
@@ -327,7 +328,7 @@ export class TarefaDetalheSidebarComponent implements OnChanges, OnDestroy {
 
   enviarComentario() {
     const editor = document.querySelector('.novo-comentario-editor .editor-content') as HTMLElement;
-    const html = editor?.innerHTML || '';
+    const html = prepararHtmlComentario(editor);
     if (!html || html.trim().length === 0 || html === '<br>') return;
 
     const userId = this.auth.usuario()!.id;
@@ -430,7 +431,7 @@ export class TarefaDetalheSidebarComponent implements OnChanges, OnDestroy {
 
   salvarEdicaoComentario(c: Comentario) {
     const editor = document.querySelector(`.comentario-editor-${c.id} .editor-content`) as HTMLElement;
-    const novoTexto = editor?.innerHTML || '';
+    const novoTexto = prepararHtmlComentario(editor);
     this.comentarioEditHtml = '';
 
     this.comentarioService.atualizar(c.id, { texto: novoTexto, tarefaId: c.tarefaId, usuarioId: c.usuarioId }).subscribe({
@@ -483,7 +484,7 @@ export class TarefaDetalheSidebarComponent implements OnChanges, OnDestroy {
 
   enviarResposta(c: Comentario) {
     const editor = document.querySelector(`.resposta-editor-${c.id} .editor-content`) as HTMLElement;
-    const html = editor?.innerHTML || '';
+    const html = prepararHtmlComentario(editor);
     if (!html || html.trim().length === 0 || html === '<br>') return;
 
     const userId = this.auth.usuario()!.id;
@@ -616,7 +617,16 @@ export class TarefaDetalheSidebarComponent implements OnChanges, OnDestroy {
   }
 
   private inserirImagemComentario(url: string) {
-    document.execCommand('insertHTML', false, `<img src="${url}" class="comentario-img" style="max-width:100%;border-radius:8px;" />`);
+    document.execCommand('insertHTML', false, criarMarcacaoImagemComentario(url));
+  }
+
+  @HostListener('click', ['$event'])
+  removerImagemComentarioPendente(event: MouseEvent): void {
+    const botao = (event.target as HTMLElement).closest('.comentario-imagem-remover');
+    if (!botao) return;
+    event.preventDefault();
+    event.stopPropagation();
+    botao.closest('.comentario-imagem-pendente')?.remove();
   }
 
   onDescricaoViewClick(event: MouseEvent) {

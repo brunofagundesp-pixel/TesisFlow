@@ -7,6 +7,7 @@ interface AtendimentoApi {
   idContato: number;
   dataContato: string;
   nomeusuario: string;
+  usuarioFoto?: string | null;
   idUsuario: number | null;
   referencia: string;
   detalhes: string;
@@ -104,6 +105,7 @@ function mapAtendimento(api: AtendimentoApi): Atendimento {
     descricao: api.detalhes || '',
     protocolo: api.protocoloComentario || '',
     usuario: api.nomeusuario || '',
+    usuarioFoto: api.usuarioFoto || null,
     data: api.dataContato ? api.dataContato.split('T')[0] : '',
     idStatusContato: api.idStatusContato ?? 0,
     nomeContato: api.nomeContato || '',

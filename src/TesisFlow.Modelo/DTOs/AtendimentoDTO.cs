@@ -11,6 +11,7 @@ namespace TesisFlow.Modelo.DTOs
         public string? NomeContato { get; set; }
         public int UsuarioId { get; set; }
         public string UsuarioNome { get; set; } = string.Empty;
+        public string? UsuarioFoto { get; set; }
         public int? TipoInteracao { get; set; }
         public int? Canal { get; set; }
         public int? Resultado { get; set; }

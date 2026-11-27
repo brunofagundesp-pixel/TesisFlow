@@ -705,7 +705,8 @@
 
   &:hover { text-decoration: underline; }
 }
-.col-usuario { width: 140px; flex-shrink: 0; }
+.col-usuario { width: 140px; flex-shrink: 0; display: inline-flex; align-items: center; gap: 0.45rem; }
+.usuario-avatar { width: 26px; height: 26px; flex: 0 0 26px; border-radius: 50%; object-fit: cover; }
 .col-data { width: 100px; flex-shrink: 0; }
 .col-professor { flex: 1; min-width: 0; }
 .col-id { width: 70px; flex-shrink: 0; }
@@ -892,9 +893,20 @@
 }
 
 .crm-historico-usuario {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.72rem;
   color: var(--tf-text-muted);
   margin-left: auto;
+}
+
+.crm-usuario-avatar {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .crm-historico-acoes {

@@ -42,6 +42,7 @@ namespace TesisFlow.Core.Servicos.Atendimentos
             NomeContato = a.NomeContato,
             UsuarioId = a.UsuarioId,
             UsuarioNome = a.UsuarioNome,
+            UsuarioFoto = a.Usuario?.Foto,
             TipoInteracao = a.TipoInteracao,
             Canal = a.Canal,
             Resultado = a.Resultado,

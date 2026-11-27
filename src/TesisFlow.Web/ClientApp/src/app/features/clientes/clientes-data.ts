@@ -29,6 +29,7 @@ export interface Atendimento {
   descricao: string;
   protocolo: string;
   usuario: string;
+  usuarioFoto?: string | null;
   data: string;
   idStatusContato: number;
   nomeContato: string;

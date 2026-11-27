@@ -22,6 +22,7 @@ import { ConfirmarSimplesDialogComponent } from '../../shared/confirmar-simples-
 import { ConfirmDialogComponent } from '../../shared/confirm-dialog';
 import { AuthService } from '../../core/services/auth.service';
 import { Cliente } from '../clientes/clientes-data';
+import { AuthUrlPipe } from '../../core/auth-url';
 
 @Component({
   selector: 'app-crm-list',
@@ -36,6 +37,7 @@ import { Cliente } from '../clientes/clientes-data';
     MatPaginatorModule,
     MatSnackBarModule,
     DatePipe,
+    AuthUrlPipe,
   ],
   templateUrl: './crm-list.html',
   styleUrl: './crm-list.scss',

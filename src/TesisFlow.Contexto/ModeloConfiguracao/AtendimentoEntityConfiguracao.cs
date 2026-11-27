@@ -23,6 +23,11 @@ namespace TesisFlow.Contexto.ModeloConfiguracao
             builder.Property(a => a.ProximoContatoMotivo).HasMaxLength(300);
             builder.Property(a => a.AtendimentoOrigemId);
 
+            builder.HasOne(a => a.Usuario)
+                .WithMany()
+                .HasForeignKey(a => a.UsuarioId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.HasIndex(a => a.ColegioId);
             builder.HasIndex(a => a.Status);
             builder.HasIndex(a => a.ProximoContatoData);

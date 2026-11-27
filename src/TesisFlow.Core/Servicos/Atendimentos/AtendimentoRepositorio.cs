@@ -18,6 +18,7 @@ namespace TesisFlow.Core.Servicos.Atendimentos
         {
             var query = _context.Atendimentos
                 .AsNoTracking()
+                .Include(a => a.Usuario)
                 .Where(a => a.Ativo);
 
             if (colegioId.HasValue)
@@ -51,6 +52,7 @@ namespace TesisFlow.Core.Servicos.Atendimentos
         {
             return await _context.Atendimentos
                 .AsNoTracking()
+                .Include(a => a.Usuario)
                 .FirstOrDefaultAsync(a => a.Id == id && a.Ativo);
         }
 
@@ -58,6 +60,7 @@ namespace TesisFlow.Core.Servicos.Atendimentos
         {
             var query = _context.Atendimentos
                 .AsNoTracking()
+                .Include(a => a.Usuario)
                 .Where(a => a.Ativo && !a.RetornoConcluido && a.ProximoContatoData != null);
 
             if (usuarioId.HasValue)
@@ -94,6 +97,8 @@ namespace TesisFlow.Core.Servicos.Atendimentos
         {
             _context.Atendimentos.Add(atendimento);
             await _context.SaveChangesAsync();
+            atendimento.Usuario = await _context.Usuarios
+                .FirstOrDefaultAsync(u => u.Id == atendimento.UsuarioId);
             return atendimento;
         }
 
@@ -102,6 +107,8 @@ namespace TesisFlow.Core.Servicos.Atendimentos
             var existente = await _context.Atendimentos.FindAsync(atendimento.Id);
             if (existente == null || !existente.Ativo)
                 throw new KeyNotFoundException();
+
+            await _context.Entry(existente).Reference(a => a.Usuario).LoadAsync();
 
             existente.ColegioId = atendimento.ColegioId;
             existente.ColegioNome = atendimento.ColegioNome;

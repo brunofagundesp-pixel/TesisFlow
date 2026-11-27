@@ -166,7 +166,7 @@
             <div class="comentarios-list">
               @for (c of comentariosPrincipais(); track c.id) {
                 <div class="comentario-item">
-                  <div class="comentario-avatar">{{ c.usuarioNome.charAt(0) }}</div>
+                  <div class="comentario-avatar">@if (c.usuarioFoto) { <img [src]="c.usuarioFoto | authUrl" alt="" /> } @else { {{ c.usuarioNome.charAt(0) }} }</div>
                   <div class="comentario-body">
                     <div class="comentario-header">
                       <span class="comentario-autor">{{ c.usuarioNome }}</span>
@@ -229,7 +229,7 @@
                     }
                     @for (resp of respostasDoComentario(c.id); track resp.id) {
                       <div class="comentario-item comentario-resposta">
-                        <div class="comentario-avatar">{{ resp.usuarioNome.charAt(0) }}</div>
+                        <div class="comentario-avatar">@if (resp.usuarioFoto) { <img [src]="resp.usuarioFoto | authUrl" alt="" /> } @else { {{ resp.usuarioNome.charAt(0) }} }</div>
                         <div class="comentario-body">
                           <div class="comentario-header">
                             <span class="comentario-autor">{{ resp.usuarioNome }}</span>

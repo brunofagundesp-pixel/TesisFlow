@@ -22,6 +22,7 @@ import {
 import { AtendimentoCrmDialogComponent } from '../crm/atendimento-crm-dialog';
 import { ConfirmarSimplesDialogComponent } from '../../shared/confirmar-simples-dialog';
 import { normalizarTexto } from '../../core/utils/texto.util';
+import { AuthUrlPipe } from '../../core/auth-url';
 
 interface TabDef {
   label: string;
@@ -56,6 +57,7 @@ const MESES = ['Janeiro', 'Fevereiro', 'Marco', 'Abril', 'Maio', 'Junho', 'Julho
     MatSelectModule,
     SlicePipe,
     DatePipe,
+    AuthUrlPipe,
   ],
   templateUrl: './cliente-detalhe.html',
   styleUrl: './cliente-detalhe.scss',

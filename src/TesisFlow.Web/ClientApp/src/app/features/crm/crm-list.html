@@ -94,7 +94,7 @@
                     <a class="escola-link" [routerLink]="['/clientes', a.colegioId]">{{ a.colegioNome }}</a>
                   </span>
                   <span class="col-resultado">{{ resultadoLabel(a.resultado) }}</span>
-                  <span class="col-usuario">{{ a.usuarioNome || '-' }}</span>
+                  <span class="col-usuario">@if (a.usuarioFoto) { <img class="usuario-avatar" [src]="a.usuarioFoto | authUrl" alt="" /> }<span>{{ a.usuarioNome || '-' }}</span></span>
                   <span class="col-data">{{ a.dataCriacao | date:'dd/MM/yyyy HH:mm' }}</span>
                   <span class="col-acoes">
                     <button class="crm-row-btn" (click)="editar(a)" title="Editar"><mat-icon>edit</mat-icon></button>

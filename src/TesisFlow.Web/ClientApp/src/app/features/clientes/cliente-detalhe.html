@@ -188,7 +188,7 @@
                       } @else {
                         <span class="col-protocolo mono">{{ a.protocolo | slice:0:8 }}</span>
                       }
-                      <span class="col-usuario">{{ a.usuario }}</span>
+                      <span class="col-usuario">@if (a.usuarioFoto) { <img class="usuario-avatar" [src]="a.usuarioFoto | authUrl" alt="" /> }<span>{{ a.usuario }}</span></span>
                       <span class="col-data">{{ formatarData(a.data) }}</span>
                     </div>
                   }
@@ -421,7 +421,7 @@
                           <span class="crm-historico-tipo">{{ tipoLabelCrm(a.tipoInteracao) }}</span>
                           @if (a.canal != null) { <span class="crm-historico-canal">{{ canalLabelCrm(a.canal) }}</span> }
                           @if (a.resultado != null) { <span class="crm-historico-resultado">{{ resultadoLabelCrm(a.resultado) }}</span> }
-                          <span class="crm-historico-usuario">{{ a.usuarioNome }}</span>
+                          <span class="crm-historico-usuario">@if (a.usuarioFoto) { <img class="crm-usuario-avatar" [src]="a.usuarioFoto | authUrl" alt="" /> }{{ a.usuarioNome }}</span>
                           <span class="crm-historico-acoes">
                             <button class="crm-row-btn" (click)="editarAtendimentoCrm(a)" title="Editar"><mat-icon>edit</mat-icon></button>
                             <button class="crm-row-btn crm-row-btn--danger" (click)="excluirAtendimentoCrm(a)" title="Excluir"><mat-icon>delete</mat-icon></button>

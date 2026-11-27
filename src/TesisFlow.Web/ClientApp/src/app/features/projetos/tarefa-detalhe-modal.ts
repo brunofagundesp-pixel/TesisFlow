@@ -1,4 +1,4 @@
-import { Component, Inject, ChangeDetectorRef } from '@angular/core';
+import { Component, Inject, ChangeDetectorRef, HostListener } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -26,6 +26,7 @@ import { ColegioSelectComponent } from '../../shared/colegio-select/colegio-sele
 import { CategoriaService } from '../categorias/categoria.service';
 import { toDateTimeLocal, toUtcIso } from '../../core/utils/date.util';
 import { ImagemService } from '../../core/services/imagem.service';
+import { criarMarcacaoImagemComentario, prepararHtmlComentario } from '../../core/utils/comentario-imagem.util';
 import { baixarEventoIcs, gerarUrlGoogle, gerarUrlOutlook } from '../../core/utils/calendar.util';
 import { membrosEfetivos } from '../../core/utils/projeto.util';
 
@@ -182,7 +183,7 @@ export class TarefaDetalheModalComponent {
 
   enviarComentario() {
     const editor = document.querySelector('.novo-comentario-editor .editor-content') as HTMLElement;
-    const html = editor?.innerHTML || '';
+    const html = prepararHtmlComentario(editor);
     if (!html || html.trim().length === 0 || html === '<br>') return;
 
     const userId = this.auth.usuario()!.id;
@@ -280,7 +281,7 @@ export class TarefaDetalheModalComponent {
 
   salvarEdicaoComentario(c: Comentario) {
     const editor = document.querySelector(`.comentario-editor-${c.id} .editor-content`) as HTMLElement;
-    const novoTexto = editor?.innerHTML || '';
+    const novoTexto = prepararHtmlComentario(editor);
     this.comentarioEditHtml = '';
 
     this.comentarioService.atualizar(c.id, { texto: novoTexto, tarefaId: c.tarefaId, usuarioId: c.usuarioId }).subscribe({
@@ -333,7 +334,7 @@ export class TarefaDetalheModalComponent {
 
   enviarResposta(c: Comentario) {
     const editor = document.querySelector(`.resposta-editor-${c.id} .editor-content`) as HTMLElement;
-    const html = editor?.innerHTML || '';
+    const html = prepararHtmlComentario(editor);
     if (!html || html.trim().length === 0 || html === '<br>') return;
 
     const userId = this.auth.usuario()!.id;
@@ -456,7 +457,16 @@ export class TarefaDetalheModalComponent {
   }
 
   private inserirImagemComentario(url: string) {
-    document.execCommand('insertHTML', false, `<img src="${url}" class="comentario-img" style="max-width:100%;border-radius:8px;" />`);
+    document.execCommand('insertHTML', false, criarMarcacaoImagemComentario(url));
+  }
+
+  @HostListener('click', ['$event'])
+  removerImagemComentarioPendente(event: MouseEvent): void {
+    const botao = (event.target as HTMLElement).closest('.comentario-imagem-remover');
+    if (!botao) return;
+    event.preventDefault();
+    event.stopPropagation();
+    botao.closest('.comentario-imagem-pendente')?.remove();
   }
 
   onDescricaoViewClick(event: MouseEvent) {

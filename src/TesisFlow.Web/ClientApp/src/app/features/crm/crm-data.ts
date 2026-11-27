@@ -8,6 +8,7 @@ export interface AtendimentoCrm {
   nomeContato: string | null;
   usuarioId: number;
   usuarioNome: string;
+  usuarioFoto?: string | null;
   tipoInteracao: number | null;
   canal: number | null;
   resultado: number | null;

@@ -10,6 +10,7 @@ namespace TesisFlow.Modelo.Entidades
         public string? NomeContato { get; set; }
         public int UsuarioId { get; set; }
         public string UsuarioNome { get; set; } = string.Empty;
+        public Usuario? Usuario { get; set; }
 
         public int? TipoInteracao { get; set; }
         public int? Canal { get; set; }
